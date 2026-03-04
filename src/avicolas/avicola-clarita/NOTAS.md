@@ -4,7 +4,7 @@
 
 ## Historial de cambios específicos
 | Fecha | Cambio |
-|-------|--------|
+|04-03-2026|Categoria clasificación de huevos|
 | — | — |
 
 ## Enlace al Google Sheet
