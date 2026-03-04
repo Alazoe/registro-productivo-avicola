@@ -18,10 +18,15 @@ Esta avícola tiene un flujo distinto al resto:
 Usar código base y coordinar manualmente el ingreso de clasificación.
 
 ## Enlace al Google Sheet
-*(pegar URL aquí)*
+https://docs.google.com/spreadsheets/d/1eaZyVjU_BsCNLbtPillvCcBEg0qUqsbTQZlqQTtWdzk/edit?gid=0#gid=0
 
 ## URL Web App publicada
-*(pegar URL aquí)*
+Producción
+https://script.google.com/macros/s/AKfycbx9Sb2P9loeHqK-7vhcufmXLHZ-u75zcHRbkLfvxgwsjCY6kiuC0p5msm2IfjQzWh_Zsw/exec
+Clasificación
+https://script.google.com/macros/s/AKfycbx2nqIZnCetjxVP7RrZ6PLIkFMQ2_qOV7n64NMVKIeDonOHiti0cuK0hf14P1JxcIfu/exec
+
+
 
 ## Contacto productor
 *(nombre y teléfono)*
