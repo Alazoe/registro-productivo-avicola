@@ -8,10 +8,10 @@
 | — | — |
 
 ## Enlace al Google Sheet
-*(pegar URL aquí)*
+https://docs.google.com/spreadsheets/d/1No5Nm1TtpZ2GpdIUtQsN7MKBjq0ANZlGyURSyy77aZw?authuser=alazoemv%40gmail.com&usp=drive_fs
 
 ## URL Web App publicada
-*(pegar URL aquí)*
+https://script.google.com/macros/s/AKfycbz_KZacc8oOBfhWAIbFMSfDqrxfhiAJr0xTdKHov2ShSwyHQh91JXkoRylWafmkc6M/exec
 
 ## Contacto productor
 *(nombre y teléfono)*
