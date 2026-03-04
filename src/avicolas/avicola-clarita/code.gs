@@ -91,43 +91,59 @@ function guardarDatos(datos) {
     
     const edadSemanas = Math.floor((fecha - fechaNac) / (7 * 24 * 60 * 60 * 1000));
     
-const wsCurva = ss.getSheetByName('MAESTRO CURVAS');
-let porcEsperado = 0;
-let columnaLineaGenetica = 2; // Por defecto Hy-line Brown
+    const wsCurva = ss.getSheetByName('MAESTRO CURVAS');
+    let porcEsperado = 0;
+    let columnaLineaGenetica = 2;
 
-if (lineaGenetica === 'Hy-line W-80') {
-  columnaLineaGenetica = 3;
-} else if (lineaGenetica === 'Lohmann Brown') {
-  columnaLineaGenetica = 4;
-} else if (lineaGenetica === 'Lohmann White') {
-  columnaLineaGenetica = 5;
-} else if (lineaGenetica === 'Hy-line Brown Jaula') {  // ← AGREGAR ESTA LÍNEA
-  columnaLineaGenetica = 6;                            // ← AGREGAR ESTA LÍNEA
-}
+    if (lineaGenetica === 'Hy-line W-80') {
+      columnaLineaGenetica = 3;
+    } else if (lineaGenetica === 'Lohmann Brown') {
+      columnaLineaGenetica = 4;
+    } else if (lineaGenetica === 'Lohmann White') {
+      columnaLineaGenetica = 5;
+    } else if (lineaGenetica === 'Hy-line Brown Jaula') {
+      columnaLineaGenetica = 6;
+    }
 
-const ultimaFilaCurva = wsCurva.getLastRow();
-for (let i = 4; i <= ultimaFilaCurva; i++) {
-  if (wsCurva.getRange(i, 1).getValue() === edadSemanas) {
-    porcEsperado = wsCurva.getRange(i, columnaLineaGenetica).getValue();
-    break;
-  }
-}
+    const ultimaFilaCurva = wsCurva.getLastRow();
+    for (let i = 4; i <= ultimaFilaCurva; i++) {
+      if (wsCurva.getRange(i, 1).getValue() === edadSemanas) {
+        porcEsperado = wsCurva.getRange(i, columnaLineaGenetica).getValue();
+        break;
+      }
+    }
     
-    const nAves = datos.nAves;
+    // Datos producción
+    const nAves      = datos.nAves;
     const mortalidad = datos.mortalidad;
     const kgAlimento = datos.kgAlimento;
-    const nHuevos = datos.nHuevos;
-    const sucios = datos.sucios;
-    const rotos = datos.rotos;
-    const trizados = datos.trizados;
-    const sangre = datos.sangre;
-    const manchados = sucios + rotos + sangre;
-    const kgPorAve = nAves > 0 ? kgAlimento / nAves : 0;
+    const nHuevos    = datos.nHuevos;
+
+    // Clasificación por tamaño (cols 7–12)
+    const chico   = datos.chico   || 0;
+    const mediano = datos.mediano || 0;
+    const grande  = datos.grande  || 0;
+    const xl      = datos.xl      || 0;
+    const superXl = datos.superXl || 0;
+    const jumbo   = datos.jumbo   || 0;
+
+    // Clasificación por calidad (cols 13–16)
+    const sucios   = datos.sucios   || 0;
+    const rotos    = datos.rotos    || 0;
+    const trizados = datos.trizados || 0;
+    const sangre   = datos.sangre   || 0;
+
+    // KPIs
+    const kgPorAve    = nAves > 0 ? kgAlimento / nAves : 0;
     const porcPostura = nAves > 0 ? nHuevos / nAves : 0;
-    const diferencia = porcEsperado > 0 ? porcPostura - porcEsperado : 0;
+    const diferencia  = porcEsperado > 0 ? porcPostura - porcEsperado : 0;
     const observaciones = datos.observaciones || '';
 
-    const fila = ws.getRange(ultimaFila, 1, 1, 15);
+    // Columnas: 1:Fecha 2:EdadSem 3:nAves 4:Mort 5:KgAlim 6:nHuevos
+    //           7:Chico 8:Mediano 9:Grande 10:XL 11:SuperXL 12:Jumbo
+    //           13:Sucios 14:Rotos 15:Trizados 16:Sangre
+    //           17:Kg/Ave 18:%Postura 19:%Esperado 20:Diferencia 21:Observaciones
+    const fila = ws.getRange(ultimaFila, 1, 1, 21);
     fila.setValues([[
       fecha,
       edadSemanas,
@@ -135,6 +151,12 @@ for (let i = 4; i <= ultimaFilaCurva; i++) {
       mortalidad,
       kgAlimento,
       nHuevos,
+      chico,
+      mediano,
+      grande,
+      xl,
+      superXl,
+      jumbo,
       sucios,
       rotos,
       trizados,
@@ -147,9 +169,9 @@ for (let i = 4; i <= ultimaFilaCurva; i++) {
     ]]);
     
     ws.getRange(ultimaFila, 1).setNumberFormat('dd/mm/yyyy');
-    ws.getRange(ultimaFila, 10).setNumberFormat('0.000');
-    ws.getRange(ultimaFila, 11, 1, 3).setNumberFormat('0.0%');
-    ws.getRange(ultimaFila, 1, 1, 14).setFontColor('#000000');
+    ws.getRange(ultimaFila, 17).setNumberFormat('0.000');        // Kg/Ave
+    ws.getRange(ultimaFila, 18, 1, 3).setNumberFormat('0.0%');  // %Postura %Esp Dif
+    ws.getRange(ultimaFila, 1, 1, 21).setFontColor('#000000');
     
     const siguiente = obtenerDatosSiguienteDia(nombreHoja, fecha, nAves, mortalidad);
     
@@ -168,7 +190,6 @@ for (let i = 4; i <= ultimaFilaCurva; i++) {
 function obtenerDatosSiguienteDia(nombreHoja, fechaActual, nAvesActual, mortalidadActual) {
   const siguienteDia = new Date(fechaActual);
   siguienteDia.setDate(siguienteDia.getDate() + 1);
-  
   return {
     fecha: siguienteDia.getTime(),
     nAves: nAvesActual - mortalidadActual
@@ -204,8 +225,8 @@ function obtenerUltimoDia(nombreHoja) {
       return { nAves: 0, fecha: new Date().getTime() };
     }
     
-    const fechaUltimo = ws.getRange(ultimaFila, 1).getValue();
-    const nAvesUltimo = ws.getRange(ultimaFila, 3).getValue();
+    const fechaUltimo      = ws.getRange(ultimaFila, 1).getValue();
+    const nAvesUltimo      = ws.getRange(ultimaFila, 3).getValue();
     const mortalidadUltimo = ws.getRange(ultimaFila, 4).getValue();
     
     const siguienteDia = new Date(fechaUltimo);
@@ -228,19 +249,15 @@ function formatDate(date) {
          (d.getMonth() + 1).toString().padStart(2, '0') + '/' + 
          d.getFullYear();
 }
+
 function obtenerConfiguracion() {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const wsConfig = ss.getSheetByName('CONFIGURACIÓN');
     
-    // Datos del productor
     const nombreProductor = wsConfig.getRange('C5').getValue() || 'Sin nombre';
     const ubicacion = wsConfig.getRange('C6').getValue() || 'Sin ubicación';
-    
-    // Lotes activos
     const lotesActivos = obtenerLotesActivos();
-    
-    // URL del Google Sheets
     const sheetUrl = ss.getUrl();
     
     return {
@@ -260,47 +277,33 @@ function obtenerConfiguracion() {
     };
   }
 }
+
 function generarCurvasJavaScript() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const ws = ss.getSheetByName('MAESTRO CURVAS');
-  
   const ultimaFila = ws.getLastRow();
-  
   let codigo = "const CURVAS = {\n";
-  
-  // Para cada línea genética (columnas B, C, D, E, F)
   const lineas = [
     {nombre: 'Hy-line Brown', columna: 2},
     {nombre: 'Hy-line W-80', columna: 3},
     {nombre: 'Lohmann Brown', columna: 4},
     {nombre: 'Lohmann White', columna: 5},
-    {nombre: 'Hy-line Brown Jaula', columna: 6}  // ← AGREGAR ESTA LÍNEA
+    {nombre: 'Hy-line Brown Jaula', columna: 6}
   ];
-  
   lineas.forEach(function(linea, idx) {
     codigo += "  '" + linea.nombre + "': {";
-    
     for (let fila = 4; fila <= ultimaFila; fila++) {
       const edad = ws.getRange(fila, 1).getValue();
       const valor = ws.getRange(fila, linea.columna).getValue();
-      
       if (edad && valor !== '') {
         codigo += edad + ":" + valor + ",";
       }
     }
-    
-    // Quitar última coma y cerrar
     codigo = codigo.slice(0, -1) + "}";
-    
-    if (idx < lineas.length - 1) {
-      codigo += ",\n";
-    }
+    if (idx < lineas.length - 1) codigo += ",\n";
   });
-  
   codigo += "\n};";
-  
   Logger.log(codigo);
-  
   return codigo;
 }
 
@@ -315,7 +318,6 @@ function obtenerDatosGraficos(nombreHoja) {
     
     const ultimaFila = ws.getLastRow();
     
-    // Si no hay datos (solo headers en fila 8)
     if (ultimaFila < 9) {
       return {
         exito: true,
@@ -324,32 +326,35 @@ function obtenerDatosGraficos(nombreHoja) {
       };
     }
     
-    // Leer todos los datos desde fila 9 hasta última fila
-    const rango = ws.getRange(9, 1, ultimaFila - 8, 14);
+    // 21 columnas con la nueva estructura
+    const rango = ws.getRange(9, 1, ultimaFila - 8, 21);
     const valores = rango.getValues();
-    
     const datos = [];
     
     for (let i = 0; i < valores.length; i++) {
-      const fila = valores[i];
-      
-      // Solo procesar si hay fecha
-      if (fila[0]) {
+      const f = valores[i];
+      if (f[0]) {
         datos.push({
-          fecha: fila[0] instanceof Date ? fila[0].getTime() : null,
-          edadSemanas: fila[1] || 0,
-          nAves: fila[2] || 0,
-          mortalidad: fila[3] || 0,
-          kgAlimento: fila[4] || 0,
-          nHuevos: fila[5] || 0,
-          sucios: fila[6] || 0,
-          rotos: fila[7] || 0,
-          trizados: fila[8] || 0,
-          sangre: fila[9] || 0,
-          kgAve: fila[10] || 0,
-          porcentajePostura: fila[11] || 0,
-          porcentajeEsperado: fila[12] || 0,
-          diferencia: fila[13] || 0
+          fecha:              f[0] instanceof Date ? f[0].getTime() : null,
+          edadSemanas:        f[1]  || 0,
+          nAves:              f[2]  || 0,
+          mortalidad:         f[3]  || 0,
+          kgAlimento:         f[4]  || 0,
+          nHuevos:            f[5]  || 0,
+          chico:              f[6]  || 0,
+          mediano:            f[7]  || 0,
+          grande:             f[8]  || 0,
+          xl:                 f[9]  || 0,
+          superXl:            f[10] || 0,
+          jumbo:              f[11] || 0,
+          sucios:             f[12] || 0,
+          rotos:              f[13] || 0,
+          trizados:           f[14] || 0,
+          sangre:             f[15] || 0,
+          kgAve:              f[16] || 0,
+          porcentajePostura:  f[17] || 0,
+          porcentajeEsperado: f[18] || 0,
+          diferencia:         f[19] || 0
         });
       }
     }
