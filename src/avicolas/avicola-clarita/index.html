@@ -1005,7 +1005,7 @@
 
       <!-- Indicador total vs huevos -->
       <div class="tamano-total-row">
-        <span class="tamano-total-label">Total clasificado:</span>
+        <span class="tamano-total-label">Total clasificado (tamaños + no vendibles):</span>
         <span>
           <span class="tamano-total-value" id="tamano-total">0</span>
           <span class="tamano-total-diff" id="tamano-diff"></span>
@@ -1016,25 +1016,33 @@
 
   <!-- CLASIFICACIÓN POR CALIDAD -->
   <div class="card">
-    <div class="card-header">🥚 No Vendibles (calidad)</div>
+    <div class="card-header">⚠️ No vendibles <span style="font-weight:400;font-size:11px;text-transform:none;letter-spacing:0;">(incluidos dentro del total)</span></div>
     <div class="card-body">
       <div class="clasificacion-grid">
         <div class="clasificacion-item">
           <div class="clasificacion-label">Sucios</div>
-          <input type="number" class="clasificacion-input" id="campo-sucios" min="0" value="0" inputmode="numeric">
+          <input type="number" class="clasificacion-input" id="campo-sucios" min="0" value="0" inputmode="numeric" oninput="actualizarTotalTamano()">
         </div>
         <div class="clasificacion-item">
           <div class="clasificacion-label">Rotos</div>
-          <input type="number" class="clasificacion-input" id="campo-rotos" min="0" value="0" inputmode="numeric">
+          <input type="number" class="clasificacion-input" id="campo-rotos" min="0" value="0" inputmode="numeric" oninput="actualizarTotalTamano()">
         </div>
         <div class="clasificacion-item">
           <div class="clasificacion-label">Trizados</div>
-          <input type="number" class="clasificacion-input" id="campo-trizados" min="0" value="0" inputmode="numeric">
+          <input type="number" class="clasificacion-input" id="campo-trizados" min="0" value="0" inputmode="numeric" oninput="actualizarTotalTamano()">
         </div>
         <div class="clasificacion-item">
           <div class="clasificacion-label">Con Sangre</div>
-          <input type="number" class="clasificacion-input" id="campo-sangre" min="0" value="0" inputmode="numeric">
+          <input type="number" class="clasificacion-input" id="campo-sangre" min="0" value="0" inputmode="numeric" oninput="actualizarTotalTamano()">
         </div>
+      </div>
+      <!-- Resumen no vendibles: informativo, sin validación de suma -->
+      <div class="tamano-total-row" style="margin-top:12px;background:#fff3e0;border-color:#ffcc80;">
+        <span class="tamano-total-label" style="color:#6d4c41;">Total no vendibles:</span>
+        <span>
+          <span class="tamano-total-value" id="calidad-total" style="color:#e65100;">0</span>
+          <span class="tamano-total-diff" id="calidad-porc"></span>
+        </span>
       </div>
     </div>
   </div>
@@ -1295,25 +1303,46 @@ function actualizarTotalTamano() {
   const jumbo   = parseInt(document.getElementById('campo-jumbo').value)   || 0;
   const nHuevos = parseInt(document.getElementById('campo-huevos').value)  || 0;
 
-  const total = chico + mediano + grande + xl + superxl + jumbo;
-  document.getElementById('tamano-total').textContent = total.toLocaleString();
+  const sucios   = parseInt(document.getElementById('campo-sucios').value)   || 0;
+  const rotos    = parseInt(document.getElementById('campo-rotos').value)    || 0;
+  const trizados = parseInt(document.getElementById('campo-trizados').value) || 0;
+  const sangre   = parseInt(document.getElementById('campo-sangre').value)   || 0;
 
+  // Tamaños vendibles + no vendibles = total huevos
+  const totalTamano  = chico + mediano + grande + xl + superxl + jumbo;
+  const totalCalidad = sucios + rotos + trizados + sangre;
+  const totalClasificado = totalTamano + totalCalidad;
+
+  // Mostrar total clasificado en el indicador de tamaños
+  document.getElementById('tamano-total').textContent = totalClasificado.toLocaleString();
+
+  // Cuadre único: (tamaños + calidad) vs total huevos
   const diffEl = document.getElementById('tamano-diff');
-  if (nHuevos === 0 || total === 0) {
+  if (nHuevos === 0 || totalClasificado === 0) {
     diffEl.textContent = '';
-    return;
+  } else {
+    const diff = totalClasificado - nHuevos;
+    if (diff === 0) {
+      diffEl.textContent = '✓ Cuadra';
+      diffEl.className = 'tamano-total-diff ok';
+    } else if (diff > 0) {
+      diffEl.textContent = '+' + diff + ' (exceso)';
+      diffEl.className = 'tamano-total-diff error';
+    } else {
+      diffEl.textContent = diff + ' (faltan)';
+      diffEl.className = 'tamano-total-diff warn';
+    }
   }
 
-  const diff = total - nHuevos;
-  if (diff === 0) {
-    diffEl.textContent = '✓ Cuadra';
-    diffEl.className = 'tamano-total-diff ok';
-  } else if (diff > 0) {
-    diffEl.textContent = '+' + diff + ' (exceso)';
-    diffEl.className = 'tamano-total-diff error';
+  // No vendibles: solo muestra total y % informativo
+  document.getElementById('calidad-total').textContent = totalCalidad.toLocaleString();
+  const calidadPorcEl = document.getElementById('calidad-porc');
+  if (nHuevos === 0 || totalCalidad === 0) {
+    calidadPorcEl.textContent = '';
   } else {
-    diffEl.textContent = diff + ' (faltan)';
-    diffEl.className = 'tamano-total-diff warn';
+    const pct = (totalCalidad / nHuevos * 100).toFixed(1);
+    calidadPorcEl.textContent = pct + '% no vendible';
+    calidadPorcEl.className = 'tamano-total-diff ' + (parseFloat(pct) <= 3 ? 'ok' : parseFloat(pct) <= 6 ? 'warn' : 'error');
   }
 }
 
@@ -1421,6 +1450,8 @@ function guardarDatos() {
             document.getElementById('observaciones').value = '';
             document.getElementById('tamano-total').textContent = '0';
             document.getElementById('tamano-diff').textContent = '';
+            document.getElementById('calidad-total').textContent = '0';
+            document.getElementById('calidad-porc').textContent = '';
             onFechaChange();
           }, 1500);
         }
