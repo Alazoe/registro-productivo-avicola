@@ -8,10 +8,11 @@
 | — | — |
 
 ## Enlace al Google Sheet
-*(pegar URL aquí)*
+https://docs.google.com/spreadsheets/d/1obgdj8Fni39tcPBcmIacVaX4ZB7RW2OvAHL86nRiv-M/edit?gid=273502136#gid=273502136
 
 ## URL Web App publicada
-*(pegar URL aquí)*
+https://script.google.com/macros/s/AKfycbw-I_G2J0tp1qHb38NUACbqJ854m4Wm3wbKQNKSGP4AOu8vJF_GFoNMLl443WcZvC1CTQ/exec
+
 
 ## Contacto productor
 *(nombre y teléfono)*
