@@ -1,0 +1,1910 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Producción Diaria</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :root {
+    --verde: #2e7d32;
+    --verde-claro: #4caf50;
+    --verde-oscuro: #1b5e20;
+    --amarillo: #f9a825;
+    --amarillo-claro: #fff176;
+    --rojo: #c62828;
+    --rojo-claro: #ef5350;
+    --gris: #546e7a;
+    --gris-claro: #eceff1;
+    --blanco: #ffffff;
+    --sombra: 0 2px 8px rgba(0,0,0,0.12);
+    --sombra-alta: 0 4px 16px rgba(0,0,0,0.2);
+  }
+
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    background: #f0f4f8;
+    min-height: 100vh;
+    color: #37474f;
+    padding-bottom: 30px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, var(--verde-oscuro) 0%, var(--verde) 100%);
+    color: white;
+    padding: 20px 16px 28px;
+    position: relative;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 14px;
+    background: #f0f4f8;
+    border-radius: 14px 14px 0 0;
+  }
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-icon {
+    font-size: 32px;
+  }
+  .header-text {
+    flex: 1;
+  }
+  .header-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .header-sub {
+    font-size: 13px;
+    opacity: 0.85;
+    margin-top: 2px;
+  }
+
+  /* CONTENEDOR */
+  .container {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 0 12px;
+  }
+
+  /* CARDS */
+  .card {
+    background: white;
+    border-radius: 14px;
+    box-shadow: var(--sombra);
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .card-header {
+    background: var(--gris-claro);
+    padding: 11px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid #dde1e7;
+  }
+  .card-body {
+    padding: 14px 16px;
+  }
+
+  /* SELECTOR DE LOTE */
+  .lote-selector {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .lote-btn {
+    flex: 1;
+    min-width: 85px;
+    padding: 12px 8px;
+    border: 2px solid #cfd8dc;
+    border-radius: 10px;
+    background: white;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gris);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+    outline: none;
+    position: relative;
+  }
+  .lote-btn:active {
+    transform: scale(0.95);
+  }
+  .lote-btn.activo {
+    border-color: var(--verde);
+    background: var(--verde);
+    color: white;
+    box-shadow: 0 3px 10px rgba(46,125,50,0.35);
+  }
+  .lote-info {
+    font-size: 11px;
+    font-weight: 400;
+    opacity: 0.8;
+    display: block;
+    margin-top: 3px;
+  }
+
+  /* INFO LOTE */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .info-item {
+    background: var(--gris-claro);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .info-label {
+    font-size: 10px;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .info-value {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--verde-oscuro);
+  }
+  .info-value.small {
+    font-size: 13px;
+  }
+
+  /* FECHA */
+  .fecha-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .fecha-input {
+    flex: 1;
+    padding: 13px 14px;
+    border: 2px solid #cfd8dc;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #37474f;
+    outline: none;
+    background: white;
+    transition: border-color 0.2s;
+  }
+  .fecha-input:focus {
+    border-color: var(--verde);
+    box-shadow: 0 0 0 3px rgba(76,175,80,0.15);
+  }
+  .fecha-btn {
+    width: 46px;
+    height: 46px;
+    border: 2px solid #cfd8dc;
+    border-radius: 10px;
+    background: white;
+    font-size: 18px;
+    color: var(--gris);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-weight: 600;
+  }
+  .fecha-btn:active {
+    background: var(--gris-claro);
+    transform: scale(0.92);
+  }
+
+  /* CAMPOS NUMÉRICOS */
+  .campo-row {
+    display: flex;
+    align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px solid #eef1f3;
+  }
+  .campo-row:last-child {
+    border-bottom: none;
+  }
+  .campo-label {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 500;
+    color: #455a64;
+    display: flex;
+    align-items: center;
+  }
+  .campo-icon {
+    margin-right: 10px;
+    font-size: 18px;
+  }
+  .campo-input {
+    width: 105px;
+    padding: 11px 12px;
+    border: 2px solid #cfd8dc;
+    border-radius: 9px;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    color: #37474f;
+    outline: none;
+    background: #fafbfc;
+    transition: all 0.2s;
+  }
+  .campo-input:focus {
+    border-color: var(--verde);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(76,175,80,0.15);
+  }
+  .campo-input.campo-huevos:focus {
+    border-color: var(--amarillo);
+    box-shadow: 0 0 0 3px rgba(249,168,37,0.15);
+  }
+  .campo-input.campo-mort:focus {
+    border-color: var(--rojo-claro);
+    box-shadow: 0 0 0 3px rgba(198,40,40,0.15);
+  }
+
+  /* CLASIFICACIÓN */
+  .clasificacion-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+  .clasificacion-item {
+    background: #fafbfc;
+    border: 1px solid #e8ecee;
+    border-radius: 10px;
+    padding: 12px 8px;
+    text-align: center;
+  }
+  .clasificacion-label {
+    font-size: 11px;
+    color: var(--gris);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    line-height: 1.2;
+    min-height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .clasificacion-input {
+    width: 100%;
+    padding: 10px 6px;
+    border: 2px solid #cfd8dc;
+    border-radius: 8px;
+    font-size: 19px;
+    font-weight: 700;
+    text-align: center;
+    color: #37474f;
+    outline: none;
+    background: white;
+    transition: all 0.2s;
+  }
+  .clasificacion-input:focus {
+    border-color: var(--amarillo);
+    box-shadow: 0 0 0 3px rgba(249,168,37,0.15);
+  }
+
+  /* BOTÓN GUARDAR */
+  .btn-guardar {
+    width: 100%;
+    padding: 17px;
+    background: linear-gradient(135deg, var(--verde) 0%, var(--verde-claro) 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(46,125,50,0.4);
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+  .btn-guardar:active:not(:disabled) {
+    transform: scale(0.97);
+    box-shadow: 0 2px 8px rgba(46,125,50,0.35);
+  }
+  .btn-guardar:disabled {
+    background: #90a4ae;
+    box-shadow: none;
+    cursor: default;
+    opacity: 0.7;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: #263238;
+    color: white;
+    padding: 15px 26px;
+    border-radius: 11px;
+    font-size: 15px;
+    font-weight: 500;
+    box-shadow: var(--sombra-alta);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 1000;
+    max-width: 90vw;
+    text-align: center;
+    white-space: pre-line;
+    line-height: 1.4;
+  }
+  .toast.visible {
+    transform: translateX(-50%) translateY(0);
+  }
+  .toast.exito {
+    background: var(--verde-oscuro);
+  }
+  .toast.error {
+    background: var(--rojo);
+  }
+
+  /* LOADING */
+  .loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .loading-overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  .loading-text {
+    color: white;
+    margin-top: 16px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+/* BOTÓN CONFIGURACIÓN */
+  .btn-config {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .btn-config:active {
+    background: rgba(255,255,255,0.3);
+    transform: scale(0.9);
+  }
+
+  /* MODAL CONFIGURACIÓN */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    padding: 20px;
+  }
+  .modal-overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .modal-content {
+    background: white;
+    border-radius: 16px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .modal-header {
+    background: linear-gradient(135deg, var(--verde-oscuro) 0%, var(--verde) 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 16px 16px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-body {
+    padding: 24px;
+  }
+  .config-section {
+    margin-bottom: 24px;
+  }
+  .config-section-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  .config-item {
+    background: var(--gris-claro);
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+  }
+  .config-label {
+    font-size: 11px;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .config-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: #37474f;
+  }
+  .lote-config {
+    background: white;
+    border: 2px solid var(--gris-claro);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .lote-config-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .lote-config-nombre {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--verde-oscuro);
+  }
+  .lote-badge {
+    background: var(--verde);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .lote-config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    font-size: 13px;
+  }
+  .lote-config-item {
+    display: flex;
+    flex-direction: column;
+  }
+  .lote-config-label {
+    font-size: 10px;
+    color: var(--gris);
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .lote-config-value {
+    font-weight: 600;
+    color: #37474f;
+  }
+  .btn-abrir-sheets {
+    width: 100%;
+    padding: 14px;
+    background: var(--verde);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+  }
+  .btn-abrir-sheets:active {
+    transform: scale(0.97);
+    background: var(--verde-oscuro);
+  }
+/* ========================================== */
+/* GRÁFICOS */
+/* ========================================== */
+
+/* BOTÓN VER GRÁFICOS */
+.btn-graficos {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.btn-graficos:active {
+  transform: scale(0.97);
+  background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+}
+
+.btn-graficos:disabled {
+  background: #90a4ae;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* MODAL GRÁFICOS */
+.modal-graficos {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1002;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  padding: 12px;
+}
+
+.modal-graficos.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal-graficos-content {
+  background: white;
+  border-radius: 16px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+.modal-graficos-header {
+  background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+  color: white;
+  padding: 16px 20px;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.modal-graficos-title {
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-graficos-body {
+  padding: 20px;
+}
+
+/* SELECTOR DE GRÁFICOS */
+.graficos-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.grafico-tab {
+  flex: 1;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #757575;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.grafico-tab.activo {
+  color: #1976d2;
+  border-bottom-color: #1976d2;
+}
+
+.grafico-tab:hover:not(.activo) {
+  color: #424242;
+}
+
+/* CANVAS GRÁFICO */
+.grafico-container {
+  position: relative;
+  height: 400px;
+  margin-bottom: 20px;
+  display: none;
+}
+
+.grafico-container.visible {
+  display: block;
+}
+
+/* STATS CARDS */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.stat-card {
+  background: #f5f5f5;
+  padding: 14px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: #757575;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1976d2;
+}
+
+.stat-value.positivo {
+  color: #2e7d32;
+}
+
+.stat-value.negativo {
+  color: #c62828;
+}
+
+/* KPIs DESTACADOS */
+.kpis-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.kpi-icon {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.kpi-content {
+  flex: 1;
+}
+
+.kpi-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #546e7a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #263238;
+  line-height: 1.2;
+}
+
+.kpi-subtitle {
+  font-size: 11px;
+  color: #78909c;
+  margin-top: 2px;
+}
+
+.kpi-trend {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.kpi-trend.positivo {
+  color: #2e7d32;
+}
+
+.kpi-trend.negativo {
+  color: #c62828;
+}
+
+.kpi-trend.neutral {
+  color: #757575;
+}
+
+/* KPI con estados */
+.kpi-card.excelente {
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+}
+
+.kpi-card.bueno {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+}
+
+.kpi-card.alerta {
+  background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+}
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-content">
+    <div class="header-icon">🐔</div>
+    <div class="header-text">
+      <div class="header-title">Registro Productivo Avicola Clarita</div>
+      <div class="header-sub">Registro diario de producción</div>
+    </div>
+    <button class="btn-config" onclick="abrirConfiguracion()" type="button">⚙️</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- SELECTOR DE LOTE -->
+  <div class="card">
+    <div class="card-header">📋 Seleccionar Lote</div>
+    <div class="card-body">
+      <div class="lote-selector" id="lote-selector">
+        <div style="color: #999; text-align: center; width: 100%; padding: 20px;">
+          Cargando lotes...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INFO DEL LOTE -->
+  <div class="card" id="card-info">
+    <div class="card-header">📊 Información del Lote</div>
+    <div class="card-body">
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">Edad actual</div>
+          <div class="info-value" id="info-edad">--</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">% Esperado</div>
+          <div class="info-value" id="info-esperado">--</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Línea genética</div>
+          <div class="info-value small" id="info-linea">--</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">N° Aves</div>
+          <div class="info-value" id="info-aves">--</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FECHA -->
+  <div class="card">
+    <div class="card-header">📅 Fecha de Registro</div>
+    <div class="card-body">
+      <div class="fecha-row">
+        <button class="fecha-btn" onclick="cambiarFecha(-1)" type="button">◀</button>
+        <input type="date" class="fecha-input" id="fecha-input" onchange="onFechaChange()">
+        <button class="fecha-btn" onclick="cambiarFecha(1)" type="button">▶</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATOS DE PRODUCCIÓN -->
+  <div class="card">
+    <div class="card-header">🐣 Datos de Producción</div>
+    <div class="card-body">
+      <div class="campo-row">
+        <div class="campo-label"><span class="campo-icon">🐓</span>N° de Aves</div>
+        <input type="number" class="campo-input" id="campo-aves" min="0" inputmode="numeric">
+      </div>
+      <div class="campo-row">
+        <div class="campo-label"><span class="campo-icon">⚠️</span>Mortalidad</div>
+        <input type="number" class="campo-input campo-mort" id="campo-mort" min="0" value="0" inputmode="numeric">
+      </div>
+      <div class="campo-row">
+        <div class="campo-label"><span class="campo-icon">🌾</span>Kg Alimento</div>
+        <input type="number" class="campo-input" id="campo-kg" min="0" value="0" inputmode="numeric">
+      </div>
+      <div class="campo-row">
+        <div class="campo-label"><span class="campo-icon">🥚</span>N° de Huevos</div>
+        <input type="number" class="campo-input campo-huevos" id="campo-huevos" min="0" value="0" inputmode="numeric">
+      </div>
+    </div>
+  </div>
+
+  <!-- CLASIFICACIÓN DE HUEVOS -->
+  <div class="card">
+    <div class="card-header">🥚 Clasificación de Huevos</div>
+    <div class="card-body">
+      <div class="clasificacion-grid">
+        <div class="clasificacion-item">
+          <div class="clasificacion-label">Sucios</div>
+          <input type="number" class="clasificacion-input" id="campo-sucios" min="0" value="0" inputmode="numeric">
+        </div>
+        <div class="clasificacion-item">
+          <div class="clasificacion-label">Rotos</div>
+          <input type="number" class="clasificacion-input" id="campo-rotos" min="0" value="0" inputmode="numeric">
+        </div>
+      <div class="clasificacion-item">
+          <div class="clasificacion-label">Trizados</div>
+          <input type="number" class="clasificacion-input" id="campo-trizados" min="0" value="0" inputmode="numeric">
+        </div>
+        <div class="clasificacion-item">
+          <div class="clasificacion-label">Con Sangre</div>
+          <input type="number" class="clasificacion-input" id="campo-sangre" min="0" value="0" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+  </div>
+<!-- Observaciones -->
+<div class="input-group">
+  <label for="observaciones">📝 Observaciones</label>
+  <textarea 
+    id="observaciones" 
+    placeholder="Notas del día (opcional)"
+    rows="3"
+    style="resize: vertical; font-family: inherit; padding: 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;"
+  ></textarea>
+</div>
+
+
+  <!-- BOTÓN GUARDAR -->
+  <button class="btn-guardar" id="btn-guardar" onclick="guardarDatos()" type="button">
+    ✅ Guardar Registro
+  </button>
+
+</div>
+<!-- BOTÓN VER GRÁFICOS -->
+<button class="btn-graficos" id="btn-graficos" onclick="abrirGraficos()" type="button" disabled>
+  📊 Ver Gráficos
+</button>
+
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- LOADING -->
+<!-- ========================================== -->
+<!-- MODAL GRÁFICOS -->
+<!-- ========================================== -->
+<div class="modal-graficos" id="modal-graficos">
+  <div class="modal-graficos-content">
+    <div class="modal-graficos-header">
+      <div class="modal-graficos-title">
+        <span>📊</span>
+        <span id="titulo-graficos">Gráficos - Lote X</span>
+      </div>
+      <button class="modal-close" onclick="cerrarGraficos()" type="button">✕</button>
+    </div>
+    <div class="modal-graficos-body">
+      <!-- KPIs DESTACADOS -->
+<div class="kpis-container">
+  <div class="kpi-card">
+    <div class="kpi-icon">🥚</div>
+    <div class="kpi-content">
+      <div class="kpi-label">Puesta Diaria</div>
+      <div class="kpi-value" id="kpi-puesta-diaria">--</div>
+      <div class="kpi-trend" id="kpi-trend-diaria"></div>
+    </div>
+  </div>
+  
+  <div class="kpi-card">
+    <div class="kpi-icon">📅</div>
+    <div class="kpi-content">
+      <div class="kpi-label">Puesta Semanal</div>
+      <div class="kpi-value" id="kpi-puesta-semanal">--</div>
+      <div class="kpi-trend" id="kpi-trend-semanal"></div>
+    </div>
+  </div>
+  
+  <div class="kpi-card">
+    <div class="kpi-icon">❌</div>
+    <div class="kpi-content">
+      <div class="kpi-label">No Vendibles</div>
+      <div class="kpi-value" id="kpi-no-vendibles">--</div>
+      <div class="kpi-subtitle" id="kpi-no-vendibles-total">-- huevos</div>
+    </div>
+  </div>
+  
+  <div class="kpi-card">
+    <div class="kpi-icon">⚖️</div>
+    <div class="kpi-content">
+      <div class="kpi-label">Conv. kg/huevo</div>
+      <div class="kpi-value" id="kpi-conv-huevo">--</div>
+      <div class="kpi-subtitle">Últimos 7 días</div>
+    </div>
+  </div>
+</div>
+
+
+      
+      <!-- SELECTOR DE GRÁFICOS -->
+      <div class="graficos-selector">
+        <button class="grafico-tab activo" onclick="cambiarGrafico('curva')" id="tab-curva" type="button">
+          📈 Curva de Postura
+        </button>
+        <button class="grafico-tab" onclick="cambiarGrafico('acumulado')" id="tab-acumulado" type="button">
+          📊 Producción Acumulada
+        </button>
+      </div>
+
+      <!-- GRÁFICO CURVA DE POSTURA -->
+      <div class="grafico-container visible" id="container-curva">
+        <canvas id="chart-curva"></canvas>
+      </div>
+
+      <!-- GRÁFICO ACUMULADO -->
+      <div class="grafico-container" id="container-acumulado">
+        <canvas id="chart-acumulado"></canvas>
+      </div>
+
+      <!-- ESTADÍSTICAS -->
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Registros</div>
+          <div class="stat-value" id="stat-registros">--</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Huevos Totales</div>
+          <div class="stat-value" id="stat-huevos">--</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Promedio Postura</div>
+          <div class="stat-value" id="stat-promedio">--</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Diferencia Media</div>
+          <div class="stat-value" id="stat-diferencia">--</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL CONFIGURACIÓN -->
+<div class="modal-overlay" id="modal-config">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">
+        <span>⚙️</span>
+        <span>Configuración</span>
+      </div>
+      <button class="modal-close" onclick="cerrarConfiguracion()" type="button">✕</button>
+    </div>
+    <div class="modal-body">
+      
+      <!-- DATOS DEL PRODUCTOR -->
+      <div class="config-section">
+        <div class="config-section-title">👤 Productor</div>
+        <div class="config-item">
+          <div class="config-label">Nombre</div>
+          <div class="config-value" id="config-nombre">--</div>
+        </div>
+        <div class="config-item">
+          <div class="config-label">Ubicación</div>
+          <div class="config-value" id="config-ubicacion">--</div>
+        </div>
+      </div>
+
+      <!-- LOTES ACTIVOS -->
+      <div class="config-section">
+        <div class="config-section-title">🐔 Lotes Activos</div>
+        <div id="config-lotes-container">
+          <div style="color: #999; text-align: center; padding: 20px;">
+            Cargando...
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTÓN ABRIR SHEETS -->
+      <button class="btn-abrir-sheets" onclick="abrirGoogleSheets()" type="button">
+        <span>📊</span>
+        <span>Abrir en Google Sheets</span>
+      </button>
+
+    </div>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loading">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loading-text">Cargando...</div>
+</div>
+
+<script>
+// ============================================
+// DATOS Y ESTADO
+// ============================================
+let lotes = [];
+let loteActual = null;
+
+// Curvas de postura por línea genética
+const CURVAS = {
+  'Hy-line Brown': {18:0.011000000000000001,19:0.08199999999999999,20:0.308,21:0.614,22:0.8240000000000001,23:0.9059999999999999,24:0.932,25:0.9420000000000001,26:0.946,27:0.948,28:0.948,29:0.948,30:0.948,31:0.9470000000000001,32:0.9470000000000001,33:0.9470000000000001,34:0.9440000000000001,35:0.9420000000000001,36:0.94,37:0.937,38:0.935,39:0.9329999999999999,40:0.9309999999999999,41:0.9279999999999999,42:0.925,43:0.9209999999999999,44:0.9179999999999999,45:0.915,46:0.912,47:0.909,48:0.907,49:0.904,50:0.9,51:0.898,52:0.8959999999999999,53:0.894,54:0.893,55:0.889,56:0.887,57:0.884,58:0.882,59:0.879,60:0.8759999999999999,61:0.873,62:0.87,63:0.867,64:0.863,65:0.861,66:0.856,67:0.851,68:0.845,69:0.838,70:0.8320000000000001,71:0.8270000000000001,72:0.82,73:0.8140000000000001,74:0.8140000000000001,75:0.8009999999999999,76:0.795,77:0.785,78:0.7829999999999999,79:0.777,80:0.7709999999999999,81:0.7659999999999999,82:0.7609999999999999,83:0.7559999999999999,84:0.752,85:0.748,86:0.7440000000000001,87:0.74,88:0.736,89:0.733,90:0.73,91:0.727,92:0.7240000000000001,93:0.721,94:0.718,95:0.715,96:0.7120000000000001,97:0.7090000000000001,98:0.706,99:0.703,100:0.7,101:0.6970000000000001,102:0.6940000000000001,103:0.691,104:0.688,105:0.685,106:0.682,107:0.679,108:0.6759999999999999,109:0.6729999999999999,110:0.67,111:0.667,112:0.664,113:0.6609999999999999,114:0.6579999999999999,115:0.655,116:0.652,117:0.649,118:0.646,119:0.643,120:0.64,121:0.637,122:0.634,123:0.631,124:0.628,125:0.625,126:0.622,127:0.619,128:0.616,129:0.613,130:0.61,131:0.607,132:0.604,133:0.601,134:0.598,135:0.595,136:0.592,137:0.589,138:0.586,139:0.583,140:0.58,141:0.577,142:0.574,143:0.571,144:0.568,145:0.565,146:0.5619999999999999,147:0.5589999999999999,148:0.5559999999999999,149:0.5529999999999999,150:0.5499999999999999},
+  'Hy-line W-80': {18:0.095,19:0.375,20:0.7155,21:0.8434999999999999,22:0.8945000000000001,23:0.924,24:0.9415,25:0.9534999999999999,26:0.9605,27:0.9655,28:0.9684999999999999,29:0.9684999999999999,30:0.9684999999999999,31:0.968,32:0.9670000000000001,33:0.9665,34:0.9655,35:0.9655,36:0.9645,37:0.9640000000000001,38:0.9634999999999999,39:0.9625,40:0.9620000000000001,41:0.9625,42:0.9615,43:0.9605,44:0.9595,45:0.9584999999999999,46:0.9575,47:0.9565,48:0.9545,49:0.9534999999999999,50:0.9515,51:0.9495,52:0.9475,53:0.9455,54:0.9434999999999999,55:0.941,56:0.9390000000000001,57:0.9365000000000001,58:0.934,59:0.9309999999999999,60:0.929,61:0.9259999999999999,62:0.9229999999999999,63:0.9205,64:0.9175,65:0.9145,66:0.9115000000000001,67:0.9085,68:0.9055,69:0.9025,70:0.8995000000000001,71:0.8959999999999999,72:0.893,73:0.8895000000000001,74:0.8859999999999999,75:0.883,76:0.88,77:0.8765000000000001,78:0.873,79:0.87,80:0.8665,81:0.8634999999999999,82:0.8604999999999999,83:0.8575,84:0.8540000000000001,85:0.851,86:0.8475,87:0.8445,88:0.8420000000000001,89:0.838,90:0.8340000000000001,91:0.8305,92:0.8270000000000001,93:0.8234999999999999,94:0.82,95:0.8165,96:0.8134999999999999,97:0.8105,98:0.807,99:0.804,100:0.801,101:0.798,102:0.795,103:0.792,104:0.789,105:0.786,106:0.783,107:0.78,108:0.777,109:0.774,110:0.771,111:0.768,112:0.765,113:0.762,114:0.759,115:0.756,116:0.753,117:0.75,118:0.747,119:0.744,120:0.741,121:0.738,122:0.735,123:0.732,124:0.729,125:0.726,126:0.723,127:0.72,128:0.717,129:0.714,130:0.711,131:0.708,132:0.705,133:0.702,134:0.699,135:0.696,136:0.693,137:0.69,138:0.6869999999999999,139:0.6839999999999999,140:0.6809999999999999,141:0.6779999999999999,142:0.6749999999999999,143:0.6719999999999999,144:0.6689999999999999,145:0.6659999999999999,146:0.6629999999999999,147:0.6599999999999999,148:0.6569999999999999,149:0.6539999999999999,150:0.6509999999999999},
+  'Lohmann Brown': {18:0.01,19:0.09300000000000001,20:0.36700000000000005,21:0.547,22:0.722,23:0.826,24:0.882,25:0.914,26:0.932,27:0.943,28:0.9490000000000001,29:0.9520000000000001,30:0.9540000000000001,31:0.956,32:0.9570000000000001,33:0.958,34:0.958,35:0.9570000000000001,36:0.956,37:0.9540000000000001,38:0.9520000000000001,39:0.951,40:0.9490000000000001,41:0.9470000000000001,42:0.945,43:0.943,44:0.941,45:0.938,46:0.9359999999999999,47:0.9329999999999999,48:0.93,49:0.927,50:0.9229999999999999,51:0.92,52:0.917,53:0.9129999999999999,54:0.91,55:0.9059999999999999,56:0.902,57:0.899,58:0.895,59:0.8909999999999999,60:0.888,61:0.884,62:0.88,63:0.8759999999999999,64:0.872,65:0.868,66:0.865,67:0.861,68:0.856,69:0.852,70:0.847,71:0.843,72:0.8370000000000001,73:0.8320000000000001,74:0.8270000000000001,75:0.8220000000000001,76:0.8170000000000001,77:0.8109999999999999,78:0.8059999999999999,79:0.8,80:0.795,81:0.789,82:0.7829999999999999,83:0.778,84:0.772,85:0.7659999999999999,86:0.76,87:0.753,88:0.747,89:0.741,90:0.735,91:0.73,92:0.73,93:0.72,94:0.72,95:0.72,96:0.71,97:0.71,98:0.71,99:0.7,100:0.7,101:0.7,102:0.7,103:0.7,104:0.69,105:0.69,106:0.69,107:0.69,108:0.69,109:0.68,110:0.68,111:0.68,112:0.68,113:0.68,114:0.67,115:0.67,116:0.67,117:0.67,118:0.66,119:0.66,120:0.66,121:0.66,122:0.66,123:0.65,124:0.65,125:0.65,126:0.65,127:0.65,128:0.64,129:0.64,130:0.64,131:0.64,132:0.64,133:0.63,134:0.63,135:0.63,136:0.63,137:0.63,138:0.62,139:0.62,140:0.62,141:0.62,142:0.62,143:0.61,144:0.61,145:0.61,146:0.61,147:0.61,148:0.6,149:0.6,150:0.6},
+  'Lohmann White': {18:0.01,19:0.08,20:0.31,21:0.61,22:0.82,23:0.91,24:0.93,25:0.94,26:0.95,27:0.95,28:0.95,29:0.95,30:0.95,31:0.95,32:0.95,33:0.95,34:0.94,35:0.94,36:0.94,37:0.94,38:0.94,39:0.93,40:0.93,41:0.93,42:0.93,43:0.92,44:0.92,45:0.92,46:0.91,47:0.91,48:0.91,49:0.9,50:0.9,51:0.9,52:0.9,53:0.89,54:0.89,55:0.89,56:0.89,57:0.88,58:0.88,59:0.88,60:0.88,61:0.87,62:0.87,63:0.87,64:0.86,65:0.86,66:0.86,67:0.85,68:0.85,69:0.84,70:0.83,71:0.83,72:0.82,73:0.81,74:0.81,75:0.8,76:0.8,77:0.79,78:0.78,79:0.78,80:0.77,81:0.77,82:0.76,83:0.76,84:0.75,85:0.75,86:0.74,87:0.74,88:0.74,89:0.73,90:0.73,91:0.73,92:0.72,93:0.72,94:0.72,95:0.72,96:0.71,97:0.71,98:0.71,99:0.7,100:0.7,101:0.7,102:0.7,103:0.7,104:0.69,105:0.69,106:0.69,107:0.69,108:0.69,109:0.68,110:0.68,111:0.68,112:0.68,113:0.68,114:0.67,115:0.67,116:0.67,117:0.67,118:0.66,119:0.66,120:0.66,121:0.66,122:0.66,123:0.65,124:0.65,125:0.65,126:0.65,127:0.65,128:0.64,129:0.64,130:0.64,131:0.64,132:0.64,133:0.63,134:0.63,135:0.63,136:0.63,137:0.63,138:0.62,139:0.62,140:0.62,141:0.62,142:0.62,143:0.61,144:0.61,145:0.61,146:0.61,147:0.61,148:0.6,149:0.6,150:0.6},
+  'Hy-line Brown Jaula': {18:0.044,19:0.1765,20:0.4405,21:0.7095,22:0.865,23:0.9235,24:0.9435,25:0.952,26:0.955,27:0.957,28:0.957,29:0.957,30:0.9565,31:0.956,32:0.956,33:0.9545,34:0.9525,35:0.951,36:0.949,37:0.947,38:0.945,39:0.943,40:0.9405,41:0.9385,42:0.9355,43:0.9325,44:0.9295,45:0.9265,46:0.9235,47:0.921,48:0.919,49:0.916,50:0.9135,51:0.911,52:0.909,53:0.9065,54:0.905,55:0.902,56:0.9005,57:0.898,58:0.896,59:0.8935,60:0.8905,61:0.8875,62:0.885,63:0.8825,64:0.88,65:0.877,66:0.873,67:0.8685,68:0.864,69:0.859,70:0.854,71:0.8485,72:0.842,73:0.836,74:0.8295,75:0.8235,76:0.8175,77:0.8115,78:0.8055,79:0.7995,80:0.7935,81:0.788,82:0.7825,83:0.777,84:0.772,85:0.767,86:0.762,87:0.757,88:0.752,89:0.748,90:0.744,91:0.74,92:0.7365,93:0.733,94:0.7295,95:0.726,96:0.7225,97:0.719,98:0.7155,99:0.712,100:0.7085,101:0.7055,102:0.7025,103:0.6995,104:0.6965,105:0.6935,106:0.6905,107:0.6875,108:0.6845,109:0.6815,110:0.6785,111:0.6755,112:0.6725,113:0.6695,114:0.6665,115:0.6635,116:0.6605,117:0.6575,118:0.6545,119:0.6515,120:0.6485,121:0.6455,122:0.6425,123:0.6395,124:0.6365,125:0.6335,126:0.6305,127:0.6275,128:0.6244999999999999,129:0.6214999999999999,130:0.6184999999999999,131:0.6154999999999999,132:0.6124999999999999,133:0.6094999999999999,134:0.6064999999999999,135:0.6034999999999999,136:0.6004999999999999,137:0.5974999999999999,138:0.5944999999999999,139:0.5914999999999999,140:0.5884999999999999,141:0.5854999999999999,142:0.5824999999999999,143:0.5794999999999999,144:0.5764999999999999,145:0.5734999999999999,146:0.5704999999999999,147:0.5674999999999999,148:0.5644999999999999,149:0.5614999999999999,150:0.5584999999999999}
+};
+
+// ============================================
+// INICIALIZACIÓN
+// ============================================
+window.onload = function() {
+  // Establecer fecha de hoy
+  document.getElementById('fecha-input').value = formatDateInput(new Date());
+  
+  // Cargar lotes desde el servidor
+  mostrarLoading(true, 'Cargando lotes...');
+  google.script.run
+    .withSuccessHandler(function(lotesData) {
+      mostrarLoading(false);
+      lotes = lotesData;
+      renderLotes();
+      if (lotes.length > 0) {
+        seleccionarLote(0);
+      }
+    })
+    .withFailureHandler(function(error) {
+      mostrarLoading(false);
+      mostrarToast('Error al cargar lotes: ' + error.message, 'error');
+      document.getElementById('lote-selector').innerHTML = 
+        '<div style="color: #f44336; text-align: center; width: 100%; padding: 20px;">Error al cargar lotes</div>';
+    })
+    .obtenerLotesActivos();
+};
+
+function renderLotes() {
+  const container = document.getElementById('lote-selector');
+  container.innerHTML = '';
+  
+  if (lotes.length === 0) {
+    container.innerHTML = '<div style="color: #999; text-align: center; width: 100%; padding: 20px;">No hay lotes activos</div>';
+    return;
+  }
+  
+  lotes.forEach((lote, idx) => {
+    const edadSem = calcularEdad(lote.fechaNacimiento);
+    const btn = document.createElement('button');
+    btn.className = 'lote-btn';
+    btn.id = `btn-lote-${idx}`;
+    btn.type = 'button';
+    btn.onclick = () => seleccionarLote(idx);
+    btn.innerHTML = `
+      ${lote.nombre}
+      <span class="lote-info">${edadSem} sem</span>
+    `;
+    container.appendChild(btn);
+  });
+}
+
+async function seleccionarLote(idx) {
+  document.querySelectorAll('.lote-btn').forEach(btn => btn.classList.remove('activo'));
+  document.getElementById(`btn-lote-${idx}`).classList.add('activo');
+  
+  loteActual = lotes[idx];
+  actualizarInfo();
+  cargarUltimoDia();
+  actualizarBotonGraficos();
+}
+
+// ============================================
+// ACTUALIZAR INFORMACIÓN DEL LOTE
+// ============================================
+function actualizarInfo() {
+  if (!loteActual) return;
+  
+  const edad = calcularEdad(loteActual.fechaNacimiento);
+  const esperado = obtenerPorcentajeEsperado(edad, loteActual.lineaGenetica);
+  
+  document.getElementById('info-edad').textContent = edad + ' semanas';
+  document.getElementById('info-esperado').textContent = (esperado * 100).toFixed(1) + '%';
+  document.getElementById('info-linea').textContent = loteActual.lineaGenetica;
+  document.getElementById('info-aves').textContent = loteActual.avesInicio.toLocaleString();
+}
+
+function obtenerPorcentajeEsperado(edad, lineaGenetica) {
+  console.log('=== DEBUG ===');
+  console.log('Edad recibida:', edad);
+  console.log('Línea genética recibida:', lineaGenetica);
+  console.log('Línea genética (con comillas):', JSON.stringify(lineaGenetica));
+  
+  const curva = CURVAS[lineaGenetica];
+  console.log('Curva encontrada:', curva ? 'SÍ' : 'NO');
+  
+  if (curva && curva[edad]) {
+    console.log('Valor encontrado:', curva[edad]);
+    return curva[edad];
+  } else {
+    console.log('Valor NO encontrado, retornando 0');
+    return 0;
+  }
+}
+
+// ============================================
+// CARGAR ÚLTIMO DÍA
+// ============================================
+function cargarUltimoDia() {
+  if (!loteActual) return;
+  
+  mostrarLoading(true, 'Cargando último registro...');
+  
+  google.script.run
+    .withSuccessHandler(function(resultado) {
+      mostrarLoading(false);
+      if (resultado) {
+        const fecha = new Date(resultado.fecha);
+        document.getElementById('fecha-input').value = formatDateInput(fecha);
+        document.getElementById('campo-aves').value = resultado.nAves;
+        document.getElementById('info-aves').textContent = resultado.nAves.toLocaleString();
+        onFechaChange();
+      }
+    })
+    .withFailureHandler(function(error) {
+      mostrarLoading(false);
+      mostrarToast('Error al cargar datos: ' + error.message, 'error');
+    })
+    .obtenerUltimoDia(loteActual.nombre);
+}
+
+// ============================================
+// FECHA
+// ============================================
+function cambiarFecha(dias) {
+  const input = document.getElementById('fecha-input');
+  const fecha = new Date(input.value + 'T00:00:00');
+  fecha.setDate(fecha.getDate() + dias);
+  input.value = formatDateInput(fecha);
+  onFechaChange();
+}
+
+function onFechaChange() {
+  if (!loteActual) return;
+  const fechaStr = document.getElementById('fecha-input').value;
+  if (!fechaStr) return;
+  
+  const fecha = new Date(fechaStr + 'T00:00:00');
+  const edadDias = (fecha - new Date(loteActual.fechaNacimiento)) / (1000 * 60 * 60 * 24);
+  const edadSem = Math.floor(edadDias / 7);
+  
+  const esperado = obtenerPorcentajeEsperado(edadSem, loteActual.lineaGenetica);
+  
+  document.getElementById('info-edad').textContent = edadSem + ' semanas';
+  document.getElementById('info-esperado').textContent = (esperado * 100).toFixed(1) + '%';
+}
+
+// ============================================
+// GUARDAR DATOS
+// ============================================
+function guardarDatos() {
+  if (!loteActual) {
+    mostrarToast('Seleccione un lote primero', 'error');
+    return;
+  }
+
+  const fechaStr = document.getElementById('fecha-input').value;
+  if (!fechaStr) {
+    mostrarToast('Ingrese una fecha', 'error');
+    return;
+  }
+
+  const nAves = parseInt(document.getElementById('campo-aves').value) || 0;
+  if (nAves <= 0) {
+    mostrarToast('N° de Aves debe ser mayor a 0', 'error');
+    return;
+  }
+
+  const fechaObj = new Date(fechaStr + 'T00:00:00');
+  
+  const datos = {
+    lote: loteActual.nombre,
+    fecha: fechaObj.getTime(), // Enviar como timestamp en lugar de objeto Date
+    nAves: nAves,
+    mortalidad: parseInt(document.getElementById('campo-mort').value) || 0,
+    kgAlimento: parseFloat(document.getElementById('campo-kg').value) || 0,
+    nHuevos: parseInt(document.getElementById('campo-huevos').value) || 0,
+    sucios: parseInt(document.getElementById('campo-sucios').value) || 0,
+    rotos: parseInt(document.getElementById('campo-rotos').value) || 0,
+    trizados: parseInt(document.getElementById('campo-trizados').value) || 0,
+    sangre: parseInt(document.getElementById('campo-sangre').value) || 0,
+    observaciones:  document.getElementById('observaciones').value.trim()
+
+  };
+
+  mostrarLoading(true, 'Guardando datos...');
+  document.getElementById('btn-guardar').disabled = true;
+
+  google.script.run
+    .withSuccessHandler(function(resultado) {
+      mostrarLoading(false);
+      document.getElementById('btn-guardar').disabled = false;
+      
+      if (resultado.exito) {
+        mostrarToast(resultado.mensaje, 'exito');
+        
+        if (resultado.siguiente) {
+          setTimeout(function() {
+            const siguienteFecha = new Date(resultado.siguiente.fecha);
+            document.getElementById('fecha-input').value = formatDateInput(siguienteFecha);
+            document.getElementById('campo-aves').value = resultado.siguiente.nAves;
+            document.getElementById('info-aves').textContent = resultado.siguiente.nAves.toLocaleString();
+            document.getElementById('campo-mort').value = 0;
+            document.getElementById('campo-kg').value = 0;
+            document.getElementById('campo-huevos').value = 0;
+            document.getElementById('campo-sucios').value = 0;
+            document.getElementById('campo-rotos').value = 0;
+            document.getElementById('campo-trizados').value = 0;
+            document.getElementById('campo-sangre').value = 0;
+            document.getElementById('observaciones').value = '';
+            onFechaChange();
+          }, 1500);
+        }
+      } else {
+        mostrarToast(resultado.mensaje, 'error');
+      }
+    })
+    .withFailureHandler(function(error) {
+      mostrarLoading(false);
+      document.getElementById('btn-guardar').disabled = false;
+      mostrarToast('Error: ' + error.message, 'error');
+    })
+    .guardarDatos(datos);
+}
+
+// ============================================
+// FUNCIONES AUXILIARES
+// ============================================
+function calcularEdad(fechaNacTimestamp) {
+  const hoy = new Date();
+  const fechaNac = new Date(fechaNacTimestamp);
+  const dias = (hoy - fechaNac) / (1000 * 60 * 60 * 24);
+  return Math.floor(dias / 7);
+}
+
+function formatDateInput(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function mostrarLoading(mostrar, texto = 'Cargando...') {
+  document.getElementById('loading').classList.toggle('visible', mostrar);
+  document.getElementById('loading-text').textContent = texto;
+}
+
+function mostrarToast(mensaje, tipo) {
+  const toast = document.getElementById('toast');
+  toast.textContent = mensaje;
+  toast.className = 'toast ' + (tipo || '');
+  toast.classList.add('visible');
+  setTimeout(() => toast.classList.remove('visible'), 3500);
+}
+let configData = null;
+
+function abrirConfiguracion() {
+  mostrarLoading(true, 'Cargando configuración...');
+  
+  google.script.run
+    .withSuccessHandler(function(config) {
+      mostrarLoading(false);
+      configData = config;
+      renderizarConfiguracion(config);
+      document.getElementById('modal-config').classList.add('visible');
+    })
+    .withFailureHandler(function(error) {
+      mostrarLoading(false);
+      mostrarToast('Error al cargar configuración', 'error');
+    })
+    .obtenerConfiguracion();
+}
+
+function cerrarConfiguracion() {
+  document.getElementById('modal-config').classList.remove('visible');
+}
+
+function renderizarConfiguracion(config) {
+  // Datos del productor
+  document.getElementById('config-nombre').textContent = config.nombreProductor || '--';
+  document.getElementById('config-ubicacion').textContent = config.ubicacion || '--';
+  
+  // Lotes activos
+  const container = document.getElementById('config-lotes-container');
+  container.innerHTML = '';
+  
+  if (config.lotes.length === 0) {
+    container.innerHTML = '<div style="color: #999; text-align: center; padding: 20px;">No hay lotes configurados</div>';
+    return;
+  }
+  
+  config.lotes.forEach(function(lote) {
+    const edadSem = calcularEdad(lote.fechaNacimiento);
+    const fechaStr = new Date(lote.fechaNacimiento).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+    
+    const div = document.createElement('div');
+    div.className = 'lote-config';
+    div.innerHTML = `
+      <div class="lote-config-header">
+        <div class="lote-config-nombre">${lote.nombre}</div>
+        <div class="lote-badge">ACTIVO</div>
+      </div>
+      <div class="lote-config-grid">
+        <div class="lote-config-item">
+          <div class="lote-config-label">Nacimiento</div>
+          <div class="lote-config-value">${fechaStr}</div>
+        </div>
+        <div class="lote-config-item">
+          <div class="lote-config-label">Edad</div>
+          <div class="lote-config-value">${edadSem} semanas</div>
+        </div>
+        <div class="lote-config-item">
+          <div class="lote-config-label">Línea Genética</div>
+          <div class="lote-config-value">${lote.lineaGenetica}</div>
+        </div>
+        <div class="lote-config-item">
+          <div class="lote-config-label">Aves Inicio</div>
+          <div class="lote-config-value">${lote.avesInicio.toLocaleString()}</div>
+        </div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function abrirGoogleSheets() {
+  if (configData && configData.sheetUrl) {
+    window.open(configData.sheetUrl, '_blank');
+  } else {
+    mostrarToast('No se pudo obtener el enlace del Google Sheets', 'error');
+  }
+}
+// ============================================
+// GRÁFICOS
+// ============================================
+let chartCurva = null;
+let chartAcumulado = null;
+let datosGraficos = null;
+
+function abrirGraficos() {
+  if (!loteActual) {
+    mostrarToast('Seleccione un lote primero', 'error');
+    return;
+  }
+  
+  mostrarLoading(true, 'Cargando datos...');
+  
+  google.script.run
+    .withSuccessHandler(function(resultado) {
+      mostrarLoading(false);
+      
+      if (resultado.exito) {
+        if (resultado.datos.length === 0) {
+          mostrarToast(resultado.mensaje || 'No hay datos para mostrar', 'error');
+          return;
+        }
+        
+        datosGraficos = resultado.datos;
+        document.getElementById('titulo-graficos').textContent = 'Gráficos - ' + loteActual.nombre;
+        document.getElementById('modal-graficos').classList.add('visible');
+        
+        // Renderizar gráficos
+        renderizarGraficoCurva();
+        renderizarGraficoAcumulado();
+        renderizarEstadisticas();
+      } else {
+        mostrarToast(resultado.mensaje || 'Error al cargar datos', 'error');
+      }
+    })
+    .withFailureHandler(function(error) {
+      mostrarLoading(false);
+      mostrarToast('Error: ' + error.message, 'error');
+    })
+    .obtenerDatosGraficos(loteActual.nombre);
+}
+
+function cerrarGraficos() {
+  document.getElementById('modal-graficos').classList.remove('visible');
+  
+  // Limpiar gráficos
+  if (chartCurva) {
+    chartCurva.destroy();
+    chartCurva = null;
+  }
+  if (chartAcumulado) {
+    chartAcumulado.destroy();
+    chartAcumulado = null;
+  }
+}
+
+function cambiarGrafico(tipo) {
+  // Actualizar tabs
+  document.querySelectorAll('.grafico-tab').forEach(tab => tab.classList.remove('activo'));
+  document.getElementById('tab-' + tipo).classList.add('activo');
+  
+  // Mostrar/ocultar containers
+  document.querySelectorAll('.grafico-container').forEach(c => c.classList.remove('visible'));
+  document.getElementById('container-' + tipo).classList.add('visible');
+}
+
+function renderizarGraficoCurva() {
+  const ctx = document.getElementById('chart-curva').getContext('2d');
+  
+  // Destruir gráfico anterior si existe
+  if (chartCurva) {
+    chartCurva.destroy();
+  }
+  
+  // Preparar datos
+  const labels = datosGraficos.map(d => 'Sem ' + d.edadSemanas);
+  const posturaReal = datosGraficos.map(d => (d.porcentajePostura * 100).toFixed(1));
+  const posturaEsperada = datosGraficos.map(d => (d.porcentajeEsperado * 100).toFixed(1));
+  
+  chartCurva = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: '% Postura Real',
+          data: posturaReal,
+          borderColor: '#2e7d32',
+          backgroundColor: 'rgba(46, 125, 50, 0.1)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true
+        },
+        {
+          label: '% Esperado',
+          data: posturaEsperada,
+          borderColor: '#1976d2',
+          backgroundColor: 'rgba(25, 118, 210, 0.1)',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          tension: 0.4,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          padding: 12,
+          titleFont: { size: 14, weight: 'bold' },
+          bodyFont: { size: 13 }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: {
+            callback: function(value) {
+              return value + '%';
+            }
+          },
+          title: {
+            display: true,
+            text: 'Porcentaje de Postura'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Edad (semanas)'
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderizarGraficoAcumulado() {
+  const ctx = document.getElementById('chart-acumulado').getContext('2d');
+  
+  // Destruir gráfico anterior si existe
+  if (chartAcumulado) {
+    chartAcumulado.destroy();
+  }
+  
+  // Calcular acumulados
+  let acumuladoHuevos = 0;
+  let acumuladoAlimento = 0;
+  const labels = [];
+  const huevosAcum = [];
+  const alimentoAcum = [];
+  
+  datosGraficos.forEach(d => {
+    acumuladoHuevos += d.nHuevos;
+    acumuladoAlimento += d.kgAlimento;
+    labels.push('Sem ' + d.edadSemanas);
+    huevosAcum.push(acumuladoHuevos);
+    alimentoAcum.push(acumuladoAlimento);
+  });
+  
+  chartAcumulado = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Huevos Acumulados',
+          data: huevosAcum,
+          borderColor: '#f9a825',
+          backgroundColor: 'rgba(249, 168, 37, 0.1)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Kg Alimento Acumulado',
+          data: alimentoAcum,
+          borderColor: '#4caf50',
+          backgroundColor: 'rgba(76, 175, 80, 0.1)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          yAxisID: 'y1'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          padding: 12,
+          titleFont: { size: 14, weight: 'bold' },
+          bodyFont: { size: 13 },
+          callbacks: {
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) {
+                label += ': ';
+              }
+              label += context.parsed.y.toLocaleString();
+              return label;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          title: {
+            display: true,
+            text: 'Huevos'
+          },
+          ticks: {
+            callback: function(value) {
+              return value.toLocaleString();
+            }
+          }
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          title: {
+            display: true,
+            text: 'Kg Alimento'
+          },
+          ticks: {
+            callback: function(value) {
+              return value.toLocaleString();
+            }
+          },
+          grid: {
+            drawOnChartArea: false
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Edad (semanas)'
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderizarEstadisticas() {
+  const totalRegistros = datosGraficos.length;
+  const totalHuevos = datosGraficos.reduce((sum, d) => sum + d.nHuevos, 0);
+  const promedioPostura = datosGraficos.reduce((sum, d) => sum + (d.porcentajePostura * 100), 0) / totalRegistros;
+  const promedioDiferencia = datosGraficos.reduce((sum, d) => sum + (d.diferencia * 100), 0) / totalRegistros;
+  
+  // Estadísticas básicas (las que ya tenías)
+  document.getElementById('stat-registros').textContent = totalRegistros;
+  document.getElementById('stat-huevos').textContent = totalHuevos.toLocaleString();
+  document.getElementById('stat-promedio').textContent = promedioPostura.toFixed(1) + '%';
+  
+  const statDif = document.getElementById('stat-diferencia');
+  statDif.textContent = promedioDiferencia.toFixed(1) + '%';
+  statDif.className = 'stat-value';
+  if (promedioDiferencia > 0) {
+    statDif.classList.add('positivo');
+  } else if (promedioDiferencia < 0) {
+    statDif.classList.add('negativo');
+  }
+  
+  // ===== NUEVOS KPIs =====
+  calcularKPIs();
+}
+
+function calcularKPIs() {
+  if (!datosGraficos || datosGraficos.length === 0) return;
+  
+  // 1. PUESTA DIARIA (último día registrado)
+  const ultimoDia = datosGraficos[datosGraficos.length - 1];
+  const puestaDiaria = (ultimoDia.porcentajePostura * 100);
+  document.getElementById('kpi-puesta-diaria').textContent = puestaDiaria.toFixed(1) + '%';
+  
+  // Tendencia vs esperado
+  const difDiaria = (ultimoDia.diferencia * 100);
+  const trendDiaria = document.getElementById('kpi-trend-diaria');
+  if (difDiaria > 0) {
+    trendDiaria.textContent = '▲ ' + difDiaria.toFixed(1) + '% vs esperado';
+    trendDiaria.className = 'kpi-trend positivo';
+  } else if (difDiaria < 0) {
+    trendDiaria.textContent = '▼ ' + Math.abs(difDiaria).toFixed(1) + '% vs esperado';
+    trendDiaria.className = 'kpi-trend negativo';
+  } else {
+    trendDiaria.textContent = '= En objetivo';
+    trendDiaria.className = 'kpi-trend neutral';
+  }
+  
+  // 2. PUESTA SEMANAL (promedio últimos 7 días)
+  const ultimos7Dias = datosGraficos.slice(-7);
+  const puestaSemanal = ultimos7Dias.reduce((sum, d) => sum + (d.porcentajePostura * 100), 0) / ultimos7Dias.length;
+  document.getElementById('kpi-puesta-semanal').textContent = puestaSemanal.toFixed(1) + '%';
+  
+  // Tendencia semanal
+  const esperadoSemanal = ultimos7Dias.reduce((sum, d) => sum + (d.porcentajeEsperado * 100), 0) / ultimos7Dias.length;
+  const difSemanal = puestaSemanal - esperadoSemanal;
+  const trendSemanal = document.getElementById('kpi-trend-semanal');
+  if (difSemanal > 0) {
+    trendSemanal.textContent = '▲ ' + difSemanal.toFixed(1) + '% vs esperado';
+    trendSemanal.className = 'kpi-trend positivo';
+  } else if (difSemanal < 0) {
+    trendSemanal.textContent = '▼ ' + Math.abs(difSemanal).toFixed(1) + '% vs esperado';
+    trendSemanal.className = 'kpi-trend negativo';
+  } else {
+    trendSemanal.textContent = '= En objetivo';
+    trendSemanal.className = 'kpi-trend neutral';
+  }
+  
+  // 3. HUEVOS NO VENDIBLES (%)
+  const totalHuevos = datosGraficos.reduce((sum, d) => sum + d.nHuevos, 0);
+  const totalNoVendibles = datosGraficos.reduce((sum, d) => sum + (d.sucios || 0) + (d.rotos || 0) + (d.trizados || 0) + (d.sangre || 0), 0);
+  const porcNoVendibles = totalHuevos > 0 ? (totalNoVendibles / totalHuevos * 100) : 0;
+  
+  document.getElementById('kpi-no-vendibles').textContent = porcNoVendibles.toFixed(1) + '%';
+  document.getElementById('kpi-no-vendibles-total').textContent = totalNoVendibles.toLocaleString() + ' huevos';
+  
+  // 4. ÍNDICE CONVERSIÓN kg/huevo (últimos 7 días)
+  const totalKgAlimento = ultimos7Dias.reduce((sum, d) => sum + d.kgAlimento, 0);
+  const totalHuevosSemana = ultimos7Dias.reduce((sum, d) => sum + d.nHuevos, 0);
+  const conversionHuevo = totalHuevosSemana > 0 ? (totalKgAlimento / totalHuevosSemana) : 0;
+  
+  document.getElementById('kpi-conv-huevo').textContent = conversionHuevo.toFixed(3) + ' kg';
+  
+  // Aplicar colores a las tarjetas según rendimiento
+  aplicarColoresKPI(puestaDiaria, puestaSemanal, porcNoVendibles, conversionHuevo);
+}
+
+function aplicarColoresKPI(puestaDiaria, puestaSemanal, noVendibles, conversion) {
+  const cards = document.querySelectorAll('.kpi-card');
+  
+  // Puesta Diaria
+  if (puestaDiaria >= 90) {
+    cards[0].className = 'kpi-card excelente';
+  } else if (puestaDiaria >= 80) {
+    cards[0].className = 'kpi-card bueno';
+  } else {
+    cards[0].className = 'kpi-card alerta';
+  }
+  
+  // Puesta Semanal
+  if (puestaSemanal >= 90) {
+    cards[1].className = 'kpi-card excelente';
+  } else if (puestaSemanal >= 80) {
+    cards[1].className = 'kpi-card bueno';
+  } else {
+    cards[1].className = 'kpi-card alerta';
+  }
+  
+  // No Vendibles (mientras menos, mejor)
+  if (noVendibles <= 2) {
+    cards[2].className = 'kpi-card excelente';
+  } else if (noVendibles <= 5) {
+    cards[2].className = 'kpi-card bueno';
+  } else {
+    cards[2].className = 'kpi-card alerta';
+  }
+  
+  // Conversión (mientras menos, mejor)
+  if (conversion <= 0.12) {
+    cards[3].className = 'kpi-card excelente';
+  } else if (conversion <= 0.15) {
+    cards[3].className = 'kpi-card bueno';
+  } else {
+    cards[3].className = 'kpi-card alerta';
+  }
+}
+
+// Habilitar/deshabilitar botón de gráficos
+function actualizarBotonGraficos() {
+  const btn = document.getElementById('btn-graficos');
+  if (loteActual) {
+    btn.disabled = false;
+  } else {
+    btn.disabled = true;
+  }
+}
+
+</script>
+<!-- FIRMA -->
+<div style="
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+  color: white;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  z-index: 999;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+">
+  Creado por <strong>Andrés Lazo Escobar</strong>, Médico Veterinario
+</div>
+
+</body>
+</html>
