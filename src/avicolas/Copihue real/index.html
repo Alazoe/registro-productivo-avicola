@@ -4,7 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Registro Avícola">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1b5e20">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>Producción Diaria</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -256,6 +261,61 @@
   .campo-input.campo-mort:focus {
     border-color: var(--rojo-claro);
     box-shadow: 0 0 0 3px rgba(198,40,40,0.15);
+  }
+
+  /* ============================================
+     CONTADOR MORTALIDAD
+     ============================================ */
+  .mort-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 11px 0;
+    border-bottom: 1px solid #eef1f3;
+  }
+  .mort-top-row {
+    display: flex;
+    align-items: center;
+  }
+  .mort-contador-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .mort-btn {
+    padding: 7px 11px;
+    border: 2px solid #ef9a9a;
+    border-radius: 8px;
+    background: #fff5f5;
+    color: #c62828;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s;
+    line-height: 1;
+    outline: none;
+  }
+  .mort-btn:active {
+    background: #ffcdd2;
+    transform: scale(0.93);
+  }
+  .mort-btn.reset-btn {
+    border-color: #cfd8dc;
+    background: #eceff1;
+    color: #546e7a;
+    margin-left: auto;
+    font-size: 12px;
+  }
+  .mort-btn.reset-btn:active {
+    background: #cfd8dc;
+  }
+  .mort-log {
+    font-size: 11px;
+    color: #90a4ae;
+    font-style: italic;
+    min-height: 16px;
+    padding-left: 2px;
   }
 
   /* ============================================
@@ -837,6 +897,52 @@
   .kpi-card.bueno     { background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); }
   .kpi-card.alerta    { background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); }
 
+  /* BARRA DE ESTADO CONEXIÓN */
+  .conexion-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2000;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+  }
+  .conexion-bar.visible { transform: translateY(0); }
+  .conexion-bar.offline {
+    background: #c62828;
+    color: white;
+  }
+  .conexion-bar.sincronizando {
+    background: #f9a825;
+    color: #37474f;
+  }
+  .conexion-bar.sincronizado {
+    background: #2e7d32;
+    color: white;
+  }
+
+  /* BADGE COLA PENDIENTE */
+  .badge-pendiente {
+    display: none;
+    background: #c62828;
+    color: white;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .badge-pendiente.visible { display: inline-block; }
+
   /* Observaciones */
   .input-group {
     background: white;
@@ -875,6 +981,12 @@
 </style>
 </head>
 <body>
+
+<!-- BARRA ESTADO CONEXIÓN -->
+<div class="conexion-bar" id="conexion-bar">
+  <span id="conexion-icon">📡</span>
+  <span id="conexion-texto">Sin conexión — los registros se guardarán localmente</span>
+</div>
 
 <div class="header">
   <div class="header-content">
@@ -940,14 +1052,29 @@
   <div class="card">
     <div class="card-header">🐣 Datos de Producción</div>
     <div class="card-body">
+
       <div class="campo-row">
         <div class="campo-label"><span class="campo-icon">🐓</span>N° de Aves</div>
         <input type="number" class="campo-input" id="campo-aves" min="0" inputmode="numeric">
       </div>
-      <div class="campo-row">
-        <div class="campo-label"><span class="campo-icon">⚠️</span>Mortalidad</div>
-        <input type="number" class="campo-input campo-mort" id="campo-mort" min="0" value="0" inputmode="numeric">
+
+      <!-- MORTALIDAD CON CONTADOR ACUMULADOR -->
+      <div class="mort-container">
+        <div class="mort-top-row">
+          <div class="campo-label"><span class="campo-icon">⚠️</span>Mortalidad</div>
+          <input type="number" class="campo-input campo-mort" id="campo-mort" min="0" value="0" inputmode="numeric" oninput="actualizarLogMort()">
+        </div>
+        <div class="mort-contador-row">
+          <span style="font-size:11px;font-weight:700;color:#90a4ae;text-transform:uppercase;letter-spacing:0.5px;">Agregar:</span>
+          <button class="mort-btn" onclick="sumarMort(1)"  type="button">+1</button>
+          <button class="mort-btn" onclick="sumarMort(2)"  type="button">+2</button>
+          <button class="mort-btn" onclick="sumarMort(5)"  type="button">+5</button>
+          <button class="mort-btn" onclick="sumarMort(10)" type="button">+10</button>
+          <button class="mort-btn reset-btn" onclick="resetMort()" type="button">↩ Reset</button>
+        </div>
+        <div class="mort-log" id="mort-log"></div>
       </div>
+
       <div class="campo-row">
         <div class="campo-label"><span class="campo-icon">🌾</span>Kg Alimento</div>
         <input type="number" class="campo-input" id="campo-kg" min="0" value="0" inputmode="numeric">
@@ -1060,6 +1187,7 @@
   <!-- BOTÓN GUARDAR -->
   <button class="btn-guardar" id="btn-guardar" onclick="guardarDatos()" type="button">
     ✅ Guardar Registro
+    <span class="badge-pendiente" id="badge-pendiente">0 pendientes</span>
   </button>
 
   <!-- BOTÓN VER GRÁFICOS -->
@@ -1206,10 +1334,190 @@
 
 <script>
 // ============================================
+// CONFIGURACIÓN BACKEND
+// ============================================
+// ⚠️ Reemplazar con la URL de tu web app publicada en Apps Script
+const URL_BACKEND = 'https://script.google.com/macros/s/TU_DEPLOYMENT_ID/exec';
+
+// Helper unificado para llamadas al backend
+function api(accion, params) {
+  return fetch(URL_BACKEND, {
+    method: 'POST',
+    mode: 'no-cors', // necesario para Apps Script
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(Object.assign({ accion }, params || {}))
+  })
+  .then(function(r) {
+    // no-cors devuelve opaque response, necesitamos doGet con callback
+    return r.json();
+  });
+}
+
+// Helper con JSONP para evitar CORS (Apps Script lo soporta via ?callback=)
+function apiGet(accion, params) {
+  return new Promise(function(resolve, reject) {
+    const cbName = '_cb_' + Date.now();
+    const qs = new URLSearchParams(Object.assign({ accion, callback: cbName }, params || {}));
+    const script = document.createElement('script');
+    script.src = URL_BACKEND + '?' + qs.toString();
+    window[cbName] = function(data) {
+      delete window[cbName];
+      document.head.removeChild(script);
+      resolve(data);
+    };
+    script.onerror = function() {
+      delete window[cbName];
+      document.head.removeChild(script);
+      reject(new Error('Error de red'));
+    };
+    setTimeout(function() {
+      if (window[cbName]) {
+        delete window[cbName];
+        try { document.head.removeChild(script); } catch(e) {}
+        reject(new Error('Timeout'));
+      }
+    }, 15000);
+    document.head.appendChild(script);
+  });
+}
+
+// ============================================
 // DATOS Y ESTADO
 // ============================================
 let lotes = [];
 let loteActual = null;
+
+// ============================================
+// OFFLINE / COLA DE SINCRONIZACIÓN
+// ============================================
+const STORAGE_LOTES    = 'avicola_lotes_cache';
+const STORAGE_COLA     = 'avicola_cola_pendiente';
+
+let estaOnline = navigator.onLine;
+
+function obtenerCola() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_COLA) || '[]'); } catch(e) { return []; }
+}
+function guardarCola(cola) {
+  localStorage.setItem(STORAGE_COLA, JSON.stringify(cola));
+}
+function agregarACola(datos) {
+  const cola = obtenerCola();
+  cola.push({ datos, timestamp: Date.now() });
+  guardarCola(cola);
+  actualizarBadgePendiente();
+}
+function actualizarBadgePendiente() {
+  const cola = obtenerCola();
+  const badge = document.getElementById('badge-pendiente');
+  if (cola.length > 0) {
+    badge.textContent = cola.length + ' pendiente' + (cola.length > 1 ? 's' : '');
+    badge.classList.add('visible');
+  } else {
+    badge.classList.remove('visible');
+  }
+}
+
+function mostrarBarraConexion(tipo, texto) {
+  const bar  = document.getElementById('conexion-bar');
+  const icon = document.getElementById('conexion-icon');
+  const msg  = document.getElementById('conexion-texto');
+  bar.className = 'conexion-bar visible ' + tipo;
+  icon.textContent = tipo === 'offline' ? '📡' : tipo === 'sincronizando' ? '🔄' : '✅';
+  msg.textContent  = texto;
+  if (tipo !== 'offline') {
+    setTimeout(() => bar.classList.remove('visible'), 3500);
+  }
+}
+
+function sincronizarCola() {
+  const cola = obtenerCola();
+  if (cola.length === 0) return;
+  mostrarBarraConexion('sincronizando', 'Sincronizando ' + cola.length + ' registro(s) pendiente(s)...');
+  let procesados = 0;
+  let errores    = 0;
+
+  function procesarSiguiente(idx) {
+    if (idx >= cola.length) {
+      if (errores === 0) {
+        guardarCola([]);
+        actualizarBadgePendiente();
+        mostrarBarraConexion('sincronizado', '✅ ' + procesados + ' registro(s) sincronizados correctamente');
+      } else {
+        // Conservar solo los que fallaron
+        mostrarBarraConexion('sincronizando', errores + ' registro(s) no pudieron sincronizarse');
+      }
+      return;
+    }
+    const item = cola[idx];
+    apiGet('guardarDatos', { datos: JSON.stringify(item.datos) })
+      .then(function(resultado) {
+        if (resultado.exito) { procesados++; } else { errores++; }
+        procesarSiguiente(idx + 1);
+      })
+      .catch(function() {
+        errores++;
+        procesarSiguiente(idx + 1);
+      });
+  }
+  procesarSiguiente(0);
+}
+
+// Detectar cambios de conexión
+window.addEventListener('online', function() {
+  estaOnline = true;
+  const cola = obtenerCola();
+  if (cola.length > 0) {
+    sincronizarCola();
+  } else {
+    mostrarBarraConexion('sincronizado', 'Conexión restaurada');
+  }
+});
+window.addEventListener('offline', function() {
+  estaOnline = false;
+  mostrarBarraConexion('offline', 'Sin conexión — los registros se guardarán localmente');
+});
+
+// Mostrar barra offline si inicia sin conexión
+if (!estaOnline) {
+  document.addEventListener('DOMContentLoaded', function() {
+    mostrarBarraConexion('offline', 'Sin conexión — los registros se guardarán localmente');
+  });
+}
+
+// ============================================
+// CONTADOR MORTALIDAD — por lote, persiste al cambiar
+// ============================================
+let mortLog = {}; // { nombreLote: [1, 2, 5, ...] }
+
+function sumarMort(n) {
+  const lote = loteActual.nombre;
+  if (!mortLog[lote]) mortLog[lote] = [];
+  const input = document.getElementById('campo-mort');
+  const actual = parseInt(input.value) || 0;
+  input.value = actual + n;
+  mortLog[lote].push(n);
+  actualizarLogMort();
+}
+
+function resetMort() {
+  const lote = loteActual.nombre;
+  mortLog[lote] = [];
+  document.getElementById('campo-mort').value = 0;
+  actualizarLogMort();
+}
+
+function actualizarLogMort() {
+  const logEl = document.getElementById('mort-log');
+  const lote = loteActual ? loteActual.nombre : null;
+  const log = (lote && mortLog[lote]) ? mortLog[lote] : [];
+  const total = parseInt(document.getElementById('campo-mort').value) || 0;
+  if (log.length === 0) {
+    logEl.textContent = total > 0 ? 'Total: ' + total : '';
+    return;
+  }
+  logEl.textContent = 'Eventos: ' + log.map(n => '+' + n).join(', ') + ' = ' + total + ' muertes';
+}
 
 const CURVAS = {
   'Hy-line Brown': {18:0.011000000000000001,19:0.08199999999999999,20:0.308,21:0.614,22:0.8240000000000001,23:0.9059999999999999,24:0.932,25:0.9420000000000001,26:0.946,27:0.948,28:0.948,29:0.948,30:0.948,31:0.9470000000000001,32:0.9470000000000001,33:0.9470000000000001,34:0.9440000000000001,35:0.9420000000000001,36:0.94,37:0.937,38:0.935,39:0.9329999999999999,40:0.9309999999999999,41:0.9279999999999999,42:0.925,43:0.9209999999999999,44:0.9179999999999999,45:0.915,46:0.912,47:0.909,48:0.907,49:0.904,50:0.9,51:0.898,52:0.8959999999999999,53:0.894,54:0.893,55:0.889,56:0.887,57:0.884,58:0.882,59:0.879,60:0.8759999999999999,61:0.873,62:0.87,63:0.867,64:0.863,65:0.861,66:0.856,67:0.851,68:0.845,69:0.838,70:0.8320000000000001,71:0.8270000000000001,72:0.82,73:0.8140000000000001,74:0.8140000000000001,75:0.8009999999999999,76:0.795,77:0.785,78:0.7829999999999999,79:0.777,80:0.7709999999999999,81:0.7659999999999999,82:0.7609999999999999,83:0.7559999999999999,84:0.752,85:0.748,86:0.7440000000000001,87:0.74,88:0.736,89:0.733,90:0.73,91:0.727,92:0.7240000000000001,93:0.721,94:0.718,95:0.715,96:0.7120000000000001,97:0.7090000000000001,98:0.706,99:0.703,100:0.7,101:0.6970000000000001,102:0.6940000000000001,103:0.691,104:0.688,105:0.685,106:0.682,107:0.679,108:0.6759999999999999,109:0.6729999999999999,110:0.67,111:0.667,112:0.664,113:0.6609999999999999,114:0.6579999999999999,115:0.655,116:0.652,117:0.649,118:0.646,119:0.643,120:0.64,121:0.637,122:0.634,123:0.631,124:0.628,125:0.625,126:0.622,127:0.619,128:0.616,129:0.613,130:0.61,131:0.607,132:0.604,133:0.601,134:0.598,135:0.595,136:0.592,137:0.589,138:0.586,139:0.583,140:0.58,141:0.577,142:0.574,143:0.571,144:0.568,145:0.565,146:0.5619999999999999,147:0.5589999999999999,148:0.5559999999999999,149:0.5529999999999999,150:0.5499999999999999},
@@ -1224,22 +1532,50 @@ const CURVAS = {
 // ============================================
 window.onload = function() {
   document.getElementById('fecha-input').value = formatDateInput(new Date());
-  
+  actualizarBadgePendiente();
+
+  // Si offline, cargar lotes desde caché
+  if (!estaOnline) {
+    try {
+      const cached = JSON.parse(localStorage.getItem(STORAGE_LOTES) || '[]');
+      if (cached.length > 0) {
+        lotes = cached;
+        renderLotes();
+        if (lotes.length > 0) seleccionarLote(0);
+        return;
+      }
+    } catch(e) {}
+    document.getElementById('lote-selector').innerHTML =
+      '<div style="color:#f44336;text-align:center;width:100%;padding:20px;">Sin conexión y sin datos en caché</div>';
+    return;
+  }
+
   mostrarLoading(true, 'Cargando lotes...');
-  google.script.run
-    .withSuccessHandler(function(lotesData) {
+  apiGet('obtenerLotes')
+    .then(function(lotesData) {
       mostrarLoading(false);
       lotes = lotesData;
+      try { localStorage.setItem(STORAGE_LOTES, JSON.stringify(lotes)); } catch(e) {}
       renderLotes();
       if (lotes.length > 0) seleccionarLote(0);
+      if (obtenerCola().length > 0) sincronizarCola();
     })
-    .withFailureHandler(function(error) {
+    .catch(function(error) {
       mostrarLoading(false);
+      try {
+        const cached = JSON.parse(localStorage.getItem(STORAGE_LOTES) || '[]');
+        if (cached.length > 0) {
+          lotes = cached;
+          renderLotes();
+          if (lotes.length > 0) seleccionarLote(0);
+          mostrarToast('Cargado desde caché local', 'error');
+          return;
+        }
+      } catch(e) {}
       mostrarToast('Error al cargar lotes: ' + error.message, 'error');
-      document.getElementById('lote-selector').innerHTML = 
+      document.getElementById('lote-selector').innerHTML =
         '<div style="color:#f44336;text-align:center;width:100%;padding:20px;">Error al cargar lotes</div>';
-    })
-    .obtenerLotesActivos();
+    });
 };
 
 function renderLotes() {
@@ -1270,6 +1606,10 @@ function seleccionarLote(idx) {
   actualizarInfo();
   cargarUltimoDia();
   actualizarBotonGraficos();
+  // Restaurar contador del lote seleccionado (sin borrar los demás)
+  const log = mortLog[loteActual.nombre] || [];
+  document.getElementById('campo-mort').value = log.reduce((s, n) => s + n, 0);
+  actualizarLogMort();
 }
 
 // ============================================
@@ -1308,15 +1648,12 @@ function actualizarTotalTamano() {
   const trizados = parseInt(document.getElementById('campo-trizados').value) || 0;
   const sangre   = parseInt(document.getElementById('campo-sangre').value)   || 0;
 
-  // Tamaños vendibles + no vendibles = total huevos
-  const totalTamano  = chico + mediano + grande + xl + superxl + jumbo;
-  const totalCalidad = sucios + rotos + trizados + sangre;
+  const totalTamano      = chico + mediano + grande + xl + superxl + jumbo;
+  const totalCalidad     = sucios + rotos + trizados + sangre;
   const totalClasificado = totalTamano + totalCalidad;
 
-  // Mostrar total clasificado en el indicador de tamaños
   document.getElementById('tamano-total').textContent = totalClasificado.toLocaleString();
 
-  // Cuadre único: (tamaños + calidad) vs total huevos
   const diffEl = document.getElementById('tamano-diff');
   if (nHuevos === 0 || totalClasificado === 0) {
     diffEl.textContent = '';
@@ -1334,7 +1671,6 @@ function actualizarTotalTamano() {
     }
   }
 
-  // No vendibles: solo muestra total y % informativo
   document.getElementById('calidad-total').textContent = totalCalidad.toLocaleString();
   const calidadPorcEl = document.getElementById('calidad-porc');
   if (nHuevos === 0 || totalCalidad === 0) {
@@ -1352,8 +1688,8 @@ function actualizarTotalTamano() {
 function cargarUltimoDia() {
   if (!loteActual) return;
   mostrarLoading(true, 'Cargando último registro...');
-  google.script.run
-    .withSuccessHandler(function(resultado) {
+  apiGet('obtenerUltimoDia', { nombreHoja: loteActual.nombre })
+    .then(function(resultado) {
       mostrarLoading(false);
       if (resultado) {
         const fecha = new Date(resultado.fecha);
@@ -1363,11 +1699,10 @@ function cargarUltimoDia() {
         onFechaChange();
       }
     })
-    .withFailureHandler(function(error) {
+    .catch(function(error) {
       mostrarLoading(false);
       mostrarToast('Error al cargar datos: ' + error.message, 'error');
-    })
-    .obtenerUltimoDia(loteActual.nombre);
+    });
 }
 
 // ============================================
@@ -1411,14 +1746,12 @@ function guardarDatos() {
     mortalidad:   parseInt(document.getElementById('campo-mort').value)    || 0,
     kgAlimento:   parseFloat(document.getElementById('campo-kg').value)    || 0,
     nHuevos:      parseInt(document.getElementById('campo-huevos').value)  || 0,
-    // tamaños
     chico:        parseInt(document.getElementById('campo-chico').value)   || 0,
     mediano:      parseInt(document.getElementById('campo-mediano').value) || 0,
     grande:       parseInt(document.getElementById('campo-grande').value)  || 0,
     xl:           parseInt(document.getElementById('campo-xl').value)      || 0,
     superXl:      parseInt(document.getElementById('campo-superxl').value) || 0,
     jumbo:        parseInt(document.getElementById('campo-jumbo').value)   || 0,
-    // calidad
     sucios:       parseInt(document.getElementById('campo-sucios').value)  || 0,
     rotos:        parseInt(document.getElementById('campo-rotos').value)   || 0,
     trizados:     parseInt(document.getElementById('campo-trizados').value)|| 0,
@@ -1426,11 +1759,20 @@ function guardarDatos() {
     observaciones: document.getElementById('observaciones').value.trim()
   };
 
+  // ── MODO OFFLINE ──
+  if (!estaOnline) {
+    agregarACola(datos);
+    mostrarToast('📥 Guardado localmente — se enviará al recuperar conexión', 'exito');
+    limpiarFormulario(datos);
+    return;
+  }
+
+  // ── MODO ONLINE ──
   mostrarLoading(true, 'Guardando datos...');
   document.getElementById('btn-guardar').disabled = true;
 
-  google.script.run
-    .withSuccessHandler(function(resultado) {
+  apiGet('guardarDatos', { datos: JSON.stringify(datos) })
+    .then(function(resultado) {
       mostrarLoading(false);
       document.getElementById('btn-guardar').disabled = false;
       if (resultado.exito) {
@@ -1441,17 +1783,7 @@ function guardarDatos() {
             document.getElementById('fecha-input').value = formatDateInput(sigFecha);
             document.getElementById('campo-aves').value = resultado.siguiente.nAves;
             document.getElementById('info-aves').textContent = resultado.siguiente.nAves.toLocaleString();
-            // limpiar campos
-            ['campo-mort','campo-kg','campo-huevos',
-             'campo-chico','campo-mediano','campo-grande',
-             'campo-xl','campo-superxl','campo-jumbo',
-             'campo-sucios','campo-rotos','campo-trizados','campo-sangre'
-            ].forEach(id => document.getElementById(id).value = 0);
-            document.getElementById('observaciones').value = '';
-            document.getElementById('tamano-total').textContent = '0';
-            document.getElementById('tamano-diff').textContent = '';
-            document.getElementById('calidad-total').textContent = '0';
-            document.getElementById('calidad-porc').textContent = '';
+            limpiarFormulario(null);
             onFechaChange();
           }, 1500);
         }
@@ -1459,12 +1791,37 @@ function guardarDatos() {
         mostrarToast(resultado.mensaje, 'error');
       }
     })
-    .withFailureHandler(function(error) {
+    .catch(function(error) {
       mostrarLoading(false);
       document.getElementById('btn-guardar').disabled = false;
-      mostrarToast('Error: ' + error.message, 'error');
-    })
-    .guardarDatos(datos);
+      agregarACola(datos);
+      mostrarToast('📥 Sin respuesta del servidor — guardado localmente', 'error');
+      limpiarFormulario(datos);
+    });
+}
+
+function limpiarFormulario(datos) {
+  // Calcular siguiente día si tenemos los datos
+  if (datos) {
+    const sigFecha = new Date(datos.fecha);
+    sigFecha.setDate(sigFecha.getDate() + 1);
+    document.getElementById('fecha-input').value = formatDateInput(sigFecha);
+    document.getElementById('campo-aves').value  = datos.nAves - datos.mortalidad;
+    document.getElementById('info-aves').textContent = (datos.nAves - datos.mortalidad).toLocaleString();
+  }
+  ['campo-mort','campo-kg','campo-huevos',
+   'campo-chico','campo-mediano','campo-grande',
+   'campo-xl','campo-superxl','campo-jumbo',
+   'campo-sucios','campo-rotos','campo-trizados','campo-sangre'
+  ].forEach(id => document.getElementById(id).value = 0);
+  document.getElementById('observaciones').value = '';
+  document.getElementById('tamano-total').textContent = '0';
+  document.getElementById('tamano-diff').textContent  = '';
+  document.getElementById('calidad-total').textContent = '0';
+  document.getElementById('calidad-porc').textContent  = '';
+  delete mortLog[loteActual.nombre];
+  actualizarLogMort();
+  onFechaChange();
 }
 
 // ============================================
@@ -1503,18 +1860,17 @@ let configData = null;
 
 function abrirConfiguracion() {
   mostrarLoading(true, 'Cargando configuración...');
-  google.script.run
-    .withSuccessHandler(function(config) {
+  apiGet('obtenerConfig')
+    .then(function(config) {
       mostrarLoading(false);
       configData = config;
       renderizarConfiguracion(config);
       document.getElementById('modal-config').classList.add('visible');
     })
-    .withFailureHandler(function(error) {
+    .catch(function(error) {
       mostrarLoading(false);
       mostrarToast('Error al cargar configuración', 'error');
-    })
-    .obtenerConfiguracion();
+    });
 }
 
 function cerrarConfiguracion() {
@@ -1569,8 +1925,8 @@ let datosGraficos = null;
 function abrirGraficos() {
   if (!loteActual) { mostrarToast('Seleccione un lote primero', 'error'); return; }
   mostrarLoading(true, 'Cargando datos...');
-  google.script.run
-    .withSuccessHandler(function(resultado) {
+  apiGet('obtenerGraficos', { nombreHoja: loteActual.nombre })
+    .then(function(resultado) {
       mostrarLoading(false);
       if (resultado.exito) {
         if (resultado.datos.length === 0) {
@@ -1588,11 +1944,10 @@ function abrirGraficos() {
         mostrarToast(resultado.mensaje || 'Error al cargar datos', 'error');
       }
     })
-    .withFailureHandler(function(error) {
+    .catch(function(error) {
       mostrarLoading(false);
       mostrarToast('Error: ' + error.message, 'error');
-    })
-    .obtenerDatosGraficos(loteActual.nombre);
+    });
 }
 
 function cerrarGraficos() {
@@ -1612,8 +1967,8 @@ function cambiarGrafico(tipo) {
 function renderizarGraficoCurva() {
   const ctx = document.getElementById('chart-curva').getContext('2d');
   if (chartCurva) chartCurva.destroy();
-  const labels        = datosGraficos.map(d => 'Sem ' + d.edadSemanas);
-  const posturaReal   = datosGraficos.map(d => (d.porcentajePostura * 100).toFixed(1));
+  const labels          = datosGraficos.map(d => 'Sem ' + d.edadSemanas);
+  const posturaReal     = datosGraficos.map(d => (d.porcentajePostura * 100).toFixed(1));
   const posturaEsperada = datosGraficos.map(d => (d.porcentajeEsperado * 100).toFixed(1));
   chartCurva = new Chart(ctx, {
     type: 'line',
@@ -1651,8 +2006,8 @@ function renderizarGraficoAcumulado() {
     data: {
       labels,
       datasets: [
-        { label: 'Huevos Acumulados', data: huevosAcum, borderColor: '#f9a825', backgroundColor: 'rgba(249,168,37,0.1)', borderWidth: 3, tension: 0.4, fill: true, yAxisID: 'y' },
-        { label: 'Kg Alimento Acumulado', data: alimentoAcum, borderColor: '#4caf50', backgroundColor: 'rgba(76,175,80,0.1)', borderWidth: 3, tension: 0.4, fill: true, yAxisID: 'y1' }
+        { label: 'Huevos Acumulados',    data: huevosAcum,   borderColor: '#f9a825', backgroundColor: 'rgba(249,168,37,0.1)', borderWidth: 3, tension: 0.4, fill: true, yAxisID: 'y' },
+        { label: 'Kg Alimento Acumulado', data: alimentoAcum, borderColor: '#4caf50', backgroundColor: 'rgba(76,175,80,0.1)',  borderWidth: 3, tension: 0.4, fill: true, yAxisID: 'y1' }
       ]
     },
     options: {
@@ -1660,7 +2015,7 @@ function renderizarGraficoAcumulado() {
       interaction: { intersect: false, mode: 'index' },
       plugins: { legend: { display: true, position: 'top' } },
       scales: {
-        y:  { type:'linear', display:true, position:'left',  title:{ display:true, text:'Huevos' }, ticks:{ callback: v => v.toLocaleString() } },
+        y:  { type:'linear', display:true, position:'left',  title:{ display:true, text:'Huevos' },     ticks:{ callback: v => v.toLocaleString() } },
         y1: { type:'linear', display:true, position:'right', title:{ display:true, text:'Kg Alimento' }, ticks:{ callback: v => v.toLocaleString() }, grid:{ drawOnChartArea:false } },
         x:  { title:{ display:true, text:'Edad (semanas)' } }
       }
@@ -1671,17 +2026,14 @@ function renderizarGraficoAcumulado() {
 function renderizarGraficoTamano() {
   const ctx = document.getElementById('chart-tamano').getContext('2d');
   if (chartTamano) chartTamano.destroy();
-
-  // Acumular totales por categoría de tamaño
   const totales = {
-    Chico:    datosGraficos.reduce((s, d) => s + (d.chico   || 0), 0),
-    Mediano:  datosGraficos.reduce((s, d) => s + (d.mediano || 0), 0),
-    Grande:   datosGraficos.reduce((s, d) => s + (d.grande  || 0), 0),
-    XL:       datosGraficos.reduce((s, d) => s + (d.xl      || 0), 0),
-    'Super XL': datosGraficos.reduce((s, d) => s + (d.superXl || 0), 0),
-    Jumbo:    datosGraficos.reduce((s, d) => s + (d.jumbo   || 0), 0)
+    Chico:      datosGraficos.reduce((s, d) => s + (d.chico    || 0), 0),
+    Mediano:    datosGraficos.reduce((s, d) => s + (d.mediano  || 0), 0),
+    Grande:     datosGraficos.reduce((s, d) => s + (d.grande   || 0), 0),
+    XL:         datosGraficos.reduce((s, d) => s + (d.xl       || 0), 0),
+    'Super XL': datosGraficos.reduce((s, d) => s + (d.superXl  || 0), 0),
+    Jumbo:      datosGraficos.reduce((s, d) => s + (d.jumbo    || 0), 0)
   };
-
   chartTamano = new Chart(ctx, {
     type: 'doughnut',
     data: {
@@ -1712,8 +2064,8 @@ function renderizarGraficoTamano() {
 }
 
 function renderizarEstadisticas() {
-  const totalRegistros = datosGraficos.length;
-  const totalHuevos    = datosGraficos.reduce((s, d) => s + d.nHuevos, 0);
+  const totalRegistros   = datosGraficos.length;
+  const totalHuevos      = datosGraficos.reduce((s, d) => s + d.nHuevos, 0);
   const promedioPostura  = datosGraficos.reduce((s, d) => s + (d.porcentajePostura * 100), 0) / totalRegistros;
   const promedioDiferencia = datosGraficos.reduce((s, d) => s + (d.diferencia * 100), 0) / totalRegistros;
 
@@ -1731,35 +2083,35 @@ function renderizarEstadisticas() {
 function calcularKPIs() {
   if (!datosGraficos || datosGraficos.length === 0) return;
 
-  const ultimoDia = datosGraficos[datosGraficos.length - 1];
+  const ultimoDia    = datosGraficos[datosGraficos.length - 1];
   const puestaDiaria = (ultimoDia.porcentajePostura * 100);
   document.getElementById('kpi-puesta-diaria').textContent = puestaDiaria.toFixed(1) + '%';
 
-  const difDiaria = (ultimoDia.diferencia * 100);
-  const trendDiaria = document.getElementById('kpi-trend-diaria');
-  if (difDiaria > 0) { trendDiaria.textContent = '▲ ' + difDiaria.toFixed(1) + '% vs esperado'; trendDiaria.className = 'kpi-trend positivo'; }
+  const difDiaria    = (ultimoDia.diferencia * 100);
+  const trendDiaria  = document.getElementById('kpi-trend-diaria');
+  if (difDiaria > 0)      { trendDiaria.textContent = '▲ ' + difDiaria.toFixed(1) + '% vs esperado'; trendDiaria.className = 'kpi-trend positivo'; }
   else if (difDiaria < 0) { trendDiaria.textContent = '▼ ' + Math.abs(difDiaria).toFixed(1) + '% vs esperado'; trendDiaria.className = 'kpi-trend negativo'; }
-  else { trendDiaria.textContent = '= En objetivo'; trendDiaria.className = 'kpi-trend neutral'; }
+  else                    { trendDiaria.textContent = '= En objetivo'; trendDiaria.className = 'kpi-trend neutral'; }
 
-  const ultimos7 = datosGraficos.slice(-7);
-  const puestaSemanal  = ultimos7.reduce((s, d) => s + (d.porcentajePostura * 100), 0) / ultimos7.length;
+  const ultimos7        = datosGraficos.slice(-7);
+  const puestaSemanal   = ultimos7.reduce((s, d) => s + (d.porcentajePostura * 100), 0) / ultimos7.length;
   const esperadoSemanal = ultimos7.reduce((s, d) => s + (d.porcentajeEsperado * 100), 0) / ultimos7.length;
-  const difSemanal = puestaSemanal - esperadoSemanal;
+  const difSemanal      = puestaSemanal - esperadoSemanal;
   document.getElementById('kpi-puesta-semanal').textContent = puestaSemanal.toFixed(1) + '%';
   const trendSemanal = document.getElementById('kpi-trend-semanal');
-  if (difSemanal > 0) { trendSemanal.textContent = '▲ ' + difSemanal.toFixed(1) + '% vs esperado'; trendSemanal.className = 'kpi-trend positivo'; }
+  if (difSemanal > 0)      { trendSemanal.textContent = '▲ ' + difSemanal.toFixed(1) + '% vs esperado'; trendSemanal.className = 'kpi-trend positivo'; }
   else if (difSemanal < 0) { trendSemanal.textContent = '▼ ' + Math.abs(difSemanal).toFixed(1) + '% vs esperado'; trendSemanal.className = 'kpi-trend negativo'; }
-  else { trendSemanal.textContent = '= En objetivo'; trendSemanal.className = 'kpi-trend neutral'; }
+  else                     { trendSemanal.textContent = '= En objetivo'; trendSemanal.className = 'kpi-trend neutral'; }
 
-  const totalHuevos = datosGraficos.reduce((s, d) => s + d.nHuevos, 0);
+  const totalHuevos      = datosGraficos.reduce((s, d) => s + d.nHuevos, 0);
   const totalNoVendibles = datosGraficos.reduce((s, d) => s + (d.sucios||0) + (d.rotos||0) + (d.trizados||0) + (d.sangre||0), 0);
-  const porcNoVendibles = totalHuevos > 0 ? (totalNoVendibles / totalHuevos * 100) : 0;
-  document.getElementById('kpi-no-vendibles').textContent = porcNoVendibles.toFixed(1) + '%';
+  const porcNoVendibles  = totalHuevos > 0 ? (totalNoVendibles / totalHuevos * 100) : 0;
+  document.getElementById('kpi-no-vendibles').textContent       = porcNoVendibles.toFixed(1) + '%';
   document.getElementById('kpi-no-vendibles-total').textContent = totalNoVendibles.toLocaleString() + ' huevos';
 
-  const totalKgAlim = ultimos7.reduce((s, d) => s + d.kgAlimento, 0);
+  const totalKgAlim    = ultimos7.reduce((s, d) => s + d.kgAlimento, 0);
   const totalHuevosSem = ultimos7.reduce((s, d) => s + d.nHuevos, 0);
-  const convHuevo = totalHuevosSem > 0 ? (totalKgAlim / totalHuevosSem) : 0;
+  const convHuevo      = totalHuevosSem > 0 ? (totalKgAlim / totalHuevosSem) : 0;
   document.getElementById('kpi-conv-huevo').textContent = convHuevo.toFixed(3) + ' kg';
 
   aplicarColoresKPI(puestaDiaria, puestaSemanal, porcNoVendibles, convHuevo);
@@ -1782,6 +2134,17 @@ function actualizarBotonGraficos() {
 <div style="position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,#1565c0 0%,#1976d2 100%);color:white;text-align:center;padding:8px 16px;font-size:12px;font-weight:500;z-index:999;box-shadow:0 -2px 8px rgba(0,0,0,0.1);">
   Creado por <strong>Andrés Lazo Escobar</strong>, Médico Veterinario
 </div>
+
+<script>
+// Registrar Service Worker para PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/registro/sw.js')
+      .then(function(reg) { console.log('SW registrado:', reg.scope); })
+      .catch(function(err) { console.log('SW error:', err); });
+  });
+}
+</script>
 
 </body>
 </html>
