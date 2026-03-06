@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Praderas - Clasificación</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :root {
+    --azul: #1976d2;
+    --azul-claro: #42a5f5;
+    --azul-oscuro: #1565c0;
+    --verde: #2e7d32;
+    --amarillo: #f9a825;
+    --rojo: #c62828;
+    --gris: #546e7a;
+    --gris-claro: #eceff1;
+    --sombra: 0 2px 8px rgba(0,0,0,0.12);
+  }
+
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f0f4f8;
+    min-height: 100vh;
+    color: #37474f;
+    padding-bottom: 60px;
+  }
+
+  .header {
+    background: linear-gradient(135deg, var(--azul-oscuro) 0%, var(--azul) 100%);
+    color: white;
+    padding: 20px 16px 28px;
+    position: relative;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 14px;
+    background: #f0f4f8;
+    border-radius: 14px 14px 0 0;
+  }
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-icon {
+    font-size: 32px;
+  }
+  .header-text {
+    flex: 1;
+  }
+  .header-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .header-sub {
+    font-size: 13px;
+    opacity: 0.85;
+    margin-top: 2px;
+  }
+
+  .container {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 0 12px;
+  }
+
+  .card {
+    background: white;
+    border-radius: 14px;
+    box-shadow: var(--sombra);
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .card-header {
+    background: var(--gris-claro);
+    padding: 11px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid #dde1e7;
+  }
+  .card-body {
+    padding: 14px 16px;
+  }
+
+  .pabellon-selector {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .pabellon-btn {
+    flex: 1;
+    min-width: 85px;
+    padding: 12px 8px;
+    border: 2px solid #cfd8dc;
+    border-radius: 10px;
+    background: white;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gris);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+    outline: none;
+  }
+  .pabellon-btn:active {
+    transform: scale(0.95);
+  }
+  .pabellon-btn.activo {
+    border-color: var(--azul);
+    background: var(--azul);
+    color: white;
+    box-shadow: 0 3px 10px rgba(25,118,210,0.35);
+  }
+  .pabellon-info {
+    font-size: 11px;
+    font-weight: 400;
+    opacity: 0.8;
+    display: block;
+    margin-top: 3px;
+  }
+
+  .fechas-pendientes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .fecha-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .fecha-item:hover {
+    border-color: var(--azul-claro);
+    background: #f5f9ff;
+  }
+  .fecha-item.activo {
+    border-color: var(--azul);
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  }
+  .fecha-radio {
+    width: 20px;
+    height: 20px;
+    margin-right: 12px;
+    cursor: pointer;
+  }
+  .fecha-info {
+    flex: 1;
+  }
+  .fecha-texto {
+    font-size: 15px;
+    font-weight: 600;
+    color: #263238;
+  }
+  .fecha-detalle {
+    font-size: 12px;
+    color: var(--gris);
+    margin-top: 2px;
+  }
+
+  .mensaje-info {
+    text-align: center;
+    padding: 24px;
+    color: var(--gris);
+    font-size: 14px;
+  }
+  .mensaje-info.exito {
+    color: var(--verde);
+  }
+
+  .clasificacion-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .clasificacion-item {
+    background: #fafbfc;
+    border: 1px solid #e8ecee;
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .clasificacion-label {
+    font-size: 11px;
+    color: var(--gris);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .clasificacion-peso {
+    font-size: 10px;
+    color: #90a4ae;
+    margin-top: 2px;
+  }
+  .clasificacion-input {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #cfd8dc;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    color: #37474f;
+    outline: none;
+    background: white;
+    transition: all 0.2s;
+  }
+  .clasificacion-input:focus {
+    border-color: var(--azul);
+    box-shadow: 0 0 0 3px rgba(25,118,210,0.15);
+  }
+
+  .contador-suma {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 12px;
+    text-align: center;
+  }
+  .contador-label {
+    font-size: 11px;
+    color: var(--gris);
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .contador-valor {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--azul-oscuro);
+  }
+  .estado-suma {
+    margin-top: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    display: inline-block;
+  }
+  .suma-correcta {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+  .suma-incorrecta {
+    background: #ffebee;
+    color: #c62828;
+  }
+
+  .btn-guardar {
+    width: 100%;
+    padding: 17px;
+    background: linear-gradient(135deg, var(--azul) 0%, var(--azul-claro) 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(25,118,210,0.4);
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+  .btn-guardar:active:not(:disabled) {
+    transform: scale(0.97);
+    box-shadow: 0 2px 8px rgba(25,118,210,0.35);
+  }
+  .btn-guardar:disabled {
+    background: #90a4ae;
+    box-shadow: none;
+    cursor: default;
+    opacity: 0.7;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 64px;
+    left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: #263238;
+    color: white;
+    padding: 15px 26px;
+    border-radius: 11px;
+    font-size: 15px;
+    font-weight: 500;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 1000;
+    max-width: 90vw;
+    text-align: center;
+    white-space: pre-line;
+    line-height: 1.4;
+  }
+  .toast.visible {
+    transform: translateX(-50%) translateY(0);
+  }
+  .toast.exito {
+    background: var(--verde);
+  }
+  .toast.error {
+    background: var(--rojo);
+  }
+
+  .loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .loading-overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  .loading-text {
+    color: white;
+    margin-top: 16px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .seccion-oculta {
+    display: none;
+  }
+/* ========================================== */
+/* GRÁFICOS Y KPIS */
+/* ========================================== */
+
+.btn-graficos {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.btn-graficos:active {
+  transform: scale(0.97);
+}
+
+.btn-graficos:disabled {
+  background: #90a4ae;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.modal-graficos {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1002;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  padding: 12px;
+}
+
+.modal-graficos.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal-graficos-content {
+  background: white;
+  border-radius: 16px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+.modal-graficos-header {
+  background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+  color: white;
+  padding: 16px 20px;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.modal-graficos-title {
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-graficos-body {
+  padding: 20px;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.kpis-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.kpi-icon {
+  font-size: 40px;
+}
+
+.kpi-content {
+  flex: 1;
+}
+
+.kpi-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #546e7a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #263238;
+}
+
+.kpi-subtitle {
+  font-size: 11px;
+  color: #78909c;
+  margin-top: 2px;
+}
+
+.kpi-trend {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.kpi-trend.positivo {
+  color: #2e7d32;
+}
+
+.kpi-trend.negativo {
+  color: #c62828;
+}
+
+.kpi-card.excelente {
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+}
+
+.kpi-card.bueno {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+}
+
+.kpi-card.alerta {
+  background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+}
+
+.graficos-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.grafico-tab {
+  flex: 1;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #757575;
+  cursor: pointer;
+}
+
+.grafico-tab.activo {
+  color: #1976d2;
+  border-bottom-color: #1976d2;
+}
+
+.grafico-container {
+  position: relative;
+  height: 400px;
+  margin-bottom: 20px;
+  display: none;
+}
+
+.grafico-container.visible {
+  display: block;
+}  
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-content">
+    <div class="header-icon">⚖️</div>
+    <div class="header-text">
+      <div class="header-title">Praderas - Clasificación de Huevos</div>
+      <div class="header-sub">Clasificación por peso y calidad</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- SELECTOR DE PABELLÓN -->
+  <div class="card">
+    <div class="card-header">🏢 Seleccionar Pabellón</div>
+    <div class="card-body">
+      <div class="pabellon-selector" id="pabellon-selector">
+        <div style="color: #999; text-align: center; width: 100%; padding: 20px;">
+          Cargando pabellones...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FECHAS PENDIENTES -->
+  <div class="card">
+    <div class="card-header">📅 Fechas Pendientes de Clasificar</div>
+    <div class="card-body">
+      <div id="fechas-container">
+        <div class="mensaje-info">Seleccione un pabellón</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLASIFICACIÓN POR PESO -->
+  <div class="card seccion-oculta" id="card-clasificacion">
+    <div class="card-header">⚖️ Clasificación por Peso (Norma Chilena)</div>
+    <div class="card-body">
+      <div class="clasificacion-grid">
+        <div class="clasificacion-item">
+          <div class="clasificacion-label">Mediano</div>
+          <div class="clasificacion-peso">47-54g</div>
+          <input type="number" class="clasificacion-input" id="campo-mediano" min="0" value="0" inputmode="numeric">
+        </div>
+        <div class="clasificacion-item">
+          <div class="clasificacion-label">Grande</div>
+          <div class="clasificacion-peso">54-61g</div>
+          <input type="number" class="clasificacion-input" id="campo-grande" min="0" value="0" inputmode="numeric">
+        </div>
+        <div class="clasificacion-item">
+          <div class="clasificacion-label">Extra Grande</div>
+          <div class="clasificacion-peso">61-68g</div>
+          <input type="number" class="clasificacion-input" id="campo-xl" min="0" value="0" inputmode="numeric">
+        </div>
+        <div class="clasificacion-item">
+          <div class="clasificacion-label">Super Extra</div>
+          <div class="clasificacion-peso">+68g</div>
+          <input type="number" class="clasificacion-input" id="campo-super-xl" min="0" value="0" inputmode="numeric">
+        </div>
+        <div class="clasificacion-item" style="grid-column: 1 / -1;">
+          <div class="clasificacion-label">Jumbo</div>
+          <div class="clasificacion-peso">+76g</div>
+          <input type="number" class="clasificacion-input" id="campo-jumbo" min="0" value="0" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HUEVOS NO VENDIBLES -->
+  <div class="card seccion-oculta" id="card-no-vendibles">
+    <div class="card-header">❌ Huevos No Vendibles</div>
+    <div class="card-body">
+      <div class="clasificacion-grid">
+        <div class="clasificacion-item">
+          <div class="clasificacion-label">Deformes</div>
+          <input type="number" class="clasificacion-input" id="campo-deformes" min="0" value="0" inputmode="numeric">
+        </div>
+        <div class="clasificacion-item">
+          <div class="clasificacion-label">Rotos</div>
+          <input type="number" class="clasificacion-input" id="campo-rotos" min="0" value="0" inputmode="numeric">
+        </div>
+        <div class="clasificacion-item">
+          <div class="clasificacion-label">Sucios</div>
+          <input type="number" class="clasificacion-input" id="campo-sucios" min="0" value="0" inputmode="numeric">
+        </div>
+        <div class="clasificacion-item">
+          <div class="clasificacion-label">Con Sangre</div>
+          <input type="number" class="clasificacion-input" id="campo-sangre" min="0" value="0" inputmode="numeric">
+        </div>
+      </div>
+
+      <!-- CONTADOR DE SUMA -->
+      <div class="contador-suma">
+        <div class="contador-label">Total Clasificados</div>
+        <div class="contador-valor" id="total-clasificados">0</div>
+        <div class="estado-suma" id="estado-suma">Ingrese valores</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTÓN GUARDAR -->
+  <button class="btn-guardar seccion-oculta" id="btn-guardar" onclick="guardarClasificacion()" type="button">
+    ✅ Guardar Clasificación
+  </button>
+  <!-- BOTÓN VER GRÁFICOS -->
+  <button class="btn-graficos seccion-oculta" id="btn-graficos" onclick="abrirGraficos()" type="button" disabled>
+    📊 Ver Gráficos
+  </button>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="loading-overlay" id="loading">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loading-text">Cargando...</div>
+</div>
+<!-- MODAL GRÁFICOS -->
+<div class="modal-graficos" id="modal-graficos">
+  <div class="modal-graficos-content">
+    <div class="modal-graficos-header">
+      <div class="modal-graficos-title">
+        <span>📊</span>
+        <span id="titulo-graficos">Gráficos - Pabellón X</span>
+      </div>
+      <button class="modal-close" onclick="cerrarGraficos()" type="button">✕</button>
+    </div>
+    <div class="modal-graficos-body">
+      
+      <!-- KPIs -->
+      <div class="kpis-container">
+        <div class="kpi-card">
+          <div class="kpi-icon">🥚</div>
+          <div class="kpi-content">
+            <div class="kpi-label">Puesta Diaria</div>
+            <div class="kpi-value" id="kpi-puesta-diaria">--</div>
+            <div class="kpi-trend" id="kpi-trend-diaria"></div>
+          </div>
+        </div>
+        
+        <div class="kpi-card">
+          <div class="kpi-icon">📅</div>
+          <div class="kpi-content">
+            <div class="kpi-label">Puesta Semanal</div>
+            <div class="kpi-value" id="kpi-puesta-semanal">--</div>
+            <div class="kpi-trend" id="kpi-trend-semanal"></div>
+          </div>
+        </div>
+        
+        <div class="kpi-card">
+          <div class="kpi-icon">❌</div>
+          <div class="kpi-content">
+            <div class="kpi-label">No Vendibles</div>
+            <div class="kpi-value" id="kpi-no-vendibles">--</div>
+            <div class="kpi-subtitle" id="kpi-no-vendibles-total">-- huevos</div>
+          </div>
+        </div>
+        
+        <div class="kpi-card">
+          <div class="kpi-icon">⚖️</div>
+          <div class="kpi-content">
+            <div class="kpi-label">Conv. kg/huevo</div>
+            <div class="kpi-value" id="kpi-conv-huevo">--</div>
+            <div class="kpi-subtitle">Últimos 7 días</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="graficos-selector">
+        <button class="grafico-tab activo" onclick="cambiarGrafico('curva')" id="tab-curva" type="button">
+          📈 Curva de Postura
+        </button>
+        <button class="grafico-tab" onclick="cambiarGrafico('distribucion')" id="tab-distribucion" type="button">
+          🥚 Distribución
+        </button>
+      </div>
+
+      <!-- GRÁFICO CURVA -->
+      <div class="grafico-container visible" id="container-curva">
+        <canvas id="chart-curva"></canvas>
+      </div>
+
+      <!-- GRÁFICO DISTRIBUCIÓN -->
+      <div class="grafico-container" id="container-distribucion">
+        <canvas id="chart-distribucion"></canvas>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+let pabellones = [];
+let pabellonActual = null;
+let fechasPendientes = [];
+let fechaSeleccionada = null;
+
+window.onload = function() {
+  mostrarLoading(true, 'Cargando pabellones...');
+  google.script.run
+    .withSuccessHandler(function(pabellonesData) {
+      mostrarLoading(false);
+      pabellones = pabellonesData;
+      renderPabellones();
+    })
+    .withFailureHandler(function(error) {
+      mostrarLoading(false);
+      mostrarToast('Error al cargar pabellones: ' + error.message, 'error');
+    })
+    .obtenerPabellonesActivos();
+  
+  // Listeners para actualizar suma
+  document.querySelectorAll('.clasificacion-input').forEach(input => {
+    input.addEventListener('input', actualizarContador);
+  });
+};
+
+function renderPabellones() {
+  const container = document.getElementById('pabellon-selector');
+  container.innerHTML = '';
+  
+  if (pabellones.length === 0) {
+    container.innerHTML = '<div style="color: #999; text-align: center; width: 100%; padding: 20px;">No hay pabellones activos</div>';
+    return;
+  }
+  
+  pabellones.forEach((pabellon, idx) => {
+    const edadSem = calcularEdad(pabellon.fechaNacimiento);
+    const btn = document.createElement('button');
+    btn.className = 'pabellon-btn';
+    btn.id = `btn-pabellon-${idx}`;
+    btn.type = 'button';
+    btn.onclick = () => seleccionarPabellon(idx);
+    btn.innerHTML = `
+      ${pabellon.nombre}
+      <span class="pabellon-info">${edadSem} sem</span>
+    `;
+    container.appendChild(btn);
+  });
+}
+
+function seleccionarPabellon(idx) {
+  document.querySelectorAll('.pabellon-btn').forEach(btn => btn.classList.remove('activo'));
+  document.getElementById(`btn-pabellon-${idx}`).classList.add('activo');
+  
+  pabellonActual = pabellones[idx];
+  fechaSeleccionada = null;
+  
+  // Ocultar secciones de clasificación
+  document.getElementById('card-clasificacion').classList.add('seccion-oculta');
+  document.getElementById('card-no-vendibles').classList.add('seccion-oculta');
+  document.getElementById('btn-guardar').classList.add('seccion-oculta');
+  
+  actualizarBotonGraficos();
+  
+  cargarFechasPendientes();
+}
+
+function cargarFechasPendientes() {
+  if (!pabellonActual) return;
+  
+  mostrarLoading(true, 'Cargando fechas pendientes...');
+  
+  google.script.run
+    .withSuccessHandler(function(fechas) {
+      mostrarLoading(false);
+      fechasPendientes = fechas;
+      renderFechasPendientes();
+    })
+    .withFailureHandler(function(error) {
+      mostrarLoading(false);
+      mostrarToast('Error al cargar fechas: ' + error.message, 'error');
+    })
+    .obtenerFechasPendientes(pabellonActual.nombre);
+}
+
+function renderFechasPendientes() {
+  const container = document.getElementById('fechas-container');
+  container.innerHTML = '';
+  
+  if (fechasPendientes.length === 0) {
+    container.innerHTML = '<div class="mensaje-info exito">✅ No hay fechas pendientes de clasificar</div>';
+    return;
+  }
+  
+  const divFechas = document.createElement('div');
+  divFechas.className = 'fechas-pendientes';
+  
+  fechasPendientes.forEach((fecha, idx) => {
+    const fechaObj = new Date(fecha.fecha);
+    const fechaStr = fechaObj.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+    
+    const div = document.createElement('div');
+    div.className = 'fecha-item';
+    div.id = `fecha-item-${idx}`;
+    div.onclick = () => seleccionarFecha(idx);
+    div.innerHTML = `
+      <input type="radio" name="fecha" class="fecha-radio" id="radio-${idx}">
+      <div class="fecha-info">
+        <div class="fecha-texto">${fechaStr} - ${pabellonActual.nombre}</div>
+        <div class="fecha-detalle">${fecha.nHuevos.toLocaleString()} huevos totales</div>
+      </div>
+    `;
+    divFechas.appendChild(div);
+  });
+  
+  container.appendChild(divFechas);
+}
+
+function seleccionarFecha(idx) {
+  // Actualizar radio buttons y estilos
+  document.querySelectorAll('.fecha-item').forEach(item => item.classList.remove('activo'));
+  document.getElementById(`fecha-item-${idx}`).classList.add('activo');
+  document.getElementById(`radio-${idx}`).checked = true;
+  
+  fechaSeleccionada = fechasPendientes[idx];
+  
+  // Mostrar secciones de clasificación
+  document.getElementById('card-clasificacion').classList.remove('seccion-oculta');
+  document.getElementById('card-no-vendibles').classList.remove('seccion-oculta');
+  document.getElementById('btn-guardar').classList.remove('seccion-oculta');
+  
+  // Limpiar campos
+  limpiarCampos();
+  
+  // Actualizar contador
+  actualizarContador();
+}
+
+function limpiarCampos() {
+  document.getElementById('campo-mediano').value = 0;
+  document.getElementById('campo-grande').value = 0;
+  document.getElementById('campo-xl').value = 0;
+  document.getElementById('campo-super-xl').value = 0;
+  document.getElementById('campo-jumbo').value = 0;
+  document.getElementById('campo-deformes').value = 0;
+  document.getElementById('campo-rotos').value = 0;
+  document.getElementById('campo-sucios').value = 0;
+  document.getElementById('campo-sangre').value = 0;
+}
+
+function actualizarContador() {
+  const mediano = parseInt(document.getElementById('campo-mediano').value) || 0;
+  const grande = parseInt(document.getElementById('campo-grande').value) || 0;
+  const xl = parseInt(document.getElementById('campo-xl').value) || 0;
+  const superXl = parseInt(document.getElementById('campo-super-xl').value) || 0;
+  const jumbo = parseInt(document.getElementById('campo-jumbo').value) || 0;
+  const deformes = parseInt(document.getElementById('campo-deformes').value) || 0;
+  const rotos = parseInt(document.getElementById('campo-rotos').value) || 0;
+  const sucios = parseInt(document.getElementById('campo-sucios').value) || 0;
+  const sangre = parseInt(document.getElementById('campo-sangre').value) || 0;
+  
+  const total = mediano + grande + xl + superXl + jumbo + deformes + rotos + sucios + sangre;
+  const totalHuevos = fechaSeleccionada ? fechaSeleccionada.nHuevos : 0;
+  
+  document.getElementById('total-clasificados').textContent = total.toLocaleString();
+  
+  const estadoDiv = document.getElementById('estado-suma');
+  if (!fechaSeleccionada) {
+    estadoDiv.textContent = 'Seleccione una fecha';
+    estadoDiv.className = 'estado-suma';
+  } else if (total === totalHuevos) {
+    estadoDiv.textContent = '✅ SUMA CORRECTA';
+    estadoDiv.className = 'estado-suma suma-correcta';
+  } else {
+    const diff = totalHuevos - total;
+    estadoDiv.textContent = `⚠️ ${diff > 0 ? 'FALTAN' : 'SOBRAN'}: ${Math.abs(diff)} huevos`;
+    estadoDiv.className = 'estado-suma suma-incorrecta';
+  }
+}
+
+function guardarClasificacion() {
+  if (!pabellonActual) {
+    mostrarToast('Seleccione un pabellón', 'error');
+    return;
+  }
+  
+  if (!fechaSeleccionada) {
+    mostrarToast('Seleccione una fecha pendiente', 'error');
+    return;
+  }
+  
+  const mediano = parseInt(document.getElementById('campo-mediano').value) || 0;
+  const grande = parseInt(document.getElementById('campo-grande').value) || 0;
+  const xl = parseInt(document.getElementById('campo-xl').value) || 0;
+  const superXl = parseInt(document.getElementById('campo-super-xl').value) || 0;
+  const jumbo = parseInt(document.getElementById('campo-jumbo').value) || 0;
+  const deformes = parseInt(document.getElementById('campo-deformes').value) || 0;
+  const rotos = parseInt(document.getElementById('campo-rotos').value) || 0;
+  const sucios = parseInt(document.getElementById('campo-sucios').value) || 0;
+  const sangre = parseInt(document.getElementById('campo-sangre').value) || 0;
+  
+  const total = mediano + grande + xl + superXl + jumbo + deformes + rotos + sucios + sangre;
+  
+  if (total !== fechaSeleccionada.nHuevos) {
+    mostrarToast(`Error de suma\nTotal huevos: ${fechaSeleccionada.nHuevos}\nClasificados: ${total}\nDiferencia: ${fechaSeleccionada.nHuevos - total}`, 'error');
+    return;
+  }
+  
+  const datos = {
+    pabellon: pabellonActual.nombre,
+    fecha: fechaSeleccionada.fecha,
+    mediano: mediano,
+    grande: grande,
+    extraGrande: xl,
+    superExtra: superXl,
+    jumbo: jumbo,
+    deformes: deformes,
+    rotos: rotos,
+    sucios: sucios,
+    sangre: sangre
+  };
+  
+  mostrarLoading(true, 'Guardando clasificación...');
+  document.getElementById('btn-guardar').disabled = true;
+  
+  google.script.run
+    .withSuccessHandler(function(resultado) {
+      mostrarLoading(false);
+      document.getElementById('btn-guardar').disabled = false;
+      
+      if (resultado.exito) {
+        mostrarToast(resultado.mensaje, 'exito');
+        
+        // Recargar fechas pendientes
+        setTimeout(() => {
+          cargarFechasPendientes();
+          limpiarCampos();
+          document.getElementById('card-clasificacion').classList.add('seccion-oculta');
+          document.getElementById('card-no-vendibles').classList.add('seccion-oculta');
+          document.getElementById('btn-guardar').classList.add('seccion-oculta');
+          fechaSeleccionada = null;
+        }, 1500);
+      } else {
+        mostrarToast(resultado.mensaje, 'error');
+      }
+    })
+    .withFailureHandler(function(error) {
+      mostrarLoading(false);
+      document.getElementById('btn-guardar').disabled = false;
+      mostrarToast('Error: ' + error.message, 'error');
+    })
+    .guardarClasificacion(datos);
+}
+
+function calcularEdad(fechaNacTimestamp) {
+  const hoy = new Date();
+  const fechaNac = new Date(fechaNacTimestamp);
+  const dias = (hoy - fechaNac) / (1000 * 60 * 60 * 24);
+  return Math.floor(dias / 7);
+}
+
+function mostrarLoading(mostrar, texto = 'Cargando...') {
+  document.getElementById('loading').classList.toggle('visible', mostrar);
+  document.getElementById('loading-text').textContent = texto;
+}
+
+function mostrarToast(mensaje, tipo) {
+  const toast = document.getElementById('toast');
+  toast.textContent = mensaje;
+  toast.className = 'toast ' + (tipo || '');
+  toast.classList.add('visible');
+  setTimeout(() => toast.classList.remove('visible'), 3500);
+}
+
+// ============================================
+// GRÁFICOS
+// ============================================
+let chartCurva = null;
+let chartDistribucion = null;
+let datosGraficos = null;
+
+function abrirGraficos() {
+  if (!pabellonActual) {
+    mostrarToast('Seleccione un pabellón primero', 'error');
+    return;
+  }
+  
+  mostrarLoading(true, 'Cargando datos...');
+  
+  google.script.run
+    .withSuccessHandler(function(resultado) {
+      mostrarLoading(false);
+      
+      if (resultado.exito) {
+        if (resultado.datos.length === 0) {
+          mostrarToast('No hay datos clasificados para mostrar', 'error');
+          return;
+        }
+        
+        datosGraficos = resultado.datos;
+        document.getElementById('titulo-graficos').textContent = 'Gráficos - ' + pabellonActual.nombre;
+        document.getElementById('modal-graficos').classList.add('visible');
+        
+        renderizarGraficoCurva();
+        renderizarGraficoDistribucion();
+        renderizarKPIs();
+      } else {
+        mostrarToast(resultado.mensaje || 'Error al cargar datos', 'error');
+      }
+    })
+    .withFailureHandler(function(error) {
+      mostrarLoading(false);
+      mostrarToast('Error: ' + error.message, 'error');
+    })
+    .obtenerDatosGraficos(pabellonActual.nombre);
+}
+
+function cerrarGraficos() {
+  document.getElementById('modal-graficos').classList.remove('visible');
+  if (chartCurva) chartCurva.destroy();
+  if (chartDistribucion) chartDistribucion.destroy();
+}
+
+function cambiarGrafico(tipo) {
+  document.querySelectorAll('.grafico-tab').forEach(tab => tab.classList.remove('activo'));
+  document.getElementById('tab-' + tipo).classList.add('activo');
+  
+  document.querySelectorAll('.grafico-container').forEach(c => c.classList.remove('visible'));
+  document.getElementById('container-' + tipo).classList.add('visible');
+}
+
+function renderizarGraficoCurva() {
+  const ctx = document.getElementById('chart-curva').getContext('2d');
+  if (chartCurva) chartCurva.destroy();
+  
+  const labels = datosGraficos.map(d => 'Sem ' + d.edadSemanas);
+  const posturaReal = datosGraficos.map(d => (d.porcentajePostura * 100).toFixed(1));
+  const posturaEsperada = datosGraficos.map(d => (d.porcentajeEsperado * 100).toFixed(1));
+  
+  chartCurva = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: '% Postura Real',
+          data: posturaReal,
+          borderColor: '#2e7d32',
+          backgroundColor: 'rgba(46, 125, 50, 0.1)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true
+        },
+        {
+          label: '% Esperado',
+          data: posturaEsperada,
+          borderColor: '#1976d2',
+          backgroundColor: 'rgba(25, 118, 210, 0.1)',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          tension: 0.4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: { callback: value => value + '%' },
+          title: { display: true, text: '% Postura' }
+        }
+      }
+    }
+  });
+}
+
+function renderizarGraficoDistribucion() {
+  const ctx = document.getElementById('chart-distribucion').getContext('2d');
+  if (chartDistribucion) chartDistribucion.destroy();
+  
+  const totales = {
+    mediano: datosGraficos.reduce((sum, d) => sum + d.mediano, 0),
+    grande: datosGraficos.reduce((sum, d) => sum + d.grande, 0),
+    extraGrande: datosGraficos.reduce((sum, d) => sum + d.extraGrande, 0),
+    superExtra: datosGraficos.reduce((sum, d) => sum + d.superExtra, 0),
+    jumbo: datosGraficos.reduce((sum, d) => sum + d.jumbo, 0),
+    deformes: datosGraficos.reduce((sum, d) => sum + d.deformes, 0),
+    rotos: datosGraficos.reduce((sum, d) => sum + d.rotos, 0),
+    sucios: datosGraficos.reduce((sum, d) => sum + d.sucios, 0),
+    sangre: datosGraficos.reduce((sum, d) => sum + d.sangre, 0)
+  };
+  
+  chartDistribucion = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: ['Mediano', 'Grande', 'Extra Grande', 'Super Extra', 'Jumbo', 'Deformes', 'Rotos', 'Sucios', 'Sangre'],
+      datasets: [{
+        data: [totales.mediano, totales.grande, totales.extraGrande, totales.superExtra, totales.jumbo, 
+               totales.deformes, totales.rotos, totales.sucios, totales.sangre],
+        backgroundColor: ['#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff5722', '#f44336', '#9c27b0', '#673ab7']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' }
+      }
+    }
+  });
+}
+
+function renderizarKPIs() {
+  const ultimoDia = datosGraficos[datosGraficos.length - 1];
+  const puestaDiaria = (ultimoDia.porcentajePostura * 100);
+  document.getElementById('kpi-puesta-diaria').textContent = puestaDiaria.toFixed(1) + '%';
+  
+  const difDiaria = (ultimoDia.diferencia * 100);
+  const trendDiaria = document.getElementById('kpi-trend-diaria');
+  if (difDiaria > 0) {
+    trendDiaria.textContent = '▲ ' + difDiaria.toFixed(1) + '%';
+    trendDiaria.className = 'kpi-trend positivo';
+  } else if (difDiaria < 0) {
+    trendDiaria.textContent = '▼ ' + Math.abs(difDiaria).toFixed(1) + '%';
+    trendDiaria.className = 'kpi-trend negativo';
+  }
+  
+  const ultimos7 = datosGraficos.slice(-7);
+  const puestaSemanal = ultimos7.reduce((sum, d) => sum + (d.porcentajePostura * 100), 0) / ultimos7.length;
+  document.getElementById('kpi-puesta-semanal').textContent = puestaSemanal.toFixed(1) + '%';
+  
+  const totalHuevos = datosGraficos.reduce((sum, d) => sum + d.nHuevos, 0);
+  const totalNoVendibles = datosGraficos.reduce((sum, d) => sum + d.deformes + d.rotos + d.sucios + d.sangre, 0);
+  const porcNoVendibles = (totalNoVendibles / totalHuevos * 100);
+  
+  document.getElementById('kpi-no-vendibles').textContent = porcNoVendibles.toFixed(1) + '%';
+  document.getElementById('kpi-no-vendibles-total').textContent = totalNoVendibles.toLocaleString() + ' huevos';
+  
+  const totalKg = ultimos7.reduce((sum, d) => sum + d.kgAlimento, 0);
+  const totalHuevosSem = ultimos7.reduce((sum, d) => sum + d.nHuevos, 0);
+  const conv = totalHuevosSem > 0 ? (totalKg / totalHuevosSem) : 0;
+  
+  document.getElementById('kpi-conv-huevo').textContent = conv.toFixed(3) + ' kg';
+  
+  // Colores
+  const cards = document.querySelectorAll('.kpi-card');
+  cards[0].className = 'kpi-card ' + (puestaDiaria >= 90 ? 'excelente' : puestaDiaria >= 80 ? 'bueno' : 'alerta');
+  cards[1].className = 'kpi-card ' + (puestaSemanal >= 90 ? 'excelente' : puestaSemanal >= 80 ? 'bueno' : 'alerta');
+  cards[2].className = 'kpi-card ' + (porcNoVendibles <= 2 ? 'excelente' : porcNoVendibles <= 5 ? 'bueno' : 'alerta');
+  cards[3].className = 'kpi-card ' + (conv <= 0.12 ? 'excelente' : conv <= 0.15 ? 'bueno' : 'alerta');
+}
+
+function actualizarBotonGraficos() {
+  const btn = document.getElementById('btn-graficos');
+  if (pabellonActual) {
+    btn.disabled = false;
+    btn.classList.remove('seccion-oculta');
+  } else {
+    btn.disabled = true;
+    btn.classList.add('seccion-oculta');
+  }
+}
+
+
+
+
+</script>
+
+<div style="
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+  color: white;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  z-index: 999;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+">
+  Creado por <strong>Andrés Lazo Escobar</strong>, Médico Veterinario
+</div>
+
+</body>
+</html>
