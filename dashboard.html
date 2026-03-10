@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AviVet — Monitor de Producción</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/recharts@2.12.0/umd/Recharts.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:#070b10; color:#e6edf3;
+    font-family:'IBM Plex Mono','Fira Code','Courier New',monospace;
+    font-size:13px; min-height:100vh;
+  }
+  button { cursor:pointer; font-family:inherit; }
+  ::-webkit-scrollbar { width:6px; }
+  ::-webkit-scrollbar-track { background:#0d1117; }
+  ::-webkit-scrollbar-thumb { background:#30363d; border-radius:3px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+const { useState, useEffect } = React;
+const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = Recharts;
+
+// ─── CONFIGURACIÓN GRANJAS ───────────────────────────────────────────────────
+const GRANJAS = [
+  {
+    id: "reinhard",
+    nombre: "Reinhard",
+    webAppUrl: "https://script.google.com/macros/s/AKfycbw-I_G2J0tp1qHb38NUACbqJ854m4Wm3wbKQNKSGP4AOu8vJF_GFoNMLl443WcZvC1CTQ/exec",
+    color: "#f0a500", unidad: "Carro", tieneClasificacion: false,
+  },
+  {
+    id: "clarita",
+    nombre: "Avícola Clarita",
+    webAppUrl: "https://script.google.com/macros/s/AKfycbyRqXzKicCFBMb_VXxGXdEb0KpzaLP6I19HcMZqYohHQJCQi5CINvemDEKudEqzLmi2/exec",
+    color: "#00d97e", unidad: "Lote", tieneClasificacion: true,
+  },
+  {
+    id: "gh",
+    nombre: "Avícola GH",
+    webAppUrl: "https://script.google.com/macros/s/AKfycbz_KZacc8oOBfhWAIbFMSfDqrxfhiAJr0xTdKHov2ShSwyHQh91JXkoRylWafmkc6M/exec",
+    color: "#58a6ff", unidad: "Lote", tieneClasificacion: true,
+  },
+];
+
+const CATEGORIAS = [
+  { key:"chico",   label:"Chico",    color:"#78909c" },
+  { key:"mediano", label:"Mediano",  color:"#42a5f5" },
+  { key:"grande",  label:"Grande",   color:"#26c6da" },
+  { key:"xl",      label:"XL",       color:"#66bb6a" },
+  { key:"superXl", label:"Super XL", color:"#ffca28" },
+  { key:"jumbo",   label:"Jumbo",    color:"#ffa726" },
+];
+const NO_CONFORMES = [
+  { key:"sucios",   label:"Sucios",   color:"#ef5350" },
+  { key:"rotos",    label:"Rotos",    color:"#e53935" },
+  { key:"trizados", label:"Trizados", color:"#b71c1c" },
+  { key:"sangre",   label:"Sangre",   color:"#880e4f" },
+];
+
+function alertColor(d) {
+  if (d===0) return "#00d97e";
+  if (d===1) return "#f0a500";
+  if (d===2) return "#ff8c00";
+  return "#ff3b3b";
+}
+function alertLabel(d) {
+  if (d===0) return "AL DÍA";
+  if (d===1) return "1 DÍA";
+  return d+" DÍAS";
+}
+
+// ─── TOOLTIP GRÁFICO ─────────────────────────────────────────────────────────
+function CustomTooltip({ active, payload, label }) {
+  if (!active || !payload || !payload.length) return null;
+  return React.createElement('div', {
+    style:{ background:"#0d1117", border:"1px solid #30363d", padding:"8px 12px",
+            borderRadius:6, fontSize:11 }
+  },
+    React.createElement('div', { style:{ color:"#8b949e", marginBottom:4 } }, label),
+    payload.map((p,i) =>
+      React.createElement('div', { key:i, style:{ color:p.color, margin:"2px 0" } },
+        p.name+": ", React.createElement('strong', null, p.value+(p.name.includes("Post")||p.name.includes("Esp")?"%":""))
+      )
+    )
+  );
+}
+
+// ─── BARRA CLASIFICACIÓN ─────────────────────────────────────────────────────
+function BarraClasif({ clasif, total }) {
+  if (!clasif || total===0) return null;
+  const items = CATEGORIAS.map(c=>({...c,n:clasif[c.key]||0})).filter(c=>c.n>0);
+  return React.createElement('div', {
+    style:{ display:"flex", height:20, borderRadius:4, overflow:"hidden", gap:1 }
+  },
+    items.map(c =>
+      React.createElement('div', {
+        key:c.key,
+        title:`${c.label}: ${c.n} (${((c.n/total)*100).toFixed(1)}%)`,
+        style:{ width:`${(c.n/total)*100}%`, background:c.color, minWidth:c.n>0?2:0 }
+      })
+    )
+  );
+}
+
+// ─── APP PRINCIPAL ────────────────────────────────────────────────────────────
+function App() {
+  const [granjaId, setGranjaId]   = useState("reinhard");
+  const [loteIdx,  setLoteIdx]    = useState(0);
+  const [datos,    setDatos]      = useState({});
+  const [estados,  setEstados]    = useState({});
+
+  const hoy = new Date().toLocaleDateString("es-CL",
+    { weekday:"long", day:"numeric", month:"long" });
+
+  useEffect(() => {
+    GRANJAS.forEach(async g => {
+      setEstados(p => ({...p, [g.id]:"cargando"}));
+      try {
+        const res  = await fetch(g.webAppUrl+"?action=getDashboard");
+        if (!res.ok) throw new Error();
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
+        setDatos(p   => ({...p, [g.id]:json}));
+        setEstados(p => ({...p, [g.id]:"ok"}));
+      } catch {
+        setEstados(p => ({...p, [g.id]:"error"}));
+      }
+    });
+  }, []);
+
+  const granja     = GRANJAS.find(g => g.id===granjaId);
+  const datosG     = datos[granjaId];
+  const lotes      = datosG?.lotes || [];
+  const lote       = lotes[loteIdx];
+
+  const alertas = GRANJAS.flatMap(g => {
+    const d = datos[g.id];
+    if (!d) return [];
+    return (d.lotes||[]).filter(l=>l.diasPendientes>0)
+      .map(l=>({ granja:g.nombre, lote:l.nombre, dias:l.diasPendientes, color:g.color }));
+  }).sort((a,b)=>b.dias-a.dias);
+
+  const clasif         = lote?.clasificacion;
+  const totalComercial = clasif ? CATEGORIAS.reduce((s,c)=>s+(clasif[c.key]||0),0) : 0;
+  const totalNoConf    = clasif ? NO_CONFORMES.reduce((s,c)=>s+(clasif[c.key]||0),0) : 0;
+  const totalClasif    = totalComercial + totalNoConf;
+  const pctNoConf      = totalClasif>0 ? ((totalNoConf/totalClasif)*100).toFixed(1) : null;
+
+  // ── RENDER ─────────────────────────────────────────────────────────────────
+  return React.createElement('div', {
+    style:{ background:"#070b10", minHeight:"100vh", display:"flex", flexDirection:"column" }
+  },
+
+    // TOP BAR
+    React.createElement('div', {
+      style:{ background:"#0d1117", borderBottom:"1px solid #21262d",
+              padding:"12px 24px", display:"flex", justifyContent:"space-between", alignItems:"center",
+              position:"sticky", top:0, zIndex:100 }
+    },
+      React.createElement('div', { style:{ display:"flex", alignItems:"center", gap:14 } },
+        React.createElement('div', { style:{ fontSize:17, fontWeight:700, letterSpacing:2 } },
+          "AVI", React.createElement('span', { style:{ color:"#f0a500" } }, "VET")
+        ),
+        React.createElement('div', { style:{ width:1, height:18, background:"#30363d" } }),
+        React.createElement('div', { style:{ fontSize:10, color:"#8b949e", letterSpacing:2 } }, "MONITOR DE PRODUCCIÓN")
+      ),
+      React.createElement('div', { style:{ display:"flex", alignItems:"center", gap:16 } },
+        alertas.length>0 && React.createElement('div', {
+          style:{ background:"rgba(255,59,59,0.12)", border:"1px solid rgba(255,59,59,0.35)",
+                  borderRadius:6, padding:"4px 12px", fontSize:11, color:"#ff5252",
+                  display:"flex", alignItems:"center", gap:6 }
+        }, "⚠ "+alertas.length+" "+(alertas.length===1?"lote":"lotes")+" con datos pendientes"),
+        React.createElement('div', { style:{ fontSize:11, color:"#8b949e", textTransform:"capitalize" } }, hoy)
+      )
+    ),
+
+    // BODY
+    React.createElement('div', { style:{ display:"grid", gridTemplateColumns:"210px 1fr", flex:1 } },
+
+      // SIDEBAR
+      React.createElement('div', {
+        style:{ background:"#0d1117", borderRight:"1px solid #21262d",
+                padding:"18px 0", display:"flex", flexDirection:"column" }
+      },
+        // Granjas
+        React.createElement('div', { style:{ padding:"0 14px 14px", borderBottom:"1px solid #21262d", marginBottom:14 } },
+          React.createElement('div', { style:{ fontSize:9, color:"#484f58", letterSpacing:2, marginBottom:10 } }, "GRANJAS"),
+          GRANJAS.map(g => {
+            const d = datos[g.id];
+            const est = estados[g.id];
+            const nA = (d?.lotes||[]).filter(l=>l.diasPendientes>0).length;
+            const activa = granjaId===g.id;
+            return React.createElement('button', {
+              key:g.id,
+              onClick:()=>{ setGranjaId(g.id); setLoteIdx(0); },
+              style:{ width:"100%", background:activa?`${g.color}12`:"none",
+                      border:activa?`1px solid ${g.color}45`:"1px solid transparent",
+                      borderRadius:7, padding:"9px 11px",
+                      display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:5,
+                      color:"inherit" }
+            },
+              React.createElement('div', { style:{ display:"flex", alignItems:"center", gap:8 } },
+                React.createElement('div', { style:{ width:7, height:7, borderRadius:"50%",
+                  background:activa?g.color:"#30363d",
+                  boxShadow:activa?`0 0 6px ${g.color}`:"none" } }),
+                React.createElement('span', {
+                  style:{ color:activa?g.color:"#8b949e", fontSize:11, fontWeight:activa?700:400 }
+                }, g.nombre)
+              ),
+              est==="cargando" && React.createElement('span', { style:{ color:"#484f58", fontSize:10 } }, "···"),
+              est==="error"   && React.createElement('span', { style:{ color:"#ff5252",  fontSize:10 } }, "✗"),
+              est==="ok" && nA>0 && React.createElement('span', {
+                style:{ background:"#ff5252", color:"#fff", borderRadius:10,
+                        padding:"1px 6px", fontSize:9, fontWeight:700 }
+              }, nA),
+              est==="ok" && nA===0 && React.createElement('span', { style:{ color:"#00d97e", fontSize:10 } }, "✓")
+            );
+          })
+        ),
+
+        // Lotes
+        React.createElement('div', { style:{ padding:"0 14px" } },
+          React.createElement('div', { style:{ fontSize:9, color:"#484f58", letterSpacing:2, marginBottom:10 } },
+            granja.unidad.toUpperCase()+"S"
+          ),
+          lotes.map((l,i) => {
+            const dias = l.diasPendientes||0;
+            const ac   = alertColor(dias);
+            const activo = loteIdx===i;
+            return React.createElement('button', {
+              key:i, onClick:()=>setLoteIdx(i),
+              style:{ width:"100%", background:activo?"rgba(255,255,255,0.05)":"none",
+                      border:activo?"1px solid #30363d":"1px solid transparent",
+                      borderRadius:6, padding:"7px 10px",
+                      display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:3,
+                      color:"inherit" }
+            },
+              React.createElement('span', { style:{ color:activo?"#e6edf3":"#8b949e", fontSize:11 } }, l.nombre),
+              React.createElement('span', {
+                style:{ background:`${ac}18`, color:ac, border:`1px solid ${ac}45`,
+                        borderRadius:4, padding:"1px 6px", fontSize:9, letterSpacing:1, fontWeight:700 }
+              }, alertLabel(dias))
+            );
+          })
+        ),
+
+        // Panel alertas
+        alertas.length>0 && React.createElement('div', {
+          style:{ margin:"14px 14px 0", background:"rgba(255,59,59,0.06)",
+                  border:"1px solid rgba(255,59,59,0.2)", borderRadius:8, padding:"12px" }
+        },
+          React.createElement('div', { style:{ fontSize:9, color:"#ff5252", letterSpacing:2, marginBottom:8 } }, "⚠ PENDIENTES"),
+          alertas.slice(0,6).map((a,i) =>
+            React.createElement('div', { key:i, style:{ display:"flex", justifyContent:"space-between", marginBottom:5, fontSize:10 } },
+              React.createElement('span', { style:{ color:"#8b949e" } },
+                React.createElement('span', { style:{ color:a.color } }, "● "), a.lote
+              ),
+              React.createElement('span', { style:{ color:alertColor(a.dias), fontWeight:700 } }, a.dias+"d")
+            )
+          )
+        )
+      ),
+
+      // CONTENIDO PRINCIPAL
+      React.createElement('div', { style:{ padding:"22px 26px", overflowY:"auto" } },
+
+        !lote && estados[granjaId]==="cargando" &&
+          React.createElement('div', { style:{ display:"flex", alignItems:"center", justifyContent:"center", height:300, color:"#484f58" } }, "Cargando datos···"),
+
+        !lote && estados[granjaId]==="error" &&
+          React.createElement('div', { style:{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:300, gap:12 } },
+            React.createElement('div', { style:{ fontSize:32 } }, "⚠"),
+            React.createElement('div', { style:{ color:"#ff5252" } }, "No se pudo conectar con "+granja.nombre),
+            React.createElement('div', { style:{ fontSize:11, color:"#484f58", textAlign:"center", maxWidth:320 } },
+              "Verifica que el Apps Script tenga getDashboard y esté reimplementado.")
+          ),
+
+        lote && React.createElement(React.Fragment, null,
+
+          // Header lote
+          React.createElement('div', { style:{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 } },
+            React.createElement('div', null,
+              React.createElement('div', { style:{ fontSize:10, color:"#8b949e", letterSpacing:2, marginBottom:4 } },
+                granja.nombre.toUpperCase()+" · "+lote.nombre.toUpperCase()
+              ),
+              React.createElement('h2', { style:{ margin:0, fontSize:20, fontWeight:700 } },
+                "Semana ",
+                React.createElement('span', { style:{ color:granja.color } }, lote.semanaVida),
+                " de vida ",
+                React.createElement('span', { style:{ fontSize:12, color:"#8b949e", fontWeight:400, marginLeft:12 } },
+                  (lote.aves?.toLocaleString("es-CL")||"")+" aves · último dato: "+lote.ultimaFecha
+                )
+              )
+            ),
+            React.createElement('div', {
+              style:{ background:`${alertColor(lote.diasPendientes)}12`,
+                      border:`1px solid ${alertColor(lote.diasPendientes)}45`,
+                      borderRadius:10, padding:"12px 18px", textAlign:"center", minWidth:80 }
+            },
+              lote.diasPendientes===0
+                ? [React.createElement('div', { key:"a", style:{ fontSize:22, color:"#00d97e" } }, "✓"),
+                   React.createElement('div', { key:"b", style:{ fontSize:9, color:"#00d97e", letterSpacing:1, marginTop:2 } }, "AL DÍA")]
+                : [React.createElement('div', { key:"a", style:{ fontSize:28, fontWeight:700, color:alertColor(lote.diasPendientes), lineHeight:1 } }, lote.diasPendientes),
+                   React.createElement('div', { key:"b", style:{ fontSize:9, color:"#8b949e", letterSpacing:1, marginTop:4 } },
+                     (lote.diasPendientes===1?"DÍA SIN":"DÍAS SIN"), React.createElement('br'), "REGISTRO")]
+            )
+          ),
+
+          // KPIs
+          React.createElement('div', { style:{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:18 } },
+            [
+              { label:"POSTURA",    value:lote.postura    !=null?lote.postura+"%":"—",    color:granja.color,  sub:lote.posturaEsperada!=null?"Esperado: "+lote.posturaEsperada+"%":"" },
+              { label:"DIFERENCIA", value:lote.diferencia !=null?(lote.diferencia>0?"+":"")+lote.diferencia+"%":"—", color:lote.diferencia>=0?"#00d97e":"#ff5252", sub:lote.diferencia>=0?"↑ Sobre curva":"↓ Bajo curva" },
+              { label:"MORTALIDAD", value:lote.mortalidadHoy!=null?lote.mortalidadHoy+" aves":"—", color:lote.mortalidadHoy>3?"#ff5252":"#00d97e", sub:lote.mortalidadHoy>3?"⚠ Alta":"Normal" },
+              { label:"KG/AVE/DÍA", value:lote.kgAve!=null?lote.kgAve:"—", color:"#58a6ff", sub:(lote.huevos?.toLocaleString("es-CL")||"—")+" huevos" },
+            ].map((kpi,i) =>
+              React.createElement('div', { key:i,
+                style:{ background:"#0d1117", border:"1px solid #21262d", borderRadius:9,
+                        padding:"14px 16px", position:"relative", overflow:"hidden" }
+              },
+                React.createElement('div', { style:{ position:"absolute", top:0, left:0, right:0, height:2, background:kpi.color, opacity:0.65 } }),
+                React.createElement('div', { style:{ fontSize:9, color:"#8b949e", letterSpacing:2, marginBottom:8 } }, kpi.label),
+                React.createElement('div', { style:{ fontSize:22, fontWeight:700, color:kpi.color, lineHeight:1 } }, kpi.value),
+                React.createElement('div', { style:{ fontSize:10, color:"#8b949e", marginTop:6 } }, kpi.sub)
+              )
+            )
+          ),
+
+          // Gráfico curva postura
+          React.createElement('div', { style:{ background:"#0d1117", border:"1px solid #21262d", borderRadius:9, padding:"18px 16px", marginBottom:18 } },
+            React.createElement('div', { style:{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 } },
+              React.createElement('div', { style:{ fontSize:10, color:"#8b949e", letterSpacing:2 } }, "CURVA DE POSTURA — ÚLTIMOS 28 DÍAS"),
+              React.createElement('div', { style:{ display:"flex", gap:14, fontSize:10, color:"#8b949e" } },
+                React.createElement('span', null, React.createElement('span', { style:{ color:granja.color } }, "● "), "Real"),
+                React.createElement('span', null, React.createElement('span', { style:{ color:"#484f58" } }, "● "), "Esperado")
+              )
+            ),
+            React.createElement(ResponsiveContainer, { width:"100%", height:190 },
+              React.createElement(LineChart, { data:lote.registros||[] },
+                React.createElement(CartesianGrid, { strokeDasharray:"3 3", stroke:"#161b22" }),
+                React.createElement(XAxis, { dataKey:"fecha", tick:{ fill:"#8b949e", fontSize:9 }, axisLine:false, tickLine:false, interval:3 }),
+                React.createElement(YAxis, { domain:[70,100], tick:{ fill:"#8b949e", fontSize:9 }, axisLine:false, tickLine:false }),
+                React.createElement(Tooltip, { content:React.createElement(CustomTooltip) }),
+                React.createElement(Line, { type:"monotone", dataKey:"esperado", stroke:"#30363d", strokeWidth:1.5, dot:false, name:"Esperado", strokeDasharray:"4 2" }),
+                React.createElement(Line, { type:"monotone", dataKey:"postura",  stroke:granja.color, strokeWidth:2.5, dot:{ fill:granja.color, r:2.5 }, name:"Postura %" })
+              )
+            ),
+            lote.diasPendientes>0 && React.createElement('div', {
+              style:{ marginTop:12, background:`${alertColor(lote.diasPendientes)}0d`,
+                      border:`1px dashed ${alertColor(lote.diasPendientes)}45`,
+                      borderRadius:6, padding:"7px 12px", display:"flex", alignItems:"center",
+                      gap:8, fontSize:11, color:alertColor(lote.diasPendientes) }
+            },
+              "⚠ Faltan ", React.createElement('strong', { style:{ margin:"0 4px" } },
+                lote.diasPendientes+" "+(lote.diasPendientes===1?"día":"días")
+              ), " sin registrar desde el "+lote.ultimaFecha
+            )
+          ),
+
+          // Clasificación (solo Clarita y GH)
+          granja.tieneClasificacion && clasif && React.createElement('div', {
+            style:{ background:"#0d1117", border:"1px solid #21262d", borderRadius:9, padding:"18px 16px" }
+          },
+            React.createElement('div', { style:{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 } },
+              React.createElement('div', { style:{ fontSize:10, color:"#8b949e", letterSpacing:2 } }, "CLASIFICACIÓN ÚLTIMO DÍA"),
+              React.createElement('div', { style:{ display:"flex", gap:16, fontSize:10 } },
+                React.createElement('span', { style:{ color:"#8b949e" } },
+                  "Total: ", React.createElement('strong', { style:{ color:"#e6edf3" } }, totalClasif.toLocaleString("es-CL"))
+                ),
+                pctNoConf!==null && React.createElement('span', { style:{ color:totalNoConf>0?"#ff5252":"#00d97e" } },
+                  "No conf.: ", React.createElement('strong', null, pctNoConf+"%")
+                )
+              )
+            ),
+            totalComercial>0 && React.createElement('div', { style:{ marginBottom:16 } },
+              React.createElement(BarraClasif, { clasif, total:totalComercial }),
+              React.createElement('div', { style:{ display:"flex", gap:12, marginTop:10, flexWrap:"wrap" } },
+                CATEGORIAS.map(c => {
+                  const n = clasif[c.key]||0;
+                  if (n===0) return null;
+                  return React.createElement('div', { key:c.key, style:{ display:"flex", alignItems:"center", gap:5, fontSize:10 } },
+                    React.createElement('div', { style:{ width:8, height:8, borderRadius:2, background:c.color } }),
+                    React.createElement('span', { style:{ color:"#8b949e" } }, c.label),
+                    React.createElement('span', { style:{ color:"#e6edf3", fontWeight:700 } }, n.toLocaleString("es-CL")),
+                    React.createElement('span', { style:{ color:"#484f58" } }, " ("+((n/totalComercial)*100).toFixed(1)+"%)")
+                  );
+                })
+              )
+            ),
+            totalNoConf>0 && React.createElement('div', { style:{ borderTop:"1px solid #21262d", paddingTop:12 } },
+              React.createElement('div', { style:{ fontSize:9, color:"#ff5252", letterSpacing:2, marginBottom:8 } }, "NO CONFORMES"),
+              React.createElement('div', { style:{ display:"flex", gap:16, flexWrap:"wrap" } },
+                NO_CONFORMES.map(c => {
+                  const n = clasif[c.key]||0;
+                  if (n===0) return null;
+                  return React.createElement('div', { key:c.key, style:{ display:"flex", alignItems:"center", gap:5, fontSize:11 } },
+                    React.createElement('div', { style:{ width:8, height:8, borderRadius:2, background:c.color } }),
+                    React.createElement('span', { style:{ color:"#8b949e" } }, c.label+":"),
+                    React.createElement('span', { style:{ color:"#ff5252", fontWeight:700 } }, n)
+                  );
+                })
+              )
+            ),
+            totalClasif===0 && React.createElement('div', { style:{ color:"#484f58", fontSize:11, textAlign:"center", padding:"12px 0" } },
+              "Sin datos de clasificación para el último día"
+            )
+          )
+        )
+      )
+    ),
+
+    // FOOTER
+    React.createElement('div', {
+      style:{ background:"#0d1117", borderTop:"1px solid #21262d", padding:"7px 24px",
+              display:"flex", justifyContent:"space-between", fontSize:9, color:"#484f58", letterSpacing:1 }
+    },
+      React.createElement('span', null, "AVIVET.CL · DR. ANDRÉS LAZO ESCOBAR · MV"),
+      React.createElement('span', null, datosG?.fechaConsulta ? "Datos al "+datosG.fechaConsulta : "")
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+</script>
+</body>
+</html>
