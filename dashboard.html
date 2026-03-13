@@ -4,430 +4,471 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AviVet — Monitor de Producción</title>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/recharts@2.12.0/umd/Recharts.js"></script>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body {
-    background:#070b10; color:#e6edf3;
-    font-family:'IBM Plex Mono','Fira Code','Courier New',monospace;
-    font-size:13px; min-height:100vh;
-  }
-  button { cursor:pointer; font-family:inherit; }
-  ::-webkit-scrollbar { width:6px; }
-  ::-webkit-scrollbar-track { background:#0d1117; }
-  ::-webkit-scrollbar-thumb { background:#30363d; border-radius:3px; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#070b10; color:#e6edf3; font-family:'IBM Plex Mono','Courier New',monospace; font-size:13px; min-height:100vh; }
+button { cursor:pointer; font-family:inherit; border:none; background:none; color:inherit; }
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:#0d1117; }
+::-webkit-scrollbar-thumb { background:#30363d; border-radius:3px; }
+#app { display:flex; flex-direction:column; min-height:100vh; }
+#topbar { background:#0d1117; border-bottom:1px solid #21262d; padding:12px 24px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:100; }
+#body { display:grid; grid-template-columns:210px 1fr; flex:1; }
+#sidebar { background:#0d1117; border-right:1px solid #21262d; padding:18px 0; display:flex; flex-direction:column; }
+#main { padding:22px 26px; overflow-y:auto; }
+#footer { background:#0d1117; border-top:1px solid #21262d; padding:7px 24px; display:flex; justify-content:space-between; font-size:9px; color:#484f58; letter-spacing:1px; }
+.logo { font-size:17px; font-weight:700; letter-spacing:2px; }
+.logo span { color:#f0a500; }
+.divider { width:1px; height:18px; background:#30363d; margin:0 14px; }
+.label { font-size:9px; color:#484f58; letter-spacing:2px; margin-bottom:10px; }
+.section { padding:0 14px 14px; border-bottom:1px solid #21262d; margin-bottom:14px; }
+.granja-btn { width:100%; border-radius:7px; padding:9px 11px; display:flex; align-items:center; justify-content:space-between; margin-bottom:5px; transition:background 0.15s; }
+.lote-btn { width:100%; border-radius:6px; padding:7px 10px; display:flex; align-items:center; justify-content:space-between; margin-bottom:3px; }
+.badge { border-radius:10px; padding:1px 6px; font-size:9px; font-weight:700; }
+.alert-tag { border-radius:4px; padding:1px 6px; font-size:9px; letter-spacing:1px; font-weight:700; }
+.kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+.kpi-card { background:#0d1117; border:1px solid #21262d; border-radius:9px; padding:14px 16px; position:relative; overflow:hidden; }
+.kpi-bar { position:absolute; top:0; left:0; right:0; height:2px; opacity:0.65; }
+.kpi-label { font-size:9px; color:#8b949e; letter-spacing:2px; margin-bottom:8px; }
+.kpi-value { font-size:22px; font-weight:700; line-height:1; }
+.kpi-sub { font-size:10px; color:#8b949e; margin-top:6px; }
+.chart-box { background:#0d1117; border:1px solid #21262d; border-radius:9px; padding:18px 16px; margin-bottom:18px; }
+.clasif-box { background:#0d1117; border:1px solid #21262d; border-radius:9px; padding:18px 16px; }
+.barra { display:flex; height:20px; border-radius:4px; overflow:hidden; gap:1px; margin-bottom:12px; }
+.legend { display:flex; gap:12px; flex-wrap:wrap; margin-top:4px; }
+.legend-item { display:flex; align-items:center; gap:5px; font-size:10px; }
+.legend-dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+.pending-box { margin-top:12px; border-radius:6px; padding:7px 12px; display:flex; align-items:center; gap:8px; font-size:11px; }
+.alertas-panel { margin:14px 14px 0; background:rgba(255,59,59,0.06); border:1px solid rgba(255,59,59,0.2); border-radius:8px; padding:12px; }
+.alert-row { display:flex; justify-content:space-between; margin-bottom:5px; font-size:10px; }
+.estado-msg { display:flex; flex-direction:column; align-items:center; justify-content:center; height:300px; gap:12px; }
+.header-lote { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
+.dias-badge { border-radius:10px; padding:12px 18px; text-align:center; min-width:80px; }
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="app">
+  <div id="topbar">
+    <div style="display:flex;align-items:center">
+      <div class="logo">AVI<span>VET</span></div>
+      <div class="divider"></div>
+      <div style="font-size:10px;color:#8b949e;letter-spacing:2px">MONITOR DE PRODUCCIÓN</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div id="alerta-global"></div>
+      <div id="fecha-hoy" style="font-size:11px;color:#8b949e;text-transform:capitalize"></div>
+    </div>
+  </div>
+  <div id="body">
+    <div id="sidebar">
+      <div class="section">
+        <div class="label">GRANJAS</div>
+        <div id="lista-granjas"></div>
+      </div>
+      <div style="padding:0 14px">
+        <div class="label" id="label-lotes">LOTES</div>
+        <div id="lista-lotes"></div>
+      </div>
+      <div id="alertas-panel-sidebar"></div>
+    </div>
+    <div id="main">
+      <div id="contenido"></div>
+    </div>
+  </div>
+  <div id="footer">
+    <span>AVIVET.CL · DR. ANDRÉS LAZO ESCOBAR · MV</span>
+    <span id="fecha-consulta"></span>
+  </div>
+</div>
 
 <script>
-const { useState, useEffect } = React;
-const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = Recharts;
-
-// ─── CONFIGURACIÓN GRANJAS ───────────────────────────────────────────────────
+// ── CONFIGURACIÓN ─────────────────────────────────────────────────────────
 const GRANJAS = [
-  {
-    id: "reinhard",
-    nombre: "Reinhard",
-    webAppUrl: "https://script.google.com/macros/s/AKfycbw-I_G2J0tp1qHb38NUACbqJ854m4Wm3wbKQNKSGP4AOu8vJF_GFoNMLl443WcZvC1CTQ/exec",
-    color: "#f0a500", unidad: "Carro", tieneClasificacion: false,
-  },
-  {
-    id: "clarita",
-    nombre: "Avícola Clarita",
-    webAppUrl: "https://script.google.com/macros/s/AKfycbyRqXzKicCFBMb_VXxGXdEb0KpzaLP6I19HcMZqYohHQJCQi5CINvemDEKudEqzLmi2/exec",
-    color: "#00d97e", unidad: "Lote", tieneClasificacion: true,
-  },
-  {
-    id: "gh",
-    nombre: "Avícola GH",
-    webAppUrl: "https://script.google.com/macros/s/AKfycbz_KZacc8oOBfhWAIbFMSfDqrxfhiAJr0xTdKHov2ShSwyHQh91JXkoRylWafmkc6M/exec",
-    color: "#58a6ff", unidad: "Lote", tieneClasificacion: true,
-  },
+  { id:"reinhard", nombre:"Reinhard",
+    webAppUrl:"https://script.google.com/macros/s/AKfycbw-I_G2J0tp1qHb38NUACbqJ854m4Wm3wbKQNKSGP4AOu8vJF_GFoNMLl443WcZvC1CTQ/exec",
+    color:"#f0a500", unidad:"Carro", tieneClasificacion:false },
+  { id:"clarita", nombre:"Avícola Clarita",
+    webAppUrl:"https://script.google.com/macros/s/AKfycbyRqXzKicCFBMb_VXxGXdEb0KpzaLP6I19HcMZqYohHQJCQi5CINvemDEKudEqzLmi2/exec",
+    color:"#00d97e", unidad:"Lote", tieneClasificacion:true },
+  { id:"gh", nombre:"Avícola GH",
+    webAppUrl:"https://script.google.com/macros/s/AKfycbz_KZacc8oOBfhWAIbFMSfDqrxfhiAJr0xTdKHov2ShSwyHQh91JXkoRylWafmkc6M/exec",
+    color:"#58a6ff", unidad:"Lote", tieneClasificacion:true },
 ];
 
 const CATEGORIAS = [
-  { key:"chico",   label:"Chico",    color:"#78909c" },
-  { key:"mediano", label:"Mediano",  color:"#42a5f5" },
-  { key:"grande",  label:"Grande",   color:"#26c6da" },
-  { key:"xl",      label:"XL",       color:"#66bb6a" },
-  { key:"superXl", label:"Super XL", color:"#ffca28" },
-  { key:"jumbo",   label:"Jumbo",    color:"#ffa726" },
+  {key:"chico",   label:"Chico",    color:"#78909c"},
+  {key:"mediano", label:"Mediano",  color:"#42a5f5"},
+  {key:"grande",  label:"Grande",   color:"#26c6da"},
+  {key:"xl",      label:"XL",       color:"#66bb6a"},
+  {key:"superXl", label:"Super XL", color:"#ffca28"},
+  {key:"jumbo",   label:"Jumbo",    color:"#ffa726"},
 ];
 const NO_CONFORMES = [
-  { key:"sucios",   label:"Sucios",   color:"#ef5350" },
-  { key:"rotos",    label:"Rotos",    color:"#e53935" },
-  { key:"trizados", label:"Trizados", color:"#b71c1c" },
-  { key:"sangre",   label:"Sangre",   color:"#880e4f" },
+  {key:"sucios",   label:"Sucios",   color:"#ef5350"},
+  {key:"rotos",    label:"Rotos",    color:"#e53935"},
+  {key:"trizados", label:"Trizados", color:"#b71c1c"},
+  {key:"sangre",   label:"Sangre",   color:"#880e4f"},
 ];
 
-function alertColor(d) {
-  if (d===0) return "#00d97e";
-  if (d===1) return "#f0a500";
-  if (d===2) return "#ff8c00";
-  return "#ff3b3b";
+// ── ESTADO ────────────────────────────────────────────────────────────────
+const state = {
+  granjaId: "reinhard",
+  loteIdx:  0,
+  datos:    {},
+  estados:  {}
+};
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+function alertColor(d){ return d===0?"#00d97e":d===1?"#f0a500":d===2?"#ff8c00":"#ff3b3b"; }
+function alertLabel(d){ return d===0?"AL DÍA":d===1?"1 DÍA":d+" DÍAS"; }
+function el(tag,attrs,...children){
+  const e=document.createElement(tag);
+  if(attrs) Object.entries(attrs).forEach(([k,v])=>{ if(k==="style") Object.assign(e.style,v); else if(k==="class") e.className=v; else e[k]=v; });
+  children.forEach(c=>{ if(c==null||c===false) return; if(typeof c==="string"||typeof c==="number") e.appendChild(document.createTextNode(c)); else if(c instanceof Node) e.appendChild(c); });
+  return e;
 }
-function alertLabel(d) {
-  if (d===0) return "AL DÍA";
-  if (d===1) return "1 DÍA";
-  return d+" DÍAS";
-}
+function set(id,node){ const c=document.getElementById(id); if(!c) return; c.innerHTML=""; if(node) c.appendChild(node); }
+function setHTML(id,html){ const c=document.getElementById(id); if(c) c.innerHTML=html; }
 
-// ─── TOOLTIP GRÁFICO ─────────────────────────────────────────────────────────
-function CustomTooltip({ active, payload, label }) {
-  if (!active || !payload || !payload.length) return null;
-  return React.createElement('div', {
-    style:{ background:"#0d1117", border:"1px solid #30363d", padding:"8px 12px",
-            borderRadius:6, fontSize:11 }
-  },
-    React.createElement('div', { style:{ color:"#8b949e", marginBottom:4 } }, label),
-    payload.map((p,i) =>
-      React.createElement('div', { key:i, style:{ color:p.color, margin:"2px 0" } },
-        p.name+": ", React.createElement('strong', null, p.value+(p.name.includes("Post")||p.name.includes("Esp")?"%":""))
-      )
-    )
-  );
-}
+// ── GRÁFICO SVG POSTURA ──────────────────────────────────────────────────
+function buildChart(registros, color){
+  const W=560, H=160, PL=36, PR=12, PT=10, PB=28;
+  const data = (registros||[]).filter(r=>r.postura!=null||r.esperado!=null).slice(-28);
+  if(!data.length) return el("div",{style:{color:"#484f58",fontSize:11,textAlign:"center",padding:"30px 0"}},"Sin datos para graficar");
 
-// ─── BARRA CLASIFICACIÓN ─────────────────────────────────────────────────────
-function BarraClasif({ clasif, total }) {
-  if (!clasif || total===0) return null;
-  const items = CATEGORIAS.map(c=>({...c,n:clasif[c.key]||0})).filter(c=>c.n>0);
-  return React.createElement('div', {
-    style:{ display:"flex", height:20, borderRadius:4, overflow:"hidden", gap:1 }
-  },
-    items.map(c =>
-      React.createElement('div', {
-        key:c.key,
-        title:`${c.label}: ${c.n} (${((c.n/total)*100).toFixed(1)}%)`,
-        style:{ width:`${(c.n/total)*100}%`, background:c.color, minWidth:c.n>0?2:0 }
-      })
-    )
-  );
-}
+  const all=[...data.map(r=>r.postura),...data.map(r=>r.esperado)].filter(v=>v!=null);
+  const minV=Math.max(0, Math.floor(Math.min(...all)/10)*10);
+  const maxV=Math.ceil(Math.max(...all)/10)*10 + 5;
+  const W2=W-PL-PR, H2=H-PT-PB;
+  const px=i=>(i/(data.length-1||1))*W2+PL;
+  const py=v=>H-PB-((v-minV)/(maxV-minV||1))*H2;
 
-// ─── APP PRINCIPAL ────────────────────────────────────────────────────────────
-function App() {
-  const [granjaId, setGranjaId]   = useState("reinhard");
-  const [loteIdx,  setLoteIdx]    = useState(0);
-  const [datos,    setDatos]      = useState({});
-  const [estados,  setEstados]    = useState({});
+  const svgNS="http://www.w3.org/2000/svg";
+  const svg=document.createElementNS(svgNS,"svg");
+  svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  svg.setAttribute("width","100%");
+  svg.setAttribute("height",H);
+  svg.style.overflow="visible";
 
-  const hoy = new Date().toLocaleDateString("es-CL",
-    { weekday:"long", day:"numeric", month:"long" });
+  // Grid
+  for(let v=minV;v<=maxV;v+=5){
+    const y=py(v);
+    const g=document.createElementNS(svgNS,"line");
+    g.setAttribute("x1",PL); g.setAttribute("y1",y);
+    g.setAttribute("x2",W-PR); g.setAttribute("y2",y);
+    g.setAttribute("stroke","#161b22"); g.setAttribute("stroke-width","1");
+    svg.appendChild(g);
+    if(v%10===0){
+      const t=document.createElementNS(svgNS,"text");
+      t.setAttribute("x",PL-4); t.setAttribute("y",y+4);
+      t.setAttribute("text-anchor","end"); t.setAttribute("font-size","9");
+      t.setAttribute("fill","#8b949e"); t.textContent=v+"%";
+      svg.appendChild(t);
+    }
+  }
 
-  useEffect(() => {
-    GRANJAS.forEach(async g => {
-      setEstados(p => ({...p, [g.id]:"cargando"}));
-      try {
-        const res  = await fetch(g.webAppUrl+"?action=getDashboard");
-        if (!res.ok) throw new Error();
-        const json = await res.json();
-        if (json.error) throw new Error(json.error);
-        setDatos(p   => ({...p, [g.id]:json}));
-        setEstados(p => ({...p, [g.id]:"ok"}));
-      } catch {
-        setEstados(p => ({...p, [g.id]:"error"}));
-      }
+  // Fechas eje X
+  const step=Math.max(1,Math.floor(data.length/7));
+  data.forEach((r,i)=>{
+    if(i%step===0||i===data.length-1){
+      const t=document.createElementNS(svgNS,"text");
+      t.setAttribute("x",px(i)); t.setAttribute("y",H-PB+14);
+      t.setAttribute("text-anchor","middle"); t.setAttribute("font-size","8");
+      t.setAttribute("fill","#8b949e");
+      t.textContent=(r.fecha||"").slice(5);
+      svg.appendChild(t);
+    }
+  });
+
+  // Línea esperado
+  const expData=data.filter((_,i)=>data[i].esperado!=null);
+  if(expData.length>1){
+    let d2="";
+    data.forEach((r,i)=>{ if(r.esperado!=null) d2+=(d2?"L":"M")+px(i)+","+py(r.esperado); });
+    const path=document.createElementNS(svgNS,"path");
+    path.setAttribute("d",d2); path.setAttribute("fill","none");
+    path.setAttribute("stroke","#30363d"); path.setAttribute("stroke-width","1.5");
+    path.setAttribute("stroke-dasharray","4 2");
+    svg.appendChild(path);
+  }
+
+  // Línea real
+  let dReal="";
+  data.forEach((r,i)=>{ if(r.postura!=null) dReal+=(dReal?"L":"M")+px(i)+","+py(r.postura); });
+  if(dReal){
+    const path=document.createElementNS(svgNS,"path");
+    path.setAttribute("d",dReal); path.setAttribute("fill","none");
+    path.setAttribute("stroke",color); path.setAttribute("stroke-width","2.5");
+    svg.appendChild(path);
+    // Puntos
+    data.forEach((r,i)=>{
+      if(r.postura==null) return;
+      const c=document.createElementNS(svgNS,"circle");
+      c.setAttribute("cx",px(i)); c.setAttribute("cy",py(r.postura)); c.setAttribute("r","3");
+      c.setAttribute("fill",color);
+      // Tooltip on hover via title
+      const tt=document.createElementNS(svgNS,"title");
+      tt.textContent=r.fecha+": "+r.postura+"%"+(r.esperado!=null?" (esp: "+r.esperado+"%)":"");
+      c.appendChild(tt);
+      svg.appendChild(c);
     });
-  }, []);
+  }
+  return svg;
+}
 
-  const granja     = GRANJAS.find(g => g.id===granjaId);
-  const datosG     = datos[granjaId];
-  const lotes      = datosG?.lotes || [];
-  const lote       = lotes[loteIdx];
+// ── RENDER SIDEBAR ────────────────────────────────────────────────────────
+function renderSidebar(){
+  // Fecha
+  document.getElementById("fecha-hoy").textContent =
+    new Date().toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"});
 
-  const alertas = GRANJAS.flatMap(g => {
-    const d = datos[g.id];
-    if (!d) return [];
+  // Granjas
+  const frag=document.createDocumentFragment();
+  GRANJAS.forEach(g=>{
+    const d=state.datos[g.id], est=state.estados[g.id];
+    const nA=(d?.lotes||[]).filter(l=>l.diasPendientes>0).length;
+    const activa=state.granjaId===g.id;
+    const btn=el("button",{
+      class:"granja-btn",
+      style:{ background:activa?g.color+"12":"none",
+              border:activa?"1px solid "+g.color+"45":"1px solid transparent" },
+      onclick:()=>{ state.granjaId=g.id; state.loteIdx=0; render(); }
+    },
+      el("div",{style:{display:"flex",alignItems:"center",gap:8}},
+        el("div",{style:{width:7,height:7,borderRadius:"50%",
+          background:activa?g.color:"#30363d",
+          boxShadow:activa?"0 0 6px "+g.color:"none"}}),
+        el("span",{style:{color:activa?g.color:"#8b949e",fontSize:11,fontWeight:activa?700:400}},g.nombre)
+      )
+    );
+    if(est==="cargando") btn.appendChild(el("span",{style:{color:"#484f58",fontSize:10}},"···"));
+    else if(est==="error") btn.appendChild(el("span",{style:{color:"#ff5252",fontSize:10}},"✗"));
+    else if(est==="ok" && nA>0) btn.appendChild(el("span",{class:"badge",style:{background:"#ff5252",color:"#fff"}},nA));
+    else if(est==="ok") btn.appendChild(el("span",{style:{color:"#00d97e",fontSize:10}},"✓"));
+    frag.appendChild(btn);
+  });
+  set("lista-granjas",el("div",null,...Array.from(frag.childNodes).map(n=>n.cloneNode(true))));
+  document.getElementById("lista-granjas").innerHTML="";
+  GRANJAS.forEach(g=>{
+    const d=state.datos[g.id], est=state.estados[g.id];
+    const nA=(d?.lotes||[]).filter(l=>l.diasPendientes>0).length;
+    const activa=state.granjaId===g.id;
+    const btn=document.createElement("button");
+    btn.className="granja-btn";
+    Object.assign(btn.style,{background:activa?g.color+"12":"none",
+      border:activa?"1px solid "+g.color+"45":"1px solid transparent"});
+    btn.onclick=()=>{ state.granjaId=g.id; state.loteIdx=0; render(); };
+    const left=document.createElement("div"); left.style.cssText="display:flex;align-items:center;gap:8px";
+    const dot=document.createElement("div");
+    Object.assign(dot.style,{width:"7px",height:"7px",borderRadius:"50%",
+      background:activa?g.color:"#30363d",boxShadow:activa?"0 0 6px "+g.color:"none"});
+    const nm=document.createElement("span");
+    Object.assign(nm.style,{color:activa?g.color:"#8b949e",fontSize:"11px",fontWeight:activa?700:400});
+    nm.textContent=g.nombre;
+    left.append(dot,nm); btn.appendChild(left);
+    if(est==="cargando"){ const s=document.createElement("span"); s.style.cssText="color:#484f58;font-size:10px"; s.textContent="···"; btn.appendChild(s); }
+    else if(est==="error"){ const s=document.createElement("span"); s.style.cssText="color:#ff5252;font-size:10px"; s.textContent="✗"; btn.appendChild(s); }
+    else if(est==="ok"&&nA>0){ const s=document.createElement("span"); s.className="badge"; Object.assign(s.style,{background:"#ff5252",color:"#fff"}); s.textContent=nA; btn.appendChild(s); }
+    else if(est==="ok"){ const s=document.createElement("span"); s.style.cssText="color:#00d97e;font-size:10px"; s.textContent="✓"; btn.appendChild(s); }
+    document.getElementById("lista-granjas").appendChild(btn);
+  });
+
+  // Lotes
+  const granja=GRANJAS.find(g=>g.id===state.granjaId);
+  const lotes=state.datos[state.granjaId]?.lotes||[];
+  document.getElementById("label-lotes").textContent=granja.unidad.toUpperCase()+"S";
+  const listaLotes=document.getElementById("lista-lotes");
+  listaLotes.innerHTML="";
+  lotes.forEach((l,i)=>{
+    const dias=l.diasPendientes||0, ac=alertColor(dias), activo=state.loteIdx===i;
+    const btn=document.createElement("button");
+    btn.className="lote-btn";
+    Object.assign(btn.style,{background:activo?"rgba(255,255,255,0.05)":"none",
+      border:activo?"1px solid #30363d":"1px solid transparent"});
+    btn.onclick=()=>{ state.loteIdx=i; render(); };
+    const nm=document.createElement("span");
+    Object.assign(nm.style,{color:activo?"#e6edf3":"#8b949e",fontSize:"11px"});
+    nm.textContent=l.nombre;
+    const tag=document.createElement("span");
+    tag.className="alert-tag";
+    Object.assign(tag.style,{background:ac+"18",color:ac,border:"1px solid "+ac+"45"});
+    tag.textContent=alertLabel(dias);
+    btn.append(nm,tag);
+    listaLotes.appendChild(btn);
+  });
+
+  // Panel alertas globales
+  const alertas=GRANJAS.flatMap(g=>{
+    const d=state.datos[g.id]; if(!d) return [];
     return (d.lotes||[]).filter(l=>l.diasPendientes>0)
-      .map(l=>({ granja:g.nombre, lote:l.nombre, dias:l.diasPendientes, color:g.color }));
+      .map(l=>({granja:g.nombre,lote:l.nombre,dias:l.diasPendientes,color:g.color}));
   }).sort((a,b)=>b.dias-a.dias);
 
-  const clasif         = lote?.clasificacion;
-  const totalComercial = clasif ? CATEGORIAS.reduce((s,c)=>s+(clasif[c.key]||0),0) : 0;
-  const totalNoConf    = clasif ? NO_CONFORMES.reduce((s,c)=>s+(clasif[c.key]||0),0) : 0;
-  const totalClasif    = totalComercial + totalNoConf;
-  const pctNoConf      = totalClasif>0 ? ((totalNoConf/totalClasif)*100).toFixed(1) : null;
+  const sidebar=document.getElementById("alertas-panel-sidebar");
+  sidebar.innerHTML="";
+  if(alertas.length){
+    const panel=document.createElement("div"); panel.className="alertas-panel";
+    const ttl=document.createElement("div"); ttl.style.cssText="font-size:9px;color:#ff5252;letter-spacing:2px;margin-bottom:8px"; ttl.textContent="⚠ PENDIENTES";
+    panel.appendChild(ttl);
+    alertas.slice(0,6).forEach(a=>{
+      const row=document.createElement("div"); row.className="alert-row";
+      const lft=document.createElement("span"); lft.style.color="#8b949e";
+      const dot=document.createElement("span"); dot.style.color=a.color; dot.textContent="● ";
+      lft.append(dot,a.lote);
+      const rgt=document.createElement("span"); Object.assign(rgt.style,{color:alertColor(a.dias),fontWeight:700}); rgt.textContent=a.dias+"d";
+      row.append(lft,rgt); panel.appendChild(row);
+    });
+    sidebar.appendChild(panel);
 
-  // ── RENDER ─────────────────────────────────────────────────────────────────
-  return React.createElement('div', {
-    style:{ background:"#070b10", minHeight:"100vh", display:"flex", flexDirection:"column" }
-  },
-
-    // TOP BAR
-    React.createElement('div', {
-      style:{ background:"#0d1117", borderBottom:"1px solid #21262d",
-              padding:"12px 24px", display:"flex", justifyContent:"space-between", alignItems:"center",
-              position:"sticky", top:0, zIndex:100 }
-    },
-      React.createElement('div', { style:{ display:"flex", alignItems:"center", gap:14 } },
-        React.createElement('div', { style:{ fontSize:17, fontWeight:700, letterSpacing:2 } },
-          "AVI", React.createElement('span', { style:{ color:"#f0a500" } }, "VET")
-        ),
-        React.createElement('div', { style:{ width:1, height:18, background:"#30363d" } }),
-        React.createElement('div', { style:{ fontSize:10, color:"#8b949e", letterSpacing:2 } }, "MONITOR DE PRODUCCIÓN")
-      ),
-      React.createElement('div', { style:{ display:"flex", alignItems:"center", gap:16 } },
-        alertas.length>0 && React.createElement('div', {
-          style:{ background:"rgba(255,59,59,0.12)", border:"1px solid rgba(255,59,59,0.35)",
-                  borderRadius:6, padding:"4px 12px", fontSize:11, color:"#ff5252",
-                  display:"flex", alignItems:"center", gap:6 }
-        }, "⚠ "+alertas.length+" "+(alertas.length===1?"lote":"lotes")+" con datos pendientes"),
-        React.createElement('div', { style:{ fontSize:11, color:"#8b949e", textTransform:"capitalize" } }, hoy)
-      )
-    ),
-
-    // BODY
-    React.createElement('div', { style:{ display:"grid", gridTemplateColumns:"210px 1fr", flex:1 } },
-
-      // SIDEBAR
-      React.createElement('div', {
-        style:{ background:"#0d1117", borderRight:"1px solid #21262d",
-                padding:"18px 0", display:"flex", flexDirection:"column" }
-      },
-        // Granjas
-        React.createElement('div', { style:{ padding:"0 14px 14px", borderBottom:"1px solid #21262d", marginBottom:14 } },
-          React.createElement('div', { style:{ fontSize:9, color:"#484f58", letterSpacing:2, marginBottom:10 } }, "GRANJAS"),
-          GRANJAS.map(g => {
-            const d = datos[g.id];
-            const est = estados[g.id];
-            const nA = (d?.lotes||[]).filter(l=>l.diasPendientes>0).length;
-            const activa = granjaId===g.id;
-            return React.createElement('button', {
-              key:g.id,
-              onClick:()=>{ setGranjaId(g.id); setLoteIdx(0); },
-              style:{ width:"100%", background:activa?`${g.color}12`:"none",
-                      border:activa?`1px solid ${g.color}45`:"1px solid transparent",
-                      borderRadius:7, padding:"9px 11px",
-                      display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:5,
-                      color:"inherit" }
-            },
-              React.createElement('div', { style:{ display:"flex", alignItems:"center", gap:8 } },
-                React.createElement('div', { style:{ width:7, height:7, borderRadius:"50%",
-                  background:activa?g.color:"#30363d",
-                  boxShadow:activa?`0 0 6px ${g.color}`:"none" } }),
-                React.createElement('span', {
-                  style:{ color:activa?g.color:"#8b949e", fontSize:11, fontWeight:activa?700:400 }
-                }, g.nombre)
-              ),
-              est==="cargando" && React.createElement('span', { style:{ color:"#484f58", fontSize:10 } }, "···"),
-              est==="error"   && React.createElement('span', { style:{ color:"#ff5252",  fontSize:10 } }, "✗"),
-              est==="ok" && nA>0 && React.createElement('span', {
-                style:{ background:"#ff5252", color:"#fff", borderRadius:10,
-                        padding:"1px 6px", fontSize:9, fontWeight:700 }
-              }, nA),
-              est==="ok" && nA===0 && React.createElement('span', { style:{ color:"#00d97e", fontSize:10 } }, "✓")
-            );
-          })
-        ),
-
-        // Lotes
-        React.createElement('div', { style:{ padding:"0 14px" } },
-          React.createElement('div', { style:{ fontSize:9, color:"#484f58", letterSpacing:2, marginBottom:10 } },
-            granja.unidad.toUpperCase()+"S"
-          ),
-          lotes.map((l,i) => {
-            const dias = l.diasPendientes||0;
-            const ac   = alertColor(dias);
-            const activo = loteIdx===i;
-            return React.createElement('button', {
-              key:i, onClick:()=>setLoteIdx(i),
-              style:{ width:"100%", background:activo?"rgba(255,255,255,0.05)":"none",
-                      border:activo?"1px solid #30363d":"1px solid transparent",
-                      borderRadius:6, padding:"7px 10px",
-                      display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:3,
-                      color:"inherit" }
-            },
-              React.createElement('span', { style:{ color:activo?"#e6edf3":"#8b949e", fontSize:11 } }, l.nombre),
-              React.createElement('span', {
-                style:{ background:`${ac}18`, color:ac, border:`1px solid ${ac}45`,
-                        borderRadius:4, padding:"1px 6px", fontSize:9, letterSpacing:1, fontWeight:700 }
-              }, alertLabel(dias))
-            );
-          })
-        ),
-
-        // Panel alertas
-        alertas.length>0 && React.createElement('div', {
-          style:{ margin:"14px 14px 0", background:"rgba(255,59,59,0.06)",
-                  border:"1px solid rgba(255,59,59,0.2)", borderRadius:8, padding:"12px" }
-        },
-          React.createElement('div', { style:{ fontSize:9, color:"#ff5252", letterSpacing:2, marginBottom:8 } }, "⚠ PENDIENTES"),
-          alertas.slice(0,6).map((a,i) =>
-            React.createElement('div', { key:i, style:{ display:"flex", justifyContent:"space-between", marginBottom:5, fontSize:10 } },
-              React.createElement('span', { style:{ color:"#8b949e" } },
-                React.createElement('span', { style:{ color:a.color } }, "● "), a.lote
-              ),
-              React.createElement('span', { style:{ color:alertColor(a.dias), fontWeight:700 } }, a.dias+"d")
-            )
-          )
-        )
-      ),
-
-      // CONTENIDO PRINCIPAL
-      React.createElement('div', { style:{ padding:"22px 26px", overflowY:"auto" } },
-
-        !lote && estados[granjaId]==="cargando" &&
-          React.createElement('div', { style:{ display:"flex", alignItems:"center", justifyContent:"center", height:300, color:"#484f58" } }, "Cargando datos···"),
-
-        !lote && estados[granjaId]==="error" &&
-          React.createElement('div', { style:{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:300, gap:12 } },
-            React.createElement('div', { style:{ fontSize:32 } }, "⚠"),
-            React.createElement('div', { style:{ color:"#ff5252" } }, "No se pudo conectar con "+granja.nombre),
-            React.createElement('div', { style:{ fontSize:11, color:"#484f58", textAlign:"center", maxWidth:320 } },
-              "Verifica que el Apps Script tenga getDashboard y esté reimplementado.")
-          ),
-
-        lote && React.createElement(React.Fragment, null,
-
-          // Header lote
-          React.createElement('div', { style:{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 } },
-            React.createElement('div', null,
-              React.createElement('div', { style:{ fontSize:10, color:"#8b949e", letterSpacing:2, marginBottom:4 } },
-                granja.nombre.toUpperCase()+" · "+lote.nombre.toUpperCase()
-              ),
-              React.createElement('h2', { style:{ margin:0, fontSize:20, fontWeight:700 } },
-                "Semana ",
-                React.createElement('span', { style:{ color:granja.color } }, lote.semanaVida),
-                " de vida ",
-                React.createElement('span', { style:{ fontSize:12, color:"#8b949e", fontWeight:400, marginLeft:12 } },
-                  (lote.aves?.toLocaleString("es-CL")||"")+" aves · último dato: "+lote.ultimaFecha
-                )
-              )
-            ),
-            React.createElement('div', {
-              style:{ background:`${alertColor(lote.diasPendientes)}12`,
-                      border:`1px solid ${alertColor(lote.diasPendientes)}45`,
-                      borderRadius:10, padding:"12px 18px", textAlign:"center", minWidth:80 }
-            },
-              lote.diasPendientes===0
-                ? [React.createElement('div', { key:"a", style:{ fontSize:22, color:"#00d97e" } }, "✓"),
-                   React.createElement('div', { key:"b", style:{ fontSize:9, color:"#00d97e", letterSpacing:1, marginTop:2 } }, "AL DÍA")]
-                : [React.createElement('div', { key:"a", style:{ fontSize:28, fontWeight:700, color:alertColor(lote.diasPendientes), lineHeight:1 } }, lote.diasPendientes),
-                   React.createElement('div', { key:"b", style:{ fontSize:9, color:"#8b949e", letterSpacing:1, marginTop:4 } },
-                     (lote.diasPendientes===1?"DÍA SIN":"DÍAS SIN"), React.createElement('br'), "REGISTRO")]
-            )
-          ),
-
-          // KPIs
-          React.createElement('div', { style:{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:18 } },
-            [
-              { label:"POSTURA",    value:lote.postura    !=null?lote.postura+"%":"—",    color:granja.color,  sub:lote.posturaEsperada!=null?"Esperado: "+lote.posturaEsperada+"%":"" },
-              { label:"DIFERENCIA", value:lote.diferencia !=null?(lote.diferencia>0?"+":"")+lote.diferencia+"%":"—", color:lote.diferencia>=0?"#00d97e":"#ff5252", sub:lote.diferencia>=0?"↑ Sobre curva":"↓ Bajo curva" },
-              { label:"MORTALIDAD", value:lote.mortalidadHoy!=null?lote.mortalidadHoy+" aves":"—", color:lote.mortalidadHoy>3?"#ff5252":"#00d97e", sub:lote.mortalidadHoy>3?"⚠ Alta":"Normal" },
-              { label:"KG/AVE/DÍA", value:lote.kgAve!=null?lote.kgAve:"—", color:"#58a6ff", sub:(lote.huevos?.toLocaleString("es-CL")||"—")+" huevos" },
-            ].map((kpi,i) =>
-              React.createElement('div', { key:i,
-                style:{ background:"#0d1117", border:"1px solid #21262d", borderRadius:9,
-                        padding:"14px 16px", position:"relative", overflow:"hidden" }
-              },
-                React.createElement('div', { style:{ position:"absolute", top:0, left:0, right:0, height:2, background:kpi.color, opacity:0.65 } }),
-                React.createElement('div', { style:{ fontSize:9, color:"#8b949e", letterSpacing:2, marginBottom:8 } }, kpi.label),
-                React.createElement('div', { style:{ fontSize:22, fontWeight:700, color:kpi.color, lineHeight:1 } }, kpi.value),
-                React.createElement('div', { style:{ fontSize:10, color:"#8b949e", marginTop:6 } }, kpi.sub)
-              )
-            )
-          ),
-
-          // Gráfico curva postura
-          React.createElement('div', { style:{ background:"#0d1117", border:"1px solid #21262d", borderRadius:9, padding:"18px 16px", marginBottom:18 } },
-            React.createElement('div', { style:{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 } },
-              React.createElement('div', { style:{ fontSize:10, color:"#8b949e", letterSpacing:2 } }, "CURVA DE POSTURA — ÚLTIMOS 28 DÍAS"),
-              React.createElement('div', { style:{ display:"flex", gap:14, fontSize:10, color:"#8b949e" } },
-                React.createElement('span', null, React.createElement('span', { style:{ color:granja.color } }, "● "), "Real"),
-                React.createElement('span', null, React.createElement('span', { style:{ color:"#484f58" } }, "● "), "Esperado")
-              )
-            ),
-            React.createElement(ResponsiveContainer, { width:"100%", height:190 },
-              React.createElement(LineChart, { data:lote.registros||[] },
-                React.createElement(CartesianGrid, { strokeDasharray:"3 3", stroke:"#161b22" }),
-                React.createElement(XAxis, { dataKey:"fecha", tick:{ fill:"#8b949e", fontSize:9 }, axisLine:false, tickLine:false, interval:3 }),
-                React.createElement(YAxis, { domain:[70,100], tick:{ fill:"#8b949e", fontSize:9 }, axisLine:false, tickLine:false }),
-                React.createElement(Tooltip, { content:React.createElement(CustomTooltip) }),
-                React.createElement(Line, { type:"monotone", dataKey:"esperado", stroke:"#30363d", strokeWidth:1.5, dot:false, name:"Esperado", strokeDasharray:"4 2" }),
-                React.createElement(Line, { type:"monotone", dataKey:"postura",  stroke:granja.color, strokeWidth:2.5, dot:{ fill:granja.color, r:2.5 }, name:"Postura %" })
-              )
-            ),
-            lote.diasPendientes>0 && React.createElement('div', {
-              style:{ marginTop:12, background:`${alertColor(lote.diasPendientes)}0d`,
-                      border:`1px dashed ${alertColor(lote.diasPendientes)}45`,
-                      borderRadius:6, padding:"7px 12px", display:"flex", alignItems:"center",
-                      gap:8, fontSize:11, color:alertColor(lote.diasPendientes) }
-            },
-              "⚠ Faltan ", React.createElement('strong', { style:{ margin:"0 4px" } },
-                lote.diasPendientes+" "+(lote.diasPendientes===1?"día":"días")
-              ), " sin registrar desde el "+lote.ultimaFecha
-            )
-          ),
-
-          // Clasificación (solo Clarita y GH)
-          granja.tieneClasificacion && clasif && React.createElement('div', {
-            style:{ background:"#0d1117", border:"1px solid #21262d", borderRadius:9, padding:"18px 16px" }
-          },
-            React.createElement('div', { style:{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 } },
-              React.createElement('div', { style:{ fontSize:10, color:"#8b949e", letterSpacing:2 } }, "CLASIFICACIÓN ÚLTIMO DÍA"),
-              React.createElement('div', { style:{ display:"flex", gap:16, fontSize:10 } },
-                React.createElement('span', { style:{ color:"#8b949e" } },
-                  "Total: ", React.createElement('strong', { style:{ color:"#e6edf3" } }, totalClasif.toLocaleString("es-CL"))
-                ),
-                pctNoConf!==null && React.createElement('span', { style:{ color:totalNoConf>0?"#ff5252":"#00d97e" } },
-                  "No conf.: ", React.createElement('strong', null, pctNoConf+"%")
-                )
-              )
-            ),
-            totalComercial>0 && React.createElement('div', { style:{ marginBottom:16 } },
-              React.createElement(BarraClasif, { clasif, total:totalComercial }),
-              React.createElement('div', { style:{ display:"flex", gap:12, marginTop:10, flexWrap:"wrap" } },
-                CATEGORIAS.map(c => {
-                  const n = clasif[c.key]||0;
-                  if (n===0) return null;
-                  return React.createElement('div', { key:c.key, style:{ display:"flex", alignItems:"center", gap:5, fontSize:10 } },
-                    React.createElement('div', { style:{ width:8, height:8, borderRadius:2, background:c.color } }),
-                    React.createElement('span', { style:{ color:"#8b949e" } }, c.label),
-                    React.createElement('span', { style:{ color:"#e6edf3", fontWeight:700 } }, n.toLocaleString("es-CL")),
-                    React.createElement('span', { style:{ color:"#484f58" } }, " ("+((n/totalComercial)*100).toFixed(1)+"%)")
-                  );
-                })
-              )
-            ),
-            totalNoConf>0 && React.createElement('div', { style:{ borderTop:"1px solid #21262d", paddingTop:12 } },
-              React.createElement('div', { style:{ fontSize:9, color:"#ff5252", letterSpacing:2, marginBottom:8 } }, "NO CONFORMES"),
-              React.createElement('div', { style:{ display:"flex", gap:16, flexWrap:"wrap" } },
-                NO_CONFORMES.map(c => {
-                  const n = clasif[c.key]||0;
-                  if (n===0) return null;
-                  return React.createElement('div', { key:c.key, style:{ display:"flex", alignItems:"center", gap:5, fontSize:11 } },
-                    React.createElement('div', { style:{ width:8, height:8, borderRadius:2, background:c.color } }),
-                    React.createElement('span', { style:{ color:"#8b949e" } }, c.label+":"),
-                    React.createElement('span', { style:{ color:"#ff5252", fontWeight:700 } }, n)
-                  );
-                })
-              )
-            ),
-            totalClasif===0 && React.createElement('div', { style:{ color:"#484f58", fontSize:11, textAlign:"center", padding:"12px 0" } },
-              "Sin datos de clasificación para el último día"
-            )
-          )
-        )
-      )
-    ),
-
-    // FOOTER
-    React.createElement('div', {
-      style:{ background:"#0d1117", borderTop:"1px solid #21262d", padding:"7px 24px",
-              display:"flex", justifyContent:"space-between", fontSize:9, color:"#484f58", letterSpacing:1 }
-    },
-      React.createElement('span', null, "AVIVET.CL · DR. ANDRÉS LAZO ESCOBAR · MV"),
-      React.createElement('span', null, datosG?.fechaConsulta ? "Datos al "+datosG.fechaConsulta : "")
-    )
-  );
+    // Alerta global topbar
+    const ag=document.getElementById("alerta-global");
+    ag.innerHTML=""; const agEl=document.createElement("div");
+    Object.assign(agEl.style,{background:"rgba(255,59,59,0.12)",border:"1px solid rgba(255,59,59,0.35)",
+      borderRadius:"6px",padding:"4px 12px",fontSize:"11px",color:"#ff5252"});
+    agEl.textContent="⚠ "+alertas.length+" "+(alertas.length===1?"lote":"lotes")+" con datos pendientes";
+    ag.appendChild(agEl);
+  } else {
+    document.getElementById("alerta-global").innerHTML="";
+  }
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+// ── RENDER MAIN ───────────────────────────────────────────────────────────
+function renderMain(){
+  const main=document.getElementById("contenido");
+  main.innerHTML="";
+  const est=state.estados[state.granjaId];
+  const granja=GRANJAS.find(g=>g.id===state.granjaId);
+  const datosG=state.datos[state.granjaId];
+  const lotes=datosG?.lotes||[];
+  const lote=lotes[state.loteIdx];
+
+  if(!lote && est==="cargando"){
+    main.innerHTML='<div class="estado-msg"><div style="color:#484f58">Cargando datos···</div></div>'; return;
+  }
+  if(!lote && est==="error"){
+    main.innerHTML=`<div class="estado-msg"><div style="font-size:32px">⚠</div><div style="color:#ff5252">No se pudo conectar con ${granja.nombre}</div><div style="font-size:11px;color:#484f58;text-align:center;max-width:320px">Verifica que el Apps Script tenga getDashboard y esté publicado.</div></div>`; return;
+  }
+  if(!lote) return;
+
+  // Header lote
+  const ac=alertColor(lote.diasPendientes);
+  const header=document.createElement("div"); header.className="header-lote";
+  const hLeft=document.createElement("div");
+  const hSub=document.createElement("div"); Object.assign(hSub.style,{fontSize:"10px",color:"#8b949e",letterSpacing:"2px",marginBottom:"4px"});
+  hSub.textContent=granja.nombre.toUpperCase()+" · "+lote.nombre.toUpperCase();
+  const hTitle=document.createElement("h2"); Object.assign(hTitle.style,{margin:"0",fontSize:"20px",fontWeight:"700"});
+  hTitle.innerHTML=`Semana <span style="color:${granja.color}">${lote.semanaVida}</span> de vida <span style="font-size:12px;color:#8b949e;font-weight:400;margin-left:12px">${(lote.aves||0).toLocaleString("es-CL")} aves · último dato: ${lote.ultimaFecha}</span>`;
+  hLeft.append(hSub,hTitle);
+  const diasBadge=document.createElement("div"); diasBadge.className="dias-badge";
+  Object.assign(diasBadge.style,{background:ac+"12",border:"1px solid "+ac+"45"});
+  if(lote.diasPendientes===0){
+    diasBadge.innerHTML=`<div style="font-size:22px;color:#00d97e">✓</div><div style="font-size:9px;color:#00d97e;letter-spacing:1px;margin-top:2px">AL DÍA</div>`;
+  } else {
+    diasBadge.innerHTML=`<div style="font-size:28px;font-weight:700;color:${ac};line-height:1">${lote.diasPendientes}</div><div style="font-size:9px;color:#8b949e;letter-spacing:1px;margin-top:4px">${lote.diasPendientes===1?"DÍA SIN":"DÍAS SIN"}<br>REGISTRO</div>`;
+  }
+  header.append(hLeft,diasBadge);
+  main.appendChild(header);
+
+  // KPIs
+  const kpiGrid=document.createElement("div"); kpiGrid.className="kpi-grid";
+  const kpis=[
+    {label:"POSTURA",    value:lote.postura!=null?lote.postura+"%":"—",    color:granja.color,  sub:lote.posturaEsperada!=null?"Esperado: "+lote.posturaEsperada+"%":""},
+    {label:"DIFERENCIA", value:lote.diferencia!=null?(lote.diferencia>0?"+":"")+lote.diferencia+"%":"—", color:lote.diferencia>=0?"#00d97e":"#ff5252", sub:lote.diferencia>=0?"↑ Sobre curva":"↓ Bajo curva"},
+    {label:"MORTALIDAD", value:lote.mortalidadHoy!=null?lote.mortalidadHoy+" aves":"—", color:lote.mortalidadHoy>3?"#ff5252":"#00d97e", sub:lote.mortalidadHoy>3?"⚠ Alta":"Normal"},
+    {label:"KG/AVE/DÍA", value:lote.kgAve!=null?lote.kgAve:"—", color:"#58a6ff", sub:(lote.huevos||0).toLocaleString("es-CL")+" huevos"},
+  ];
+  kpis.forEach(kpi=>{
+    const card=document.createElement("div"); card.className="kpi-card";
+    const bar=document.createElement("div"); bar.className="kpi-bar"; bar.style.background=kpi.color;
+    const lbl=document.createElement("div"); lbl.className="kpi-label"; lbl.textContent=kpi.label;
+    const val=document.createElement("div"); val.className="kpi-value"; val.style.color=kpi.color; val.textContent=kpi.value;
+    const sub=document.createElement("div"); sub.className="kpi-sub"; sub.textContent=kpi.sub;
+    card.append(bar,lbl,val,sub); kpiGrid.appendChild(card);
+  });
+  main.appendChild(kpiGrid);
+
+  // Gráfico
+  const chartBox=document.createElement("div"); chartBox.className="chart-box";
+  const chartHdr=document.createElement("div"); Object.assign(chartHdr.style,{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"});
+  const chartTtl=document.createElement("div"); Object.assign(chartTtl.style,{fontSize:"10px",color:"#8b949e",letterSpacing:"2px"}); chartTtl.textContent="CURVA DE POSTURA — ÚLTIMOS 28 DÍAS";
+  const chartLgnd=document.createElement("div"); Object.assign(chartLgnd.style,{display:"flex",gap:"14px",fontSize:"10px",color:"#8b949e"});
+  chartLgnd.innerHTML=`<span><span style="color:${granja.color}">● </span>Real</span><span><span style="color:#484f58">● </span>Esperado</span>`;
+  chartHdr.append(chartTtl,chartLgnd);
+  chartBox.appendChild(chartHdr);
+  chartBox.appendChild(buildChart(lote.registros, granja.color));
+  if(lote.diasPendientes>0){
+    const pb=document.createElement("div"); pb.className="pending-box";
+    Object.assign(pb.style,{background:ac+"0d",border:"1px dashed "+ac+"45",color:ac,marginTop:"12px"});
+    pb.innerHTML=`⚠ Faltan <strong style="margin:0 4px">${lote.diasPendientes} ${lote.diasPendientes===1?"día":"días"}</strong> sin registrar desde el ${lote.ultimaFecha}`;
+    chartBox.appendChild(pb);
+  }
+  main.appendChild(chartBox);
+
+  // Clasificación
+  if(granja.tieneClasificacion && lote.clasificacion){
+    const clasif=lote.clasificacion;
+    const totalCom=CATEGORIAS.reduce((s,c)=>s+(clasif[c.key]||0),0);
+    const totalNC=NO_CONFORMES.reduce((s,c)=>s+(clasif[c.key]||0),0);
+    const total=totalCom+totalNC;
+    const pctNC=total>0?((totalNC/total)*100).toFixed(1):null;
+
+    const box=document.createElement("div"); box.className="clasif-box";
+    const chdr=document.createElement("div"); Object.assign(chdr.style,{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px"});
+    const ctitl=document.createElement("div"); Object.assign(ctitl.style,{fontSize:"10px",color:"#8b949e",letterSpacing:"2px"}); ctitl.textContent="CLASIFICACIÓN ÚLTIMO DÍA";
+    const ctots=document.createElement("div"); Object.assign(ctots.style,{display:"flex",gap:"16px",fontSize:"10px"});
+    ctots.innerHTML=`<span style="color:#8b949e">Total: <strong style="color:#e6edf3">${total.toLocaleString("es-CL")}</strong></span>`+(pctNC!==null?`<span style="color:${totalNC>0?"#ff5252":"#00d97e"}">No conf.: <strong>${pctNC}%</strong></span>`:"");
+    chdr.append(ctitl,ctots); box.appendChild(chdr);
+
+    if(totalCom>0){
+      const barra=document.createElement("div"); barra.className="barra";
+      CATEGORIAS.forEach(c=>{ const n=clasif[c.key]||0; if(!n) return; const seg=document.createElement("div"); Object.assign(seg.style,{width:((n/totalCom)*100)+"%",background:c.color,minWidth:"2px"}); seg.title=c.label+": "+n; barra.appendChild(seg); });
+      box.appendChild(barra);
+      const lgnd=document.createElement("div"); lgnd.className="legend";
+      CATEGORIAS.forEach(c=>{ const n=clasif[c.key]||0; if(!n) return;
+        const li=document.createElement("div"); li.className="legend-item";
+        li.innerHTML=`<div class="legend-dot" style="background:${c.color}"></div><span style="color:#8b949e">${c.label}</span><span style="color:#e6edf3;font-weight:700">${n.toLocaleString("es-CL")}</span><span style="color:#484f58"> (${((n/totalCom)*100).toFixed(1)}%)</span>`;
+        lgnd.appendChild(li);
+      });
+      box.appendChild(lgnd);
+    }
+
+    if(totalNC>0){
+      const sep=document.createElement("div"); Object.assign(sep.style,{borderTop:"1px solid #21262d",paddingTop:"12px",marginTop:"12px"});
+      const nclbl=document.createElement("div"); Object.assign(nclbl.style,{fontSize:"9px",color:"#ff5252",letterSpacing:"2px",marginBottom:"8px"}); nclbl.textContent="NO CONFORMES";
+      const ncrow=document.createElement("div"); Object.assign(ncrow.style,{display:"flex",gap:"16px",flexWrap:"wrap"});
+      NO_CONFORMES.forEach(c=>{ const n=clasif[c.key]||0; if(!n) return;
+        const li=document.createElement("div"); li.className="legend-item";
+        li.innerHTML=`<div class="legend-dot" style="background:${c.color}"></div><span style="color:#8b949e">${c.label}:</span><span style="color:#ff5252;font-weight:700">${n}</span>`;
+        ncrow.appendChild(li);
+      });
+      sep.append(nclbl,ncrow); box.appendChild(sep);
+    }
+
+    if(total===0) box.innerHTML+='<div style="color:#484f58;font-size:11px;text-align:center;padding:12px 0">Sin datos de clasificación para el último día</div>';
+    main.appendChild(box);
+  }
+
+  // Footer fecha consulta
+  const fc=document.getElementById("fecha-consulta");
+  if(datosG?.fechaConsulta) fc.textContent="Datos al "+datosG.fechaConsulta; else fc.textContent="";
+}
+
+// ── RENDER COMPLETO ───────────────────────────────────────────────────────
+function render(){ renderSidebar(); renderMain(); }
+
+// ── CARGA DATOS ───────────────────────────────────────────────────────────
+function cargarGranja(g){
+  state.estados[g.id]="cargando";
+  render();
+  fetch(g.webAppUrl+"?action=getDashboard")
+    .then(r=>{ if(!r.ok) throw new Error(); return r.json(); })
+    .then(json=>{ if(json.error) throw new Error(json.error); state.datos[g.id]=json; state.estados[g.id]="ok"; render(); })
+    .catch(()=>{ state.estados[g.id]="error"; render(); });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+render();
+GRANJAS.forEach(cargarGranja);
 </script>
 </body>
 </html>
