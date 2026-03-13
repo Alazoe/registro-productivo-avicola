@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>AviVet — Monitor de Producción</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -375,7 +378,7 @@ function renderMain(){
     {label:"POSTURA",    value:lote.postura!=null?lote.postura+"%":"—",    color:granja.color,  sub:lote.posturaEsperada!=null?"Esperado: "+lote.posturaEsperada+"%":""},
     {label:"DIFERENCIA", value:lote.diferencia!=null?(lote.diferencia>0?"+":"")+lote.diferencia+"%":"—", color:lote.diferencia>=0?"#00d97e":"#ff5252", sub:lote.diferencia>=0?"↑ Sobre curva":"↓ Bajo curva"},
     {label:"MORTALIDAD", value:lote.mortalidadHoy!=null?lote.mortalidadHoy+" aves":"—", color:lote.mortalidadHoy>3?"#ff5252":"#00d97e", sub:lote.mortalidadHoy>3?"⚠ Alta":"Normal"},
-    {label:"KG/AVE/DÍA", value:lote.kgAve!=null?lote.kgAve:"—", color:"#58a6ff", sub:(lote.huevos||0).toLocaleString("es-CL")+" huevos"},
+    {label:"G ALIM/HUEVO", value:lote.gAlimPorHuevo!=null?lote.gAlimPorHuevo+" g":"—", color:"#58a6ff", sub:(lote.huevos||0).toLocaleString("es-CL")+" huevos"},
   ];
   kpis.forEach(kpi=>{
     const card=document.createElement("div"); card.className="kpi-card";
