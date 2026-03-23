@@ -5,7 +5,7 @@
 ## Historial de cambios específicos
 | Fecha | Cambio |
 |-------|--------|
-| — | — |
+23| 03|V2
 
 ## Enlace al Google Sheet
 https://docs.google.com/spreadsheets/d/1No5Nm1TtpZ2GpdIUtQsN7MKBjq0ANZlGyURSyy77aZw?authuser=alazoemv%40gmail.com&usp=drive_fs
