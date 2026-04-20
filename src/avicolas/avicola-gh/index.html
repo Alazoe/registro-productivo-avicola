@@ -90,6 +90,12 @@
   .banner-edicion-texto { flex: 1; line-height: 1.4; }
   .banner-edicion-titulo { font-size: 15px; font-weight: 700; }
   .banner-edicion-subtitulo { font-size: 12px; opacity: 0.9; margin-top: 2px; }
+  .btn-cancelar-edicion {
+    padding: 8px 12px; border: 2px solid rgba(255,255,255,0.8); border-radius: 8px;
+    background: transparent; color: white; font-size: 13px; font-weight: 700;
+    cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: background 0.2s;
+  }
+  .btn-cancelar-edicion:active { background: rgba(255,255,255,0.2); }
 
   /* SELECTOR DE LOTE */
   .lote-selector { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -475,8 +481,9 @@
     <div class="banner-edicion-icon">✏️</div>
     <div class="banner-edicion-texto">
       <div class="banner-edicion-titulo">Modo edición</div>
-      <div class="banner-edicion-subtitulo">Cargando registro existente — los datos serán sobreescritos al guardar</div>
+      <div class="banner-edicion-subtitulo">Registro existente cargado — se sobreescribirá al guardar</div>
     </div>
+    <button class="btn-cancelar-edicion" onclick="cancelarEdicion()" type="button">✕ Cancelar</button>
   </div>
 
   <!-- SELECTOR DE LOTE -->
@@ -1036,6 +1043,10 @@ function setModoEdicion(activo) {
     btn.innerHTML = '✅ Guardar Registro';
     btn.classList.remove('modo-edicion');
   }
+}
+
+function cancelarEdicion() {
+  cargarUltimoDia();
 }
 
 // ============================================

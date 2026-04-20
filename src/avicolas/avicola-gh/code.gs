@@ -219,32 +219,39 @@ function detectarDiasFaltantes(nombreHoja) {
 
     const numFilas = ultimaFila - 8;
     const valores  = ws.getRange(9, 1, numFilas, 1).getValues();
+    const tz       = Session.getScriptTimeZone();
 
-    // Recopilar fechas válidas
-    const fechas = [];
+    // Recopilar fechas como strings 'yyyy-MM-dd' para evitar problemas de zona horaria
+    const fechasSet = new Set();
+    const timestamps = [];
     for (let i = 0; i < valores.length; i++) {
-      if (valores[i][0] instanceof Date && valores[i][0] !== '') {
-        const d = new Date(valores[i][0]);
-        d.setHours(0, 0, 0, 0);
-        fechas.push(d.getTime());
+      const val = valores[i][0];
+      if (val instanceof Date) {
+        const str = Utilities.formatDate(val, tz, 'yyyy-MM-dd');
+        if (!fechasSet.has(str)) {
+          fechasSet.add(str);
+          timestamps.push(val.getTime());
+        }
       }
     }
-    if (fechas.length < 2) return { faltantes: [] };
-    fechas.sort((a, b) => a - b);
+    if (fechasSet.size < 2) return { faltantes: [] };
+    timestamps.sort((a, b) => a - b);
 
+    // Iterar día a día con setDate(+1) para respetar cambio de hora DST
     const faltantes = [];
-    const UN_DIA = 24 * 60 * 60 * 1000;
+    const cursor = new Date(timestamps[0]);
+    cursor.setHours(12, 0, 0, 0); // mediodía evita ambigüedades de DST
+    cursor.setDate(cursor.getDate() + 1);
 
-    for (let i = 0; i < fechas.length - 1; i++) {
-      let cursor = fechas[i] + UN_DIA;
-      while (cursor < fechas[i + 1]) {
-        const d    = new Date(cursor);
-        const dd   = String(d.getDate()).padStart(2, '0');
-        const mm   = String(d.getMonth() + 1).padStart(2, '0');
-        const yyyy = d.getFullYear();
-        faltantes.push(dd + '/' + mm + '/' + yyyy);
-        cursor += UN_DIA;
+    const fin = new Date(timestamps[timestamps.length - 1]);
+    fin.setHours(12, 0, 0, 0);
+
+    while (cursor < fin) {
+      const str = Utilities.formatDate(cursor, tz, 'yyyy-MM-dd');
+      if (!fechasSet.has(str)) {
+        faltantes.push(Utilities.formatDate(cursor, tz, 'dd/MM/yyyy'));
       }
+      cursor.setDate(cursor.getDate() + 1);
     }
 
     return { faltantes };
