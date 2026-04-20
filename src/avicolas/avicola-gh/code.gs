@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════
-// REGISTRO DE DATOS PRODUCTIVOS — AVÍCOLA Abogabir
-// Code.gs — con sobreescritura de registros y consulta por fecha
+// REGISTRO DE DATOS PRODUCTIVOS — AVÍCOLA GH
+// Code.gs — con sobreescritura de registros, consulta por fecha y ordenar
 // ═══════════════════════════════════════════════════════════════════════
 
 function doGet(e) {
@@ -15,11 +15,8 @@ function doGet(e) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// NUEVA FUNCIÓN: obtenerDatosFecha
-// Devuelve { existe: false } si no hay registro para esa fecha,
-// o { existe: true, ...todos los campos } si ya existe.
+// obtenerDatosFecha
 // ═══════════════════════════════════════════════════════════════════════
-
 function obtenerDatosFecha(nombreHoja, fechaTimestamp) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -43,7 +40,7 @@ function obtenerDatosFecha(nombreHoja, fechaTimestamp) {
       if (fechaFila.getTime() === fechaBuscada.getTime()) {
         return {
           existe:        true,
-          filaIndex:     i + 9, // fila real en la hoja (1-based, datos desde fila 9)
+          filaIndex:     i + 9,
           nAves:         f[2]  || 0,
           mortalidad:    f[3]  || 0,
           kgAlimento:    f[4]  || 0,
@@ -62,9 +59,7 @@ function obtenerDatosFecha(nombreHoja, fechaTimestamp) {
         };
       }
     }
-
     return { existe: false };
-
   } catch (error) {
     Logger.log('Error en obtenerDatosFecha: ' + error.message);
     return { existe: false };
@@ -72,10 +67,8 @@ function obtenerDatosFecha(nombreHoja, fechaTimestamp) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// guardarDatos — ahora acepta datos.sobreescribir = true
-// Si sobreescribir es true, busca la fila con esa fecha y la reemplaza.
+// guardarDatos — con loop confiable para fila destino
 // ═══════════════════════════════════════════════════════════════════════
-
 function guardarDatos(datos) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -89,7 +82,7 @@ function guardarDatos(datos) {
     const fecha = new Date(datos.fecha);
     fecha.setHours(0, 0, 0, 0);
 
-    // ── Buscar si ya existe un registro para esta fecha ──────────────
+    // Buscar si ya existe registro para esta fecha
     let filaExistente = -1;
     const ultimaFila = ws.getLastRow();
 
@@ -101,29 +94,25 @@ function guardarDatos(datos) {
         const fechaFila = new Date(fechas[i][0]);
         fechaFila.setHours(0, 0, 0, 0);
         if (fechaFila.getTime() === fecha.getTime()) {
-          filaExistente = i + 9; // fila real (1-based)
+          filaExistente = i + 9;
           break;
         }
       }
     }
 
-    // Si existe y NO se pidió sobreescribir → error
     if (filaExistente > 0 && !datos.sobreescribir) {
-      return {
-        exito: false,
-        mensaje: '⚠️ Ya existe un registro para esta fecha'
-      };
+      return { exito: false, mensaje: '⚠️ Ya existe un registro para esta fecha' };
     }
 
-    // ── Obtener configuración del lote ───────────────────────────────
+    // Obtener configuración del lote
     const wsConfig = ss.getSheetByName('CONFIGURACIÓN');
     let fechaNac = null;
     let lineaGenetica = null;
 
     for (let i = 10; i <= 14; i++) {
       if (wsConfig.getRange(i, 2).getValue() === nombreHoja) {
-        fechaNac       = wsConfig.getRange(i, 3).getValue();
-        lineaGenetica  = wsConfig.getRange(i, 4).getValue();
+        fechaNac      = wsConfig.getRange(i, 3).getValue();
+        lineaGenetica = wsConfig.getRange(i, 4).getValue();
         break;
       }
     }
@@ -132,8 +121,8 @@ function guardarDatos(datos) {
       return { exito: false, mensaje: 'No se encontró configuración del lote' };
     }
 
-    // ── Calcular KPIs ────────────────────────────────────────────────
-    const edadSemanas = Math.floor((fecha - fechaNac) / (7 * 24 * 60 * 60 * 1000))+1;
+    // Calcular KPIs
+    const edadSemanas = Math.floor((fecha - fechaNac) / (7 * 24 * 60 * 60 * 1000)) + 1;
 
     const wsCurva = ss.getSheetByName('MAESTRO CURVAS');
     let porcEsperado = 0;
@@ -156,18 +145,16 @@ function guardarDatos(datos) {
     const mortalidad = datos.mortalidad;
     const kgAlimento = datos.kgAlimento;
     const nHuevos    = datos.nHuevos;
-
-    const chico   = datos.chico   || 0;
-    const mediano = datos.mediano || 0;
-    const grande  = datos.grande  || 0;
-    const xl      = datos.xl      || 0;
-    const superXl = datos.superXl || 0;
-    const jumbo   = datos.jumbo   || 0;
-
-    const sucios   = datos.sucios   || 0;
-    const rotos    = datos.rotos    || 0;
-    const trizados = datos.trizados || 0;
-    const sangre   = datos.sangre   || 0;
+    const chico      = datos.chico   || 0;
+    const mediano    = datos.mediano || 0;
+    const grande     = datos.grande  || 0;
+    const xl         = datos.xl      || 0;
+    const superXl    = datos.superXl || 0;
+    const jumbo      = datos.jumbo   || 0;
+    const sucios     = datos.sucios   || 0;
+    const rotos      = datos.rotos    || 0;
+    const trizados   = datos.trizados || 0;
+    const sangre     = datos.sangre   || 0;
 
     const kgPorAve    = nAves > 0 ? kgAlimento / nAves : 0;
     const porcPostura = nAves > 0 ? nHuevos / nAves    : 0;
@@ -181,17 +168,16 @@ function guardarDatos(datos) {
       kgPorAve, porcPostura, porcEsperado, diferencia, observaciones
     ]];
 
-    // ── Escribir en la fila correcta ─────────────────────────────────
+    // Determinar fila destino — loop confiable
     let filaDestino;
-
     if (filaExistente > 0) {
-      // Sobreescribir fila existente
       filaDestino = filaExistente;
     } else {
-      // Nueva fila al final
-      filaDestino = ultimaFila + 1;
-      // Si la última fila está vacía (primer registro), usar fila 9
-      if (ws.getRange(9, 1).getValue() === '') filaDestino = 9;
+      filaDestino = 9;
+      while (ws.getRange(filaDestino, 1).getValue() !== '') {
+        filaDestino++;
+        if (filaDestino > 2000) break;
+      }
     }
 
     ws.getRange(filaDestino, 1, 1, 21).setValues(valoresNuevos);
@@ -204,7 +190,6 @@ function guardarDatos(datos) {
       ? '✅ Registro sobreescrito correctamente'
       : '✅ Datos guardados correctamente';
 
-    // Solo avanzar al día siguiente si es un registro nuevo (no sobreescritura)
     let siguiente = null;
     if (!datos.sobreescribir) {
       siguiente = obtenerDatosSiguienteDia(nombreHoja, fecha, nAves, mortalidad);
@@ -219,9 +204,87 @@ function guardarDatos(datos) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// detectarDiasFaltantes
+// Detecta huecos en la secuencia de fechas de la hoja.
+// Retorna { faltantes: ['dd/mm/yyyy', ...] }
+// ═══════════════════════════════════════════════════════════════════════
+function detectarDiasFaltantes(nombreHoja) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ws = ss.getSheetByName(nombreHoja);
+    if (!ws) return { faltantes: [] };
+
+    const ultimaFila = ws.getLastRow();
+    if (ultimaFila < 10) return { faltantes: [] };
+
+    const numFilas = ultimaFila - 8;
+    const valores  = ws.getRange(9, 1, numFilas, 1).getValues();
+
+    // Recopilar fechas válidas
+    const fechas = [];
+    for (let i = 0; i < valores.length; i++) {
+      if (valores[i][0] instanceof Date && valores[i][0] !== '') {
+        const d = new Date(valores[i][0]);
+        d.setHours(0, 0, 0, 0);
+        fechas.push(d.getTime());
+      }
+    }
+    if (fechas.length < 2) return { faltantes: [] };
+    fechas.sort((a, b) => a - b);
+
+    const faltantes = [];
+    const UN_DIA = 24 * 60 * 60 * 1000;
+
+    for (let i = 0; i < fechas.length - 1; i++) {
+      let cursor = fechas[i] + UN_DIA;
+      while (cursor < fechas[i + 1]) {
+        const d    = new Date(cursor);
+        const dd   = String(d.getDate()).padStart(2, '0');
+        const mm   = String(d.getMonth() + 1).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        faltantes.push(dd + '/' + mm + '/' + yyyy);
+        cursor += UN_DIA;
+      }
+    }
+
+    return { faltantes };
+  } catch (error) {
+    Logger.log('Error en detectarDiasFaltantes: ' + error.message);
+    return { faltantes: [] };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// ordenarPorFecha
+// Ordena filas desde la 9 por fecha ascendente y re-aplica formatos.
+// ═══════════════════════════════════════════════════════════════════════
+function ordenarPorFecha(nombreHoja) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ws = ss.getSheetByName(nombreHoja);
+    if (!ws) return { exito: false, mensaje: 'Hoja no encontrada' };
+
+    const ultimaFila = ws.getLastRow();
+    if (ultimaFila < 10) return { exito: true, mensaje: 'Sin datos que ordenar' };
+
+    const numFilas = ultimaFila - 8;
+    ws.getRange(9, 1, numFilas, 21).sort({ column: 1, ascending: true });
+
+    // Re-aplicar formatos
+    ws.getRange(9, 1,  numFilas, 1).setNumberFormat('dd/mm/yyyy');
+    ws.getRange(9, 17, numFilas, 1).setNumberFormat('0.000');
+    ws.getRange(9, 18, numFilas, 3).setNumberFormat('0.0%');
+
+    return { exito: true, mensaje: '✅ Datos ordenados por fecha correctamente' };
+  } catch (error) {
+    Logger.log('Error en ordenarPorFecha: ' + error.message);
+    return { exito: false, mensaje: '❌ Error: ' + error.message };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // ENDPOINT DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════
-
 function getDashboard() {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -254,13 +317,7 @@ function getDashboard() {
       const ultimaFila = hoja.getLastRow();
 
       if (ultimaFila < 9) {
-        return {
-          nombre, diasPendientes: 999, aves: 0, semanaVida: 0,
-          postura: null, posturaEsperada: null, diferencia: null,
-          mortalidadHoy: null, huevos: null, kgAve: null,
-          gAlimPorHuevo: null, clasificacion: null,
-          ultimaFecha: null, registros: []
-        };
+        return { nombre, diasPendientes: 999, aves: 0, semanaVida: 0, postura: null, posturaEsperada: null, diferencia: null, mortalidadHoy: null, huevos: null, kgAve: null, gAlimPorHuevo: null, clasificacion: null, ultimaFecha: null, registros: [] };
       }
 
       const numFilas = ultimaFila - 8;
@@ -268,13 +325,7 @@ function getDashboard() {
       const filas = valores.filter(f => f[0] instanceof Date || (f[0] && f[0] !== ''));
 
       if (!filas.length) {
-        return {
-          nombre, diasPendientes: 999, aves: 0, semanaVida: 0,
-          postura: null, posturaEsperada: null, diferencia: null,
-          mortalidadHoy: null, huevos: null, kgAve: null,
-          gAlimPorHuevo: null, clasificacion: null,
-          ultimaFecha: null, registros: []
-        };
+        return { nombre, diasPendientes: 999, aves: 0, semanaVida: 0, postura: null, posturaEsperada: null, diferencia: null, mortalidadHoy: null, huevos: null, kgAve: null, gAlimPorHuevo: null, clasificacion: null, ultimaFecha: null, registros: [] };
       }
 
       const ultima = filas[filas.length - 1];
@@ -289,7 +340,7 @@ function getDashboard() {
             avesInicio = parseInt(wsConfig.getRange(i, 5).getValue()) || 0;
             const fechaNac = wsConfig.getRange(i, 3).getValue();
             if (fechaNac instanceof Date) {
-              semanaVida = Math.floor((hoy - fechaNac) / (7 * 86400000))+1;
+              semanaVida = Math.floor((hoy - fechaNac) / (7 * 86400000)) + 1;
             }
             break;
           }
@@ -297,59 +348,47 @@ function getDashboard() {
       }
 
       const clasificacion = {
-        chico:    parseInt(ultima[6])  || 0,
-        mediano:  parseInt(ultima[7])  || 0,
-        grande:   parseInt(ultima[8])  || 0,
-        xl:       parseInt(ultima[9])  || 0,
-        superXl:  parseInt(ultima[10]) || 0,
-        jumbo:    parseInt(ultima[11]) || 0,
-        sucios:   parseInt(ultima[12]) || 0,
-        rotos:    parseInt(ultima[13]) || 0,
-        trizados: parseInt(ultima[14]) || 0,
-        sangre:   parseInt(ultima[15]) || 0,
+        chico: parseInt(ultima[6]) || 0, mediano: parseInt(ultima[7]) || 0,
+        grande: parseInt(ultima[8]) || 0, xl: parseInt(ultima[9]) || 0,
+        superXl: parseInt(ultima[10]) || 0, jumbo: parseInt(ultima[11]) || 0,
+        sucios: parseInt(ultima[12]) || 0, rotos: parseInt(ultima[13]) || 0,
+        trizados: parseInt(ultima[14]) || 0, sangre: parseInt(ultima[15]) || 0,
       };
 
       const kgAlimUltimo  = parseFloat(ultima[4]) || 0;
       const nHuevosUltimo = parseInt(ultima[5])   || 0;
       const gAlimPorHuevo = nHuevosUltimo > 0
-        ? Math.round((kgAlimUltimo * 1000) / nHuevosUltimo * 10) / 10
-        : null;
+        ? Math.round((kgAlimUltimo * 1000) / nHuevosUltimo * 10) / 10 : null;
 
       const ultimos28 = filas.slice(-28).map(f => {
         const fd = new Date(f[0]);
         const kgA = parseFloat(f[4]) || 0;
         const nH  = parseInt(f[5])   || 0;
         return {
-          fecha:         fd.getDate() + '/' + (fd.getMonth() + 1),
-          postura:       f[17] ? Math.round(f[17] * 1000) / 10 : null,
-          esperado:      f[18] ? Math.round(f[18] * 1000) / 10 : null,
-          mortalidad:    f[3]  || 0,
-          huevos:        nH,
-          kgAve:         f[16] ? Math.round(f[16] * 1000) / 1000 : null,
+          fecha: fd.getDate() + '/' + (fd.getMonth() + 1),
+          postura: f[17] ? Math.round(f[17] * 1000) / 10 : null,
+          esperado: f[18] ? Math.round(f[18] * 1000) / 10 : null,
+          mortalidad: f[3] || 0, huevos: nH,
+          kgAve: f[16] ? Math.round(f[16] * 1000) / 1000 : null,
           gAlimPorHuevo: nH > 0 ? Math.round((kgA * 1000) / nH * 10) / 10 : null,
         };
       });
 
       return {
-        nombre,
-        aves:            parseInt(ultima[2]) || avesInicio,
-        semanaVida,
-        postura:         ultima[17] ? Math.round(ultima[17] * 1000) / 10 : null,
+        nombre, aves: parseInt(ultima[2]) || avesInicio, semanaVida,
+        postura: ultima[17] ? Math.round(ultima[17] * 1000) / 10 : null,
         posturaEsperada: ultima[18] ? Math.round(ultima[18] * 1000) / 10 : null,
-        diferencia:      ultima[19] ? Math.round(ultima[19] * 1000) / 10 : null,
-        mortalidadHoy:   ultima[3]  || null,
-        huevos:          ultima[5]  || null,
-        kgAve:           ultima[16] ? Math.round(ultima[16] * 1000) / 1000 : null,
-        gAlimPorHuevo,
-        clasificacion,
-        diasPendientes,
+        diferencia: ultima[19] ? Math.round(ultima[19] * 1000) / 10 : null,
+        mortalidadHoy: ultima[3] || null, huevos: ultima[5] || null,
+        kgAve: ultima[16] ? Math.round(ultima[16] * 1000) / 1000 : null,
+        gAlimPorHuevo, clasificacion, diasPendientes,
         ultimaFecha: Utilities.formatDate(ultimaFechaDate, Session.getScriptTimeZone(), 'dd/MM/yyyy'),
-        registros:   ultimos28
+        registros: ultimos28
       };
     });
 
     return ContentService.createTextOutput(JSON.stringify({
-      granja:        ss.getName(),
+      granja: ss.getName(),
       fechaConsulta: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm'),
       lotes
     })).setMimeType(ContentService.MimeType.JSON);
@@ -361,9 +400,8 @@ function getDashboard() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// FUNCIONES ORIGINALES
+// FUNCIONES BASE
 // ═══════════════════════════════════════════════════════════════════════
-
 function obtenerLotesActivos() {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -372,12 +410,12 @@ function obtenerLotesActivos() {
 
     const lotes = [];
     for (let i = 1; i <= 5; i++) {
-      const fila         = i + 9;
-      const nombre       = wsConfig.getRange(fila, 2).getValue();
-      const fechaNac     = wsConfig.getRange(fila, 3).getValue();
-      const lineaGenetica= wsConfig.getRange(fila, 4).getValue();
-      const avesInicio   = wsConfig.getRange(fila, 5).getValue();
-      const estado       = wsConfig.getRange(fila, 6).getValue();
+      const fila          = i + 9;
+      const nombre        = wsConfig.getRange(fila, 2).getValue();
+      const fechaNac      = wsConfig.getRange(fila, 3).getValue();
+      const lineaGenetica = wsConfig.getRange(fila, 4).getValue();
+      const avesInicio    = wsConfig.getRange(fila, 5).getValue();
+      const estado        = wsConfig.getRange(fila, 6).getValue();
 
       if (estado && estado.toString().toUpperCase().includes('SÍ') && fechaNac) {
         lotes.push({
@@ -389,7 +427,6 @@ function obtenerLotesActivos() {
       }
     }
     return lotes;
-
   } catch (error) {
     Logger.log('Error en obtenerLotesActivos: ' + error.message);
     throw error;
@@ -399,17 +436,13 @@ function obtenerLotesActivos() {
 function obtenerDatosSiguienteDia(nombreHoja, fechaActual, nAvesActual, mortalidadActual) {
   const siguienteDia = new Date(fechaActual);
   siguienteDia.setDate(siguienteDia.getDate() + 1);
-  return {
-    fecha: siguienteDia.getTime(),
-    nAves: nAvesActual - mortalidadActual
-  };
+  return { fecha: siguienteDia.getTime(), nAves: nAvesActual - mortalidadActual };
 }
 
 function obtenerUltimoDia(nombreHoja) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const ws = ss.getSheetByName(nombreHoja);
-
     if (!ws) return { nAves: 0, fecha: new Date().getTime() };
 
     let ultimaFila = 9;
@@ -422,8 +455,7 @@ function obtenerUltimoDia(nombreHoja) {
       const wsConfig = ss.getSheetByName('CONFIGURACIÓN');
       for (let i = 10; i <= 14; i++) {
         if (wsConfig.getRange(i, 2).getValue() === nombreHoja) {
-          const avesInicio = wsConfig.getRange(i, 5).getValue();
-          return { nAves: parseInt(avesInicio) || 0, fecha: new Date().getTime() };
+          return { nAves: parseInt(wsConfig.getRange(i, 5).getValue()) || 0, fecha: new Date().getTime() };
         }
       }
       return { nAves: 0, fecha: new Date().getTime() };
@@ -432,7 +464,6 @@ function obtenerUltimoDia(nombreHoja) {
     const fechaUltimo      = ws.getRange(ultimaFila, 1).getValue();
     const nAvesUltimo      = ws.getRange(ultimaFila, 3).getValue();
     const mortalidadUltimo = ws.getRange(ultimaFila, 4).getValue();
-
     const siguienteDia = new Date(fechaUltimo);
     siguienteDia.setDate(siguienteDia.getDate() + 1);
 
@@ -440,7 +471,6 @@ function obtenerUltimoDia(nombreHoja) {
       nAves: (parseInt(nAvesUltimo) || 0) - (parseInt(mortalidadUltimo) || 0),
       fecha: siguienteDia.getTime()
     };
-
   } catch (error) {
     Logger.log('Error en obtenerUltimoDia: ' + error.message);
     return { nAves: 0, fecha: new Date().getTime() };
@@ -473,40 +503,25 @@ function obtenerDatosGraficos(nombreHoja) {
       return { exito: true, datos: [], mensaje: 'No hay datos registrados para este lote' };
     }
 
-    const rango   = ws.getRange(9, 1, ultimaFila - 8, 21);
-    const valores = rango.getValues();
-    const datos   = [];
+    const valores = ws.getRange(9, 1, ultimaFila - 8, 21).getValues();
+    const datos = [];
 
     for (let i = 0; i < valores.length; i++) {
       const f = valores[i];
       if (f[0]) {
         datos.push({
-          fecha:              f[0] instanceof Date ? f[0].getTime() : null,
-          edadSemanas:        f[1]  || 0,
-          nAves:              f[2]  || 0,
-          mortalidad:         f[3]  || 0,
-          kgAlimento:         f[4]  || 0,
-          nHuevos:            f[5]  || 0,
-          chico:              f[6]  || 0,
-          mediano:            f[7]  || 0,
-          grande:             f[8]  || 0,
-          xl:                 f[9]  || 0,
-          superXl:            f[10] || 0,
-          jumbo:              f[11] || 0,
-          sucios:             f[12] || 0,
-          rotos:              f[13] || 0,
-          trizados:           f[14] || 0,
-          sangre:             f[15] || 0,
-          kgAve:              f[16] || 0,
-          porcentajePostura:  f[17] || 0,
-          porcentajeEsperado: f[18] || 0,
-          diferencia:         f[19] || 0
+          fecha: f[0] instanceof Date ? f[0].getTime() : null,
+          edadSemanas: f[1] || 0, nAves: f[2] || 0, mortalidad: f[3] || 0,
+          kgAlimento: f[4] || 0, nHuevos: f[5] || 0,
+          chico: f[6] || 0, mediano: f[7] || 0, grande: f[8] || 0,
+          xl: f[9] || 0, superXl: f[10] || 0, jumbo: f[11] || 0,
+          sucios: f[12] || 0, rotos: f[13] || 0, trizados: f[14] || 0, sangre: f[15] || 0,
+          kgAve: f[16] || 0, porcentajePostura: f[17] || 0,
+          porcentajeEsperado: f[18] || 0, diferencia: f[19] || 0
         });
       }
     }
-
     return { exito: true, datos, totalRegistros: datos.length };
-
   } catch (error) {
     Logger.log('Error en obtenerDatosGraficos: ' + error.message);
     return { exito: false, datos: [], mensaje: 'Error: ' + error.message };
@@ -519,10 +534,8 @@ function generarCurvasJavaScript() {
   const ultimaFila = ws.getLastRow();
   let codigo = "const CURVAS = {\n";
   const lineas = [
-    { nombre: 'Hy-line Brown',       columna: 2 },
-    { nombre: 'Hy-line W-80',        columna: 3 },
-    { nombre: 'Lohmann Brown',       columna: 4 },
-    { nombre: 'Lohmann White',       columna: 5 },
+    { nombre: 'Hy-line Brown', columna: 2 }, { nombre: 'Hy-line W-80', columna: 3 },
+    { nombre: 'Lohmann Brown', columna: 4 }, { nombre: 'Lohmann White', columna: 5 },
     { nombre: 'Hy-line Brown Jaula', columna: 6 }
   ];
   lineas.forEach(function(linea, idx) {
