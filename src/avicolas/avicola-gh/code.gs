@@ -195,6 +195,18 @@ function guardarDatos(datos) {
       siguiente = obtenerDatosSiguienteDia(nombreHoja, fecha, nAves, mortalidad);
     }
 
+    sincronizarConFirebase({
+      lote:        nombreHoja,
+      fecha:       fecha,
+      jumbo:       jumbo,
+      superXl:     superXl,
+      xl:          xl,
+      grande:      grande,
+      mediano:     mediano,
+      chico:       chico,
+      sobreescribir: datos.sobreescribir || false
+    });
+
     return { exito: true, mensaje, siguiente };
 
   } catch (error) {
@@ -558,4 +570,129 @@ function generarCurvasJavaScript() {
   codigo += '\n};';
   Logger.log(codigo);
   return codigo;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SYNC CON FIREBASE (inventario-huevos)
+// Mapea tamaños avicola-gh → categorías norma chilena y crea/actualiza
+// lotes en Firestore.
+//
+// CONFIGURACIÓN (una sola vez):
+//   Apps Script → Configuración del proyecto → Propiedades de script:
+//     FIREBASE_API_KEY   → AIzaSyB4_nLqQF-58zt6FiBck--urkzwYbAETDY
+//     FIREBASE_SYNC_EMAIL    → correo del usuario sync en Firebase
+//     FIREBASE_SYNC_PASSWORD → contraseña de ese usuario
+// ═══════════════════════════════════════════════════════════════════════
+
+function mapearCategoriasChilenas(d) {
+  return {
+    AAA: (d.jumbo    || 0),
+    AA:  (d.superXl  || 0) + (d.xl     || 0),
+    A:   (d.grande   || 0),
+    B:   (d.mediano  || 0),
+    C:   (d.chico    || 0)
+  };
+}
+
+function sincronizarConFirebase(datos) {
+  try {
+    const props   = PropertiesService.getScriptProperties();
+    const apiKey  = props.getProperty('FIREBASE_API_KEY');
+    const email   = props.getProperty('FIREBASE_SYNC_EMAIL');
+    const pass    = props.getProperty('FIREBASE_SYNC_PASSWORD');
+    if (!apiKey || !email || !pass) return;
+
+    const authResp = UrlFetchApp.fetch(
+      'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + apiKey,
+      {
+        method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+        payload: JSON.stringify({ email: email, password: pass, returnSecureToken: true })
+      }
+    );
+    const auth = JSON.parse(authResp.getContentText());
+    if (!auth.idToken) { Logger.log('Firebase sync: auth fallida — ' + authResp.getContentText()); return; }
+
+    const token    = auth.idToken;
+    const uid      = auth.localId;
+    const tz       = Session.getScriptTimeZone();
+    const fechaStr = Utilities.formatDate(datos.fecha, tz, 'yyyy-MM-dd');
+    const cats     = mapearCategoriasChilenas(datos);
+
+    const BASE = 'https://firestore.googleapis.com/v1/projects/avicola-clarita/databases/(default)/documents';
+
+    for (const cat in cats) {
+      const unidades = cats[cat];
+      if (unidades <= 0) continue;
+
+      const numeroLote = datos.lote + '-' + fechaStr + '-' + cat;
+
+      const qResp = UrlFetchApp.fetch(BASE + ':runQuery', {
+        method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+        headers: { Authorization: 'Bearer ' + token },
+        payload: JSON.stringify({
+          structuredQuery: {
+            from: [{ collectionId: 'lotes' }],
+            where: {
+              compositeFilter: {
+                op: 'AND',
+                filters: [
+                  { fieldFilter: { field: { fieldPath: 'uid' },        op: 'EQUAL', value: { stringValue: uid } } },
+                  { fieldFilter: { field: { fieldPath: 'numeroLote' }, op: 'EQUAL', value: { stringValue: numeroLote } } }
+                ]
+              }
+            },
+            limit: 1
+          }
+        })
+      });
+
+      const qData  = JSON.parse(qResp.getContentText());
+      const docExistente = qData[0] && qData[0].document ? qData[0].document : null;
+
+      if (docExistente) {
+        const dispActual   = parseInt((docExistente.fields.disponible   || {}).integerValue || 0);
+        const totalActual  = parseInt((docExistente.fields.unidadesTotal|| {}).integerValue || 0);
+        const nuevoDisp    = Math.max(0, dispActual + (unidades - totalActual));
+        UrlFetchApp.fetch(
+          'https://firestore.googleapis.com/v1/' + docExistente.name +
+          '?updateMask.fieldPaths=unidadesTotal&updateMask.fieldPaths=disponible',
+          {
+            method: 'patch', contentType: 'application/json', muteHttpExceptions: true,
+            headers: { Authorization: 'Bearer ' + token },
+            payload: JSON.stringify({
+              fields: {
+                unidadesTotal: { integerValue: String(unidades) },
+                disponible:    { integerValue: String(nuevoDisp) }
+              }
+            })
+          }
+        );
+      } else {
+        UrlFetchApp.fetch(BASE + '/lotes', {
+          method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+          headers: { Authorization: 'Bearer ' + token },
+          payload: JSON.stringify({
+            fields: {
+              uid:              { stringValue: uid },
+              productor:        { stringValue: email },
+              categoria:        { stringValue: cat },
+              formato:          { stringValue: 'Unidades' },
+              formatoId:        { stringValue: 'unidad' },
+              cajasIngresadas:  { integerValue: '0' },
+              unidadesTotal:    { integerValue: String(unidades) },
+              disponible:       { integerValue: String(unidades) },
+              numeroLote:       { stringValue: numeroLote },
+              fechaElaboracion: { stringValue: fechaStr },
+              notas:            { stringValue: 'Producción diaria · ' + datos.lote },
+              origenGAS:        { booleanValue: true }
+            }
+          })
+        });
+      }
+    }
+
+    Logger.log('Firebase sync OK — ' + fechaStr + ' · ' + datos.lote);
+  } catch (err) {
+    Logger.log('Firebase sync error (no bloqueante): ' + err.message);
+  }
 }
