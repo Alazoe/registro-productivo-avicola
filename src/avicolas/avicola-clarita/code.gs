@@ -1,4 +1,7 @@
 function doGet(e) {
+  if (e && e.parameter && e.parameter.action === 'getDashboard') {
+    return getDashboard();
+  }
   const template = HtmlService.createTemplateFromFile('index');
   return template.evaluate()
     .setTitle('Registro de Datos Productivos')
@@ -364,7 +367,7 @@ function obtenerDatosGraficos(nombreHoja) {
       datos: datos,
       totalRegistros: datos.length
     };
-    
+
   } catch (error) {
     Logger.log('Error en obtenerDatosGraficos: ' + error.message);
     return {
@@ -372,5 +375,120 @@ function obtenerDatosGraficos(nombreHoja) {
       datos: [],
       mensaje: 'Error: ' + error.message
     };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// ENDPOINT DASHBOARD — usado por dashboard.html central
+// ═══════════════════════════════════════════════════════════════════════
+function getDashboard() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const wsConfig = ss.getSheetByName('CONFIGURACIÓN');
+    const hojasIgnorar = ['Formulario', 'CONFIGURACIÓN', 'MAESTRO CURVAS'];
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    const lotesActivos = new Set();
+    if (wsConfig) {
+      for (let i = 10; i <= 14; i++) {
+        const nombre = wsConfig.getRange(i, 2).getValue();
+        const estado = wsConfig.getRange(i, 6).getValue();
+        if (nombre && estado && estado.toString().toUpperCase().includes('SÍ')) {
+          lotesActivos.add(nombre.toString().trim());
+        }
+      }
+    }
+
+    const hojas = ss.getSheets().filter(h => {
+      const nombre = h.getName();
+      if (hojasIgnorar.includes(nombre)) return false;
+      if (lotesActivos.size === 0) return true;
+      return lotesActivos.has(nombre.trim());
+    });
+
+    const lotes = hojas.map(hoja => {
+      const nombre = hoja.getName();
+      const ultimaFila = hoja.getLastRow();
+
+      if (ultimaFila < 9) {
+        return { nombre, diasPendientes: 999, aves: 0, semanaVida: 0, postura: null, posturaEsperada: null, diferencia: null, mortalidadHoy: null, huevos: null, kgAve: null, gAlimPorHuevo: null, clasificacion: null, ultimaFecha: null, registros: [] };
+      }
+
+      const numFilas = ultimaFila - 8;
+      const valores = hoja.getRange(9, 1, numFilas, 21).getValues();
+      const filas = valores.filter(f => f[0] instanceof Date || (f[0] && f[0] !== ''));
+
+      if (!filas.length) {
+        return { nombre, diasPendientes: 999, aves: 0, semanaVida: 0, postura: null, posturaEsperada: null, diferencia: null, mortalidadHoy: null, huevos: null, kgAve: null, gAlimPorHuevo: null, clasificacion: null, ultimaFecha: null, registros: [] };
+      }
+
+      const ultima = filas[filas.length - 1];
+      const ultimaFechaDate = new Date(ultima[0]);
+      ultimaFechaDate.setHours(0, 0, 0, 0);
+      const diasPendientes = Math.max(0, Math.round((hoy - ultimaFechaDate) / 86400000));
+
+      let avesInicio = 0, semanaVida = parseInt(ultima[1]) || 0;
+      if (wsConfig) {
+        for (let i = 10; i <= 14; i++) {
+          if (wsConfig.getRange(i, 2).getValue() === nombre) {
+            avesInicio = parseInt(wsConfig.getRange(i, 5).getValue()) || 0;
+            const fechaNac = wsConfig.getRange(i, 3).getValue();
+            if (fechaNac instanceof Date) {
+              semanaVida = Math.floor((hoy - fechaNac) / (7 * 86400000)) + 1;
+            }
+            break;
+          }
+        }
+      }
+
+      const clasificacion = {
+        chico: parseInt(ultima[6]) || 0, mediano: parseInt(ultima[7]) || 0,
+        grande: parseInt(ultima[8]) || 0, xl: parseInt(ultima[9]) || 0,
+        superXl: parseInt(ultima[10]) || 0, jumbo: parseInt(ultima[11]) || 0,
+        sucios: parseInt(ultima[12]) || 0, rotos: parseInt(ultima[13]) || 0,
+        trizados: parseInt(ultima[14]) || 0, sangre: parseInt(ultima[15]) || 0,
+      };
+
+      const kgAlimUltimo  = parseFloat(ultima[4]) || 0;
+      const nHuevosUltimo = parseInt(ultima[5])   || 0;
+      const gAlimPorHuevo = nHuevosUltimo > 0
+        ? Math.round((kgAlimUltimo * 1000) / nHuevosUltimo * 10) / 10 : null;
+
+      const ultimos28 = filas.slice(-28).map(f => {
+        const fd = new Date(f[0]);
+        return {
+          fecha:    fd.getDate() + '/' + (fd.getMonth() + 1),
+          postura:  f[17] ? Math.round(f[17] * 1000) / 10 : null,
+          esperado: f[18] ? Math.round(f[18] * 1000) / 10 : null,
+          mortalidad: f[3] || 0, huevos: parseInt(f[5]) || 0,
+          kgAve: f[16] ? Math.round(f[16] * 1000) / 1000 : null,
+          gAlimPorHuevo: parseInt(f[5]) > 0 ? Math.round(((parseFloat(f[4])||0) * 1000) / parseInt(f[5]) * 10) / 10 : null,
+        };
+      });
+
+      return {
+        nombre, aves: parseInt(ultima[2]) || avesInicio, semanaVida,
+        postura:         ultima[17] ? Math.round(ultima[17] * 1000) / 10 : null,
+        posturaEsperada: ultima[18] ? Math.round(ultima[18] * 1000) / 10 : null,
+        diferencia:      ultima[19] ? Math.round(ultima[19] * 1000) / 10 : null,
+        mortalidadHoy: ultima[3] || null, huevos: ultima[5] || null,
+        kgAve: ultima[16] ? Math.round(ultima[16] * 1000) / 1000 : null,
+        gAlimPorHuevo, clasificacion, diasPendientes,
+        ultimaFecha: Utilities.formatDate(ultimaFechaDate, Session.getScriptTimeZone(), 'dd/MM/yyyy'),
+        registros: ultimos28
+      };
+    });
+
+    return ContentService.createTextOutput(JSON.stringify({
+      granja: ss.getName(),
+      fechaConsulta: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm'),
+      lotes
+    })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ error: error.message }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }

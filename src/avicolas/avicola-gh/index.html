@@ -360,6 +360,12 @@
   }
   .modal-graficos-title { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
   .modal-graficos-body { padding: 20px; }
+  .btn-pdf {
+    padding: 7px 14px; background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.55);
+    border-radius: 8px; color: white; font-size: 12px; font-weight: 700; cursor: pointer;
+    transition: background 0.2s; white-space: nowrap; flex-shrink: 0;
+  }
+  .btn-pdf:active { background: rgba(255,255,255,0.08); }
   .resumen-panel { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
   .resumen-card { border-radius: 12px; padding: 14px 12px; text-align: center; }
   .resumen-card.azul   { background: linear-gradient(135deg, #e3f2fd, #bbdefb); border: 1px solid #90caf9; }
@@ -659,7 +665,10 @@
   <div class="modal-graficos-content">
     <div class="modal-graficos-header">
       <div class="modal-graficos-title"><span>📊</span><span id="titulo-graficos">Gráficos - Lote X</span></div>
-      <button class="modal-close" onclick="cerrarGraficos()" type="button">✕</button>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn-pdf" onclick="exportarPDFSemanal()" type="button">📄 Exportar PDF</button>
+        <button class="modal-close" onclick="cerrarGraficos()" type="button">✕</button>
+      </div>
     </div>
     <div class="modal-graficos-body">
       <div class="resumen-panel">
@@ -1514,6 +1523,200 @@ function renderizarEstadisticas() {
   cards[1].className = 'kpi-card ' + (ps           >= 90 ? 'excelente' : ps           >= 80 ? 'bueno' : 'alerta');
   cards[2].className = 'kpi-card ' + (pNV          <=  2 ? 'excelente' : pNV          <=  5 ? 'bueno' : 'alerta');
   cards[3].className = 'kpi-card ' + (conv         <= 0.12? 'excelente' : conv        <= 0.15? 'bueno' : 'alerta');
+}
+
+// ============================================
+// EXPORTAR REPORTE SEMANAL PDF
+// ============================================
+function exportarPDFSemanal() {
+  if (!loteActual || !datosGraficos || !datosGraficos.length) {
+    mostrarToast('Cargue los gráficos primero', 'error');
+    return;
+  }
+
+  // Capture chart as base64 (already rendered)
+  const chartCanvas = document.getElementById('chart-curva');
+  const chartImg    = chartCanvas ? chartCanvas.toDataURL('image/png') : null;
+
+  // Aggregate weekly data
+  const semanas = {};
+  datosGraficos.forEach(d => {
+    const s = d.edadSemanas;
+    if (!semanas[s]) semanas[s] = [];
+    semanas[s].push(d);
+  });
+
+  // Global KPIs
+  const n        = datosGraficos.length;
+  const th       = datosGraficos.reduce((s,d) => s + (d.nHuevos    || 0), 0);
+  const pp       = datosGraficos.reduce((s,d) => s + (d.porcentajePostura || 0), 0) / n * 100;
+  const totalNV  = datosGraficos.reduce((s,d) => s + (d.sucios||0) + (d.rotos||0) + (d.trizados||0) + (d.sangre||0), 0);
+  const pNV      = th > 0 ? totalNV / th * 100 : 0;
+  const ul7      = datosGraficos.slice(-7);
+  const ps7      = ul7.reduce((s,d) => s + (d.porcentajePostura || 0), 0) / ul7.length * 100;
+  const h7       = ul7.reduce((s,d) => s + (d.nHuevos    || 0), 0);
+  const kg7      = ul7.reduce((s,d) => s + (d.kgAlimento || 0), 0);
+  const conv     = h7 > 0 ? kg7 / h7 : 0;
+
+  const semActual = datosGraficos[datosGraficos.length - 1].edadSemanas;
+  const fechaHoy  = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  // Build weekly table rows
+  let filasHTML = '';
+  Object.keys(semanas).sort((a, b) => a - b).forEach(sem => {
+    const dias    = semanas[sem];
+    const nd      = dias.length;
+    const avgAves = Math.round(dias.reduce((s,d) => s + (d.nAves    || 0), 0) / nd);
+    const totH    = dias.reduce((s,d) => s + (d.nHuevos    || 0), 0);
+    const totMort = dias.reduce((s,d) => s + (d.mortalidad  || 0), 0);
+    const totAlim = dias.reduce((s,d) => s + (d.kgAlimento  || 0), 0);
+    const totNVS  = dias.reduce((s,d) => s + (d.sucios||0)+(d.rotos||0)+(d.trizados||0)+(d.sangre||0), 0);
+    const avgPost = dias.reduce((s,d) => s + (d.porcentajePostura  || 0), 0) / nd * 100;
+    const avgEsp  = dias.reduce((s,d) => s + (d.porcentajeEsperado || 0), 0) / nd * 100;
+    const dif     = avgPost - avgEsp;
+    const pNVSem  = totH > 0 ? totNVS / totH * 100 : 0;
+    const difColor  = dif >= 0 ? '#2e7d32' : '#c62828';
+    const mortColor = totMort > 0 ? '#c62828' : '#546e7a';
+    filasHTML += `
+      <tr>
+        <td class="tc bold blue">${sem}</td>
+        <td class="tc gray">${nd}/7</td>
+        <td class="tc">${avgAves.toLocaleString('es-CL')}</td>
+        <td class="tc bold">${totH.toLocaleString('es-CL')}</td>
+        <td class="tc bold green">${avgPost.toFixed(1)}%</td>
+        <td class="tc gray">${avgEsp.toFixed(1)}%</td>
+        <td class="tc bold" style="color:${difColor}">${dif >= 0 ? '+' : ''}${dif.toFixed(1)}%</td>
+        <td class="tc" style="color:${mortColor}">${totMort}</td>
+        <td class="tc">${totAlim.toFixed(1)}</td>
+        <td class="tc" style="color:${pNVSem > 5 ? '#c62828' : pNVSem > 2 ? '#e65100' : '#546e7a'}">${pNVSem.toFixed(1)}%</td>
+      </tr>`;
+  });
+
+  const pNVClass = pNV <= 2 ? 'kpi-g' : pNV <= 5 ? 'kpi-n' : 'kpi-r';
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Reporte Semanal — ${loteActual.nombre}</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',Arial,sans-serif; font-size:12px; color:#263238; background:#fff; }
+.page { padding:24px 28px; max-width:960px; margin:0 auto; }
+.hdr { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid #2e7d32; padding-bottom:12px; margin-bottom:18px; }
+h1 { font-size:20px; color:#1b5e20; font-weight:800; margin-bottom:3px; }
+.sub { font-size:12px; color:#546e7a; }
+.hdr-r { text-align:right; font-size:11px; color:#546e7a; line-height:1.5; }
+.hdr-r strong { color:#2e7d32; }
+.kpis { display:flex; gap:10px; margin-bottom:18px; }
+.kpi { flex:1; border-radius:8px; padding:10px 12px; }
+.kpi-b  { background:#e3f2fd; border:1px solid #90caf9; }
+.kpi-g  { background:#e8f5e9; border:1px solid #a5d6a7; }
+.kpi-n  { background:#fff3e0; border:1px solid #ffcc80; }
+.kpi-r  { background:#ffebee; border:1px solid #ffcdd2; }
+.kl { font-size:9px; text-transform:uppercase; letter-spacing:.8px; color:#546e7a; font-weight:700; margin-bottom:4px; }
+.kv { font-size:20px; font-weight:800; }
+.kpi-b .kv { color:#1565c0; }
+.kpi-g .kv { color:#2e7d32; }
+.kpi-n .kv { color:#e65100; }
+.kpi-r .kv { color:#c62828; }
+.ks { font-size:10px; color:#78909c; margin-top:2px; }
+h2 { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#37474f; font-weight:700; margin-bottom:8px; margin-top:16px; }
+table { width:100%; border-collapse:collapse; font-size:11px; }
+th { background:#37474f; color:#fff; padding:7px 5px; text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:.4px; font-weight:700; }
+th.gr { background:#2e7d32; }
+th.bl { background:#1565c0; }
+td { padding:6px 5px; border-bottom:1px solid #eceff1; }
+tr:nth-child(even) td { background:#f9fbf9; }
+.tc { text-align:center; }
+.bold { font-weight:700; }
+.blue { color:#1565c0; }
+.green { color:#2e7d32; }
+.gray { color:#78909c; }
+.chart-img { width:100%; border:1px solid #eceff1; border-radius:6px; margin:4px 0 8px; display:block; }
+.ftr { margin-top:20px; padding-top:10px; border-top:1px solid #eceff1; font-size:10px; color:#90a4ae; display:flex; justify-content:space-between; }
+@media print {
+  body { background:#fff; }
+  .page { padding:10px 14px; }
+  @page { margin:1.2cm; size:A4 landscape; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="hdr">
+    <div>
+      <h1>Reporte de Producción Semanal</h1>
+      <div class="sub">${loteActual.nombre} &nbsp;·&nbsp; Semana de vida ${semActual} &nbsp;·&nbsp; Línea: ${loteActual.lineaGenetica} &nbsp;·&nbsp; ${loteActual.avesInicio.toLocaleString('es-CL')} aves</div>
+    </div>
+    <div class="hdr-r">
+      <div>Generado el ${fechaHoy}</div>
+      <div><strong>AVIVET · Dr. Andrés Lazo Escobar, MV</strong></div>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi kpi-b">
+      <div class="kl">Huevos acumulados</div>
+      <div class="kv">${th.toLocaleString('es-CL')}</div>
+      <div class="ks">${n} días registrados</div>
+    </div>
+    <div class="kpi kpi-g">
+      <div class="kl">% Postura promedio</div>
+      <div class="kv">${pp.toFixed(1)}%</div>
+      <div class="ks">histórico lote</div>
+    </div>
+    <div class="kpi kpi-g">
+      <div class="kl">Última semana</div>
+      <div class="kv">${ps7.toFixed(1)}%</div>
+      <div class="ks">${h7.toLocaleString('es-CL')} huevos · 7 días</div>
+    </div>
+    <div class="kpi kpi-n">
+      <div class="kl">Conv. kg/huevo</div>
+      <div class="kv">${conv.toFixed(3)}</div>
+      <div class="ks">últimos 7 días</div>
+    </div>
+    <div class="kpi ${pNVClass}">
+      <div class="kl">No vendibles</div>
+      <div class="kv">${pNV.toFixed(1)}%</div>
+      <div class="ks">${totalNV.toLocaleString('es-CL')} huevos acum.</div>
+    </div>
+  </div>
+
+  ${chartImg ? `<h2>Curva de Postura — últimas semanas</h2><img src="${chartImg}" class="chart-img" alt="Curva de postura">` : ''}
+
+  <h2>Resumen por Semana de Vida</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Sem.</th>
+        <th>Días reg.</th>
+        <th>Aves prom.</th>
+        <th>Huevos tot.</th>
+        <th class="gr">% Postura</th>
+        <th class="bl">% Esperado</th>
+        <th>Diferencia</th>
+        <th>Mort.</th>
+        <th>Kg Alim.</th>
+        <th>% No vend.</th>
+      </tr>
+    </thead>
+    <tbody>${filasHTML}</tbody>
+  </table>
+
+  <div class="ftr">
+    <span>Reporte generado automáticamente · Sistema de Registro Productivo Avícola AviVet</span>
+    <span>avivet.cl</span>
+  </div>
+</div>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=1000,height=750');
+  if (!win) { mostrarToast('Permita ventanas emergentes para exportar el PDF', 'advertencia'); return; }
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => { win.focus(); win.print(); }, 600);
 }
 </script>
 
