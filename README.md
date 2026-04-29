@@ -1,107 +1,116 @@
 # Registro Productivo Avícola
 
-Sistema de registro diario de producción para gallinas ponedoras, desarrollado en Google Apps Script con interfaz web optimizada para móvil.
-
+Sistema de registro diario de producción para gallinas ponedoras.  
 **Autor:** Andrés Lazo Escobar, Médico Veterinario · [avivet.cl](http://avivet.cl)
 
 ---
 
-## Dashboard central
+## Estado actual de la migración
 
-Visualiza todas las granjas en tiempo real:
+El sistema está en transición de Google Apps Script (GAS) + Google Sheets a una arquitectura centralizada en **Supabase**.
 
-**[avivet.cl/registro-productivo-avicola/dashboard.html](http://avivet.cl/registro-productivo-avicola/dashboard.html)**
-
-Muestra por granja: % postura vs curva esperada, mortalidad, clasificación de huevos, días sin registro y curva de los últimos 28 días.
-
----
-
-## Granjas activas
-
-| Granja | Carpeta | getDashboard | PDF semanal |
-|--------|---------|:---:|:---:|
-| Avícola GH | `src/avicolas/avicola-gh/` | ✓ | ✓ |
-| Avícola Clarita | `src/avicolas/avicola-clarita/` | ✓ | ✓ |
-| Roberto Santelices | `src/avicolas/roberto-santelices/` | ✓ | ✓ |
-| Vicente Abogabir | `src/avicolas/Vicente-Abogabir/` | ✓ | ✓ |
-| Praderas de Ranco | `src/avicolas/praderas-de-ranco/` | — | ✓ |
-| Copihue Real | `src/avicolas/Copihue real/` | — | ✓ |
-
-Para agregar una granja al dashboard central, añadir su entrada al array `GRANJAS` en `dashboard.html`:
-
-```js
-{ id: "nombre-id", nombre: "Nombre Granja",
-  webAppUrl: "https://script.google.com/macros/s/TU_URL/exec",
-  color: "#58a6ff", unidad: "Lote", tieneClasificacion: true }
-```
+| Etapa | Estado |
+|-------|--------|
+| Nueva app Supabase (`src/supabase/`) | ✅ Lista |
+| Schema + RLS en Supabase | ⏳ Pendiente deploy |
+| Migración historial Avícola GH | ⏳ Pendiente |
+| Migración historial Avícola Clarita | ⏳ Pendiente |
+| Migración historial Praderas de Ranco | ⏳ Pendiente |
+| Migración historial Reinhard | ⏳ Pendiente |
+| Productores usando nueva app | ⏳ Pendiente |
 
 ---
 
-## Estructura del repositorio
+## Por qué migramos
+
+| Problema actual (GAS) | Solución nueva (Supabase) |
+|-----------------------|--------------------------|
+| Un Sheet y una URL por productor → deploy manual de 15–20 min | Una URL para todos, crear productor = 2 min en Supabase Auth |
+| Sin autenticación real (URL pública con `?productor=X`) | Login email/contraseña con Row Level Security |
+| Cada productor ve solo su propio Sheet pero no hay restricción técnica | RLS garantiza aislamiento a nivel de base de datos |
+| Escalar requiere copiar y configurar archivos | Nuevo productor = crear usuario, no tocar código |
+| Datos históricos atrapados en Sheets individuales | Todo en PostgreSQL, consultable centralmente |
+
+---
+
+## Nueva arquitectura (`src/supabase/`)
 
 ```
-registro-productivo-avicola/
-├── dashboard.html               ← Monitor central (todas las granjas)
-├── src/
-│   ├── Code.gs                  ← Código base compartido
-│   ├── index.html               ← Interfaz base compartida
-│   └── avicolas/
-│       ├── avicola-gh/
-│       │   ├── code.gs          ← Backend GAS (doGet, getDashboard, guardarDatos…)
-│       │   └── index.html       ← App móvil + gráficos + exportar PDF
-│       ├── avicola-clarita/
-│       │   ├── code.gs
-│       │   └── index.html
-│       └── …                    ← Una carpeta por granja
-├── assets/img/                  ← Logos
-└── docs/
-    └── como-publicar.md         ← Guía de deploy
+src/supabase/
+├── index.html            ← App única para todos los productores
+└── supabase-schema.sql   ← Tablas y políticas RLS
 ```
 
+**URL:** pendiente de configurar en GitHub Pages  
+**Supabase project:** `xewujmpycclqjhlmiica.supabase.co` (mismo proyecto que pesaje-pollitas)
+
+### Tablas
+
+| Tabla | Descripción |
+|-------|-------------|
+| `lotes_produccion` | Lotes por usuario (nombre, fecha nac, n° aves, línea genética) |
+| `registros` | Un registro por día por lote (producción + clasificación + KPIs) |
+
+Ambas tablas tienen Row Level Security activado: cada usuario ve y modifica solo sus propios datos.
+
+### Funcionalidades de la nueva app
+
+- **Registro diario** — aves, mortalidad, kg alimento, huevos, clasificación por tamaño (Chico → Jumbo) y calidad (sucios, rotos, trizados, sangre)
+- **Modo edición** — detecta fechas con registro existente y permite sobreescribir con confirmación
+- **Detección de huecos** — avisa qué días faltan en la secuencia del lote
+- **Gráficos** — curva de postura vs esperado, acumulado, distribución por tamaño, tabla semanal por semana de vida
+- **Importar CSV** — herramienta integrada para migrar historial desde Google Sheets (tab Lotes → Importar)
+- **KPIs calculados client-side** — semana de vida, kg/ave, % postura, % esperado por línea genética, diferencia vs curva
+
+### Cómo activar Supabase (una sola vez)
+
+1. **SQL Editor de Supabase** → pegar y ejecutar `supabase-schema.sql`
+2. **Authentication → Users → Add user** → email + contraseña por productor
+3. El productor entra a la URL de la app, crea sus lotes e importa su historial
+
+### Cómo migrar el historial de un productor
+
+1. Abrir su Google Sheet → ir a la pestaña del lote
+2. Archivo → Descargar → Valores separados por coma (.csv)
+3. En la nueva app: tab **Lotes** → seleccionar lote destino → subir CSV
+4. Repetir por cada pestaña de lote
+
 ---
 
-## Cómo desplegar cambios a una granja
+## Arquitectura anterior (GAS) — referencia
 
-1. Abre el Google Sheet de la granja → **Extensiones → Apps Script**
-2. Pega el contenido actualizado de `code.gs` en el editor (archivo `Código.gs`)
-3. Pega el contenido actualizado de `index.html` en el archivo `index.html` del editor
-4. Guarda (Cmd+S)
-5. **Implementar → Gestionar implementaciones → editar → Nueva versión → Implementar**
+Las carpetas `src/avicolas/` se mantienen como archivo histórico. Cada una tiene:
 
-> Sin el nuevo deploy, los usuarios siguen viendo la versión anterior.
+```
+src/avicolas/<nombre>/
+├── code.gs      ← Backend GAS (doGet, guardarDatos, getDashboard…)
+├── index.html   ← App móvil con gráficos y exportar PDF
+└── NOTAS.md     ← URL del Sheet, URL web app, contacto del productor
+```
+
+### Productores en GAS (activos al momento de la migración)
+
+| Productor | Carpeta | Línea genética |
+|-----------|---------|----------------|
+| Avícola GH | `src/avicolas/avicola-gh/` | ver Sheet |
+| Avícola Clarita | `src/avicolas/avicola-clarita/` | ver Sheet |
+| Praderas de Ranco | `src/avicolas/praderas-de-ranco/` | ver Sheet |
+| Reinhard | `src/avicolas/reinhard/` | ver Sheet |
+| Roberto Santelices | `src/avicolas/roberto-santelices/` | ver Sheet |
+| Vicente Abogabir | `src/avicolas/Vicente-Abogabir/` | ver Sheet |
+| Copihue Real | `src/avicolas/Copihue real/` | ver Sheet |
+
+### Cómo actualizar un productor en GAS (mientras no se migra)
+
+1. Google Sheet → Extensiones → Apps Script
+2. Actualizar `Código.gs` y/o `index.html`
+3. Implementar → Gestionar implementaciones → editar → Nueva versión → Implementar
 
 ---
 
-## Funcionalidades principales
+## Dashboard central (GAS)
 
-### App por granja (index.html)
-- Registro diario: aves, mortalidad, huevos, kg alimento
-- Clasificación por tamaño (Chico → Jumbo) y calidad (sucios, rotos, trizados, sangre)
-- Validación de postura máxima (105%)
-- Detección de días faltantes
-- Modo edición para corregir registros anteriores
-- Gráficos: curva de postura vs esperado, acumulados, distribución por tamaño
-- **Exportar PDF semanal**: reporte con KPIs, gráfico y tabla por semana de vida
-
-### Dashboard central (dashboard.html)
-- Carga en paralelo el endpoint `?action=getDashboard` de cada granja
-- Sidebar con lista de granjas y alertas de días pendientes
-- KPIs: % postura, diferencia vs curva, mortalidad, conversión g alimento/huevo
-- Gráfico SVG de postura últimos 28 días
-- Clasificación del último día con distribución por tamaño
-
-### Backend GAS (code.gs) — funciones principales
-| Función | Descripción |
-|---------|-------------|
-| `doGet(e)` | Sirve la app o enruta `?action=getDashboard` |
-| `getDashboard()` | Retorna JSON con KPIs de todos los lotes activos |
-| `guardarDatos(datos)` | Guarda o sobreescribe un registro diario |
-| `obtenerDatosFecha(hoja, ts)` | Consulta si existe registro para una fecha |
-| `obtenerDatosGraficos(hoja)` | Retorna todos los registros para gráficos y PDF |
-| `obtenerLotesActivos()` | Lee hoja CONFIGURACIÓN y retorna lotes activos |
-| `detectarDiasFaltantes(hoja)` | Detecta huecos en la secuencia de fechas |
-| `ordenarPorFecha(hoja)` | Ordena registros cronológicamente |
-| `sincronizarConFirebase(datos)` | Sync con Firestore (inventario huevos) |
+`dashboard.html` en la raíz del repo consulta el endpoint `?action=getDashboard` de cada granja GAS y muestra KPIs en tiempo real. Este dashboard quedará obsoleto una vez que todos los productores estén en Supabase — se reemplazará por una vista centralizada que lea directo de PostgreSQL.
 
 ---
 
@@ -109,9 +118,8 @@ registro-productivo-avicola/
 
 | Fecha | Cambio |
 |-------|--------|
-| 2026-04 | Exportar PDF semanal con gráfico y tabla por semana de vida |
-| 2026-04 | getDashboard añadido a avicola-clarita para dashboard central |
-| 2025-04 | Dashboard central con múltiples granjas |
-| 2025-04 | KPIs en gráficos, campo observaciones |
-| 2025-04 | Línea genética Hy-line Brown Jaula |
-| 2025-03 | Versión inicial |
+| 2026-04 | Nueva app Supabase + herramienta de importación CSV |
+| 2026-04 | Inicio migración GAS → Supabase |
+| 2026-04 | Exportar PDF semanal con gráfico y tabla |
+| 2026-04 | Dashboard central multi-granja |
+| 2025-03 | Versión inicial GAS |
