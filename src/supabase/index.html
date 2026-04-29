@@ -767,6 +767,8 @@ async function guardarRegistro(sobreescribir=false) {
     observaciones:obs, user_id:currentUser.id,
   };
 
+  const prevReg = [...registrosLote].reverse().find(r => r.fecha < fecha) || null;
+
   const btn = document.getElementById('btn-guardar');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
 
@@ -779,6 +781,7 @@ async function guardarRegistro(sobreescribir=false) {
 
   if (!error) {
     toast(modoEdicion ? '✏️ Registro actualizado' : `✅ Guardado — ${(pctPost*100).toFixed(1)}% postura (esp: ${(pctEsp*100).toFixed(1)}%)`,'ok',3500);
+    verificarAlertas(loteActual.nombre, fecha, nAves, mort, pctPost, prevReg);
     await seleccionarLote(loteActual.id);
     const sig = nuevoDia(fecha);
     document.getElementById('fecha-input').value = sig;
@@ -1018,6 +1021,35 @@ function parseFecha(str) {
   if (!isNaN(n) && n>40000) { const d=new Date((n-25569)*86400*1000); return d.toISOString().slice(0,10); }
   return null;
 }
+async function verificarAlertas(loteNombre, fecha, nAves, mort, pctPost, prevReg) {
+  const alertas = [];
+
+  if (nAves > 0 && mort / nAves > 0.003) {
+    const pctMort = (mort / nAves * 100).toFixed(2);
+    alertas.push(`🐔 Mortalidad elevada: ${mort} aves (${pctMort}% — umbral 0,30%)`);
+  }
+
+  if (prevReg && prevReg.pct_postura != null && pctPost != null) {
+    const caida = (prevReg.pct_postura - pctPost) * 100;
+    if (caida > 3) {
+      const prev = (prevReg.pct_postura * 100).toFixed(1);
+      const hoy  = (pctPost * 100).toFixed(1);
+      alertas.push(`📉 Caída de postura: ${prev}% → ${hoy}% (−${caida.toFixed(1)}% en un día)`);
+    }
+  }
+
+  if (!alertas.length) return;
+
+  try {
+    await sb.functions.invoke('alerta-produccion', {
+      body: { lote: loteNombre, fecha, alertas },
+    });
+    toast('⚠️ Alerta enviada por email','warn',4000);
+  } catch (e) {
+    console.warn('No se pudo enviar alerta:', e);
+  }
+}
+
 function renderHistorial() {
   const sinLote = document.getElementById('datos-sin-lote');
   const wrap    = document.getElementById('datos-tabla-wrap');
