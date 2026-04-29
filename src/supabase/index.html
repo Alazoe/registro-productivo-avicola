@@ -933,29 +933,48 @@ function procesarArchivoImport(file) {
   reader.readAsText(file, 'UTF-8');
 }
 
+function parseCSVLine(line) {
+  const result = [];
+  let cur = '', inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
+      else inQuotes = !inQuotes;
+    } else if (ch === ',' && !inQuotes) {
+      result.push(cur.trim()); cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur.trim());
+  return result;
+}
+
 function parsearCSV(texto) {
-  const lineas = texto.split(/\r?\n/).filter(l=>l.trim());
+  const lineas = texto.split(/\r?\n/);
   importRows = [];
   for (const linea of lineas) {
-    const cols = linea.split(',').map(c=>c.trim().replace(/^"|"$/g,''));
+    if (!linea.trim()) continue;
+    const cols = parseCSVLine(linea);
     const fechaStr = parseFecha(cols[0]);
     if (!fechaStr) continue;
     importRows.push({
-      fecha:    fechaStr,
-      n_aves:   parseInt(cols[2])||0,
-      mortalidad:parseInt(cols[3])||0,
-      kg_alimento:parseFloat(cols[4].replace(',','.'))||0,
-      n_huevos: parseInt(cols[5])||0,
-      chico:    parseInt(cols[6])||0,
-      mediano:  parseInt(cols[7])||0,
-      grande:   parseInt(cols[8])||0,
-      xl:       parseInt(cols[9])||0,
-      super_xl: parseInt(cols[10])||0,
-      jumbo:    parseInt(cols[11])||0,
-      sucios:   parseInt(cols[12])||0,
-      rotos:    parseInt(cols[13])||0,
-      trizados: parseInt(cols[14])||0,
-      sangre:   parseInt(cols[15])||0,
+      fecha:         fechaStr,
+      n_aves:        parseInt(cols[2])                          ||0,
+      mortalidad:    parseInt(cols[3])                          ||0,
+      kg_alimento:   parseFloat((cols[4]||'').replace(',','.')) ||0,
+      n_huevos:      parseInt(cols[5])                          ||0,
+      chico:         parseInt(cols[6])                          ||0,
+      mediano:       parseInt(cols[7])                          ||0,
+      grande:        parseInt(cols[8])                          ||0,
+      xl:            parseInt(cols[9])                          ||0,
+      super_xl:      parseInt(cols[10])                         ||0,
+      jumbo:         parseInt(cols[11])                         ||0,
+      sucios:        parseInt(cols[12])                         ||0,
+      rotos:         parseInt(cols[13])                         ||0,
+      trizados:      parseInt(cols[14])                         ||0,
+      sangre:        parseInt(cols[15])                         ||0,
       observaciones: cols[20]||'',
     });
   }
