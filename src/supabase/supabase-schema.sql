@@ -1,9 +1,13 @@
 -- ══ SCHEMA UNIFICADO — Pesaje Pollitas + Registro Productivo ════════════
--- Ejecutar una sola vez en Supabase SQL Editor
+-- Ejecutar una sola vez en Supabase SQL Editor (proyecto xewujmpycclqjhlmiica)
 -- Un mismo lote recorre crianza (pesaje) → postura (registro productivo)
 
+drop table if exists pesajes cascade;
+drop table if exists registros cascade;
+drop table if exists lotes cascade;
+
 create table lotes (
-  id             text        primary key,          -- 'L01', 'L02', …
+  id             uuid        default gen_random_uuid() primary key,
   nombre         text        not null,
   fecha_nac      date        not null,
   n_aves         integer     default 0,
@@ -16,7 +20,7 @@ create table lotes (
 -- Pesaje de pollitas en crianza (semanas 1–19)
 create table pesajes (
   id           uuid        default gen_random_uuid() primary key,
-  lote_id      text        references lotes(id) on delete cascade not null,
+  lote_id      uuid        references lotes(id) on delete cascade not null,
   semana       integer     not null,
   fecha        date,
   n_aves       integer,
@@ -35,7 +39,7 @@ create table pesajes (
 -- Registro diario de producción en postura (semanas 18+)
 create table registros (
   id            uuid        default gen_random_uuid() primary key,
-  lote_id       text        references lotes(id) on delete cascade not null,
+  lote_id       uuid        references lotes(id) on delete cascade not null,
   fecha         date        not null,
   semana_vida   integer,
   n_aves        integer,
@@ -63,10 +67,10 @@ create table registros (
 );
 
 -- Row Level Security
-alter table lotes    enable row level security;
-alter table pesajes  enable row level security;
+alter table lotes     enable row level security;
+alter table pesajes   enable row level security;
 alter table registros enable row level security;
 
-create policy "lotes_user"    on lotes     for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "pesajes_user"  on pesajes   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "lotes_user"     on lotes     for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "pesajes_user"   on pesajes   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "registros_user" on registros for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

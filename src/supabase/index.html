@@ -600,12 +600,7 @@ async function crearLote() {
   if (!nombre || !fecha) { toast('Completa nombre y fecha de nacimiento','warn'); return; }
   const btn = document.getElementById('btn-crear-lote');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
-  const { data: existentes } = await sb.from('lotes').select('id');
-  const usados = new Set(existentes?.map(l => l.id) || []);
-  let num = 1;
-  while (usados.has('L' + String(num).padStart(2,'0'))) num++;
-  const id = 'L' + String(num).padStart(2,'0');
-  const { error } = await sb.from('lotes').insert({ id, nombre, fecha_nac:fecha, n_aves:parseInt(aves)||0, linea_genetica:linea, user_id:currentUser.id });
+  const { error } = await sb.from('lotes').insert({ nombre, fecha_nac:fecha, n_aves:parseInt(aves)||0, linea_genetica:linea, user_id:currentUser.id });
   if (!error) {
     toast('✅ Lote creado','ok');
     document.getElementById('nl-nombre').value=''; document.getElementById('nl-fecha').value=''; document.getElementById('nl-aves').value='';
