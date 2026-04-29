@@ -148,6 +148,8 @@ label:first-child{margin-top:0}
 .tabla-semanal th{background:#37474f;color:#fff;padding:8px 6px;text-align:center;font-size:.68rem;font-weight:700;text-transform:uppercase;white-space:nowrap}
 .tabla-semanal td{padding:7px 6px;text-align:center;border-bottom:1px solid #eee}
 .tabla-semanal tr:nth-child(even) td{background:#f5f5f5}
+.btn-editar-row{background:var(--azul);color:#fff;border:none;border-radius:6px;padding:5px 9px;font-size:.8rem;cursor:pointer;line-height:1}
+.btn-editar-row:active{opacity:.8}
 
 /* IMPORT CSV */
 .drop-zone{border:2px dashed #cfd8dc;border-radius:10px;padding:24px;text-align:center;color:#90a4ae;font-size:.85rem;cursor:pointer;transition:.2s}
@@ -222,6 +224,7 @@ label:first-child{margin-top:0}
 <div class="tabs">
   <div class="tab active" onclick="irTab('registro')">📋 Registro</div>
   <div class="tab" onclick="irTab('graficos')">📊 Gráficos</div>
+  <div class="tab" onclick="irTab('datos')">📂 Datos</div>
   <div class="tab" onclick="irTab('lotes')">🐔 Lotes</div>
 </div>
 
@@ -384,6 +387,27 @@ label:first-child{margin-top:0}
   </div>
 </div>
 
+<!-- ══ TAB DATOS ══════════════════════════════════════ -->
+<div class="page" id="page-datos">
+  <div id="datos-sin-lote" class="alerta alerta-info">Selecciona un lote en la pestaña Registro para ver su historial.</div>
+  <div id="datos-tabla-wrap" style="display:none">
+    <div style="background:#fff;border-radius:var(--radio) var(--radio) 0 0;border:1px solid #e0e0e0;border-bottom:none">
+      <div class="card-header" style="border-radius:var(--radio) var(--radio) 0 0">📂 Historial diario — <span id="datos-lote-nombre"></span></div>
+    </div>
+    <div class="tabla-wrap" style="border-radius:0 0 var(--radio) var(--radio)">
+      <table class="tabla-semanal">
+        <thead>
+          <tr>
+            <th>Fecha</th><th>Sem</th><th>Aves</th><th>Mort</th>
+            <th>Huevos</th><th>% Post</th><th>Kg alim</th><th>Defec</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="datos-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- ══ TAB LOTES ══════════════════════════════════════ -->
 <div class="page" id="page-lotes">
 
@@ -524,11 +548,12 @@ async function mostrarApp() {
 
 // ══ TABS ════════════════════════════════════════════════════════
 function irTab(tab) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['registro','graficos','lotes'][i]===tab));
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['registro','graficos','datos','lotes'][i]===tab));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
   if (tab === 'graficos') renderGraficosTab();
   if (tab === 'lotes')    renderListaLotes();
+  if (tab === 'datos')    renderHistorial();
 }
 
 // ══ LOTES ═══════════════════════════════════════════════════════
@@ -993,6 +1018,45 @@ function parseFecha(str) {
   if (!isNaN(n) && n>40000) { const d=new Date((n-25569)*86400*1000); return d.toISOString().slice(0,10); }
   return null;
 }
+function renderHistorial() {
+  const sinLote = document.getElementById('datos-sin-lote');
+  const wrap    = document.getElementById('datos-tabla-wrap');
+  if (!loteActual) { sinLote.style.display='block'; wrap.style.display='none'; return; }
+  sinLote.style.display = 'none';
+  wrap.style.display    = 'block';
+  document.getElementById('datos-lote-nombre').textContent = loteActual.nombre;
+  const tbody = document.getElementById('datos-body');
+  if (!registrosLote.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:20px">Sin registros aún</td></tr>';
+    return;
+  }
+  const rows = [...registrosLote].reverse();
+  tbody.innerHTML = rows.map(r => {
+    const pct  = (r.pct_postura||0)*100;
+    const esp  = (r.pct_esperado||0)*100;
+    const dif  = pct - esp;
+    const col  = dif >= 0 ? 'var(--verde)' : 'var(--rojo)';
+    const def  = (r.sucios||0)+(r.rotos||0)+(r.trizados||0)+(r.sangre||0);
+    return `<tr>
+      <td style="white-space:nowrap">${fmtFecha(r.fecha)}</td>
+      <td>${r.semana_vida||'—'}</td>
+      <td>${(r.n_aves||0).toLocaleString('es-CL')}</td>
+      <td>${r.mortalidad||0}</td>
+      <td>${(r.n_huevos||0).toLocaleString('es-CL')}</td>
+      <td style="font-weight:700;color:${col}">${pct.toFixed(1)}%</td>
+      <td>${(r.kg_alimento||0).toFixed(2)}</td>
+      <td>${def||0}</td>
+      <td><button class="btn-editar-row" onclick="editarDesdeHistorial('${r.fecha}')">✏️</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function editarDesdeHistorial(fecha) {
+  irTab('registro');
+  document.getElementById('fecha-input').value = fecha;
+  onFechaChange();
+}
+
 function toast(msg, tipo='', dur=2800) {
   const el=document.getElementById('toast');
   el.textContent=msg; el.className='show '+(tipo==='ok'?'ok':tipo==='err'?'err':tipo==='warn'?'warn':'');
