@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Registro Productivo Avícola</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --verde:   #2e7d32; --verde-c: #4caf50; --verde-o: #1b5e20;
+  --amarillo:#f9a825; --rojo: #c62828; --naranja: #e65100;
+  --azul:    #1565c0; --gris-f: #f0f4f8; --gris-b: #eceff1;
+  --texto:   #37474f; --radio: 12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--gris-f);color:var(--texto);padding-bottom:72px;-webkit-font-smoothing:antialiased}
+
+/* LOGIN */
+#pantalla-login{position:fixed;inset:0;background:var(--verde-o);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
+.login-card{background:#fff;border-radius:18px;padding:32px 24px;width:100%;max-width:380px;text-align:center}
+.login-logo{font-size:3rem;margin-bottom:10px}
+.login-card h2{font-size:1.4rem;color:var(--verde);margin-bottom:4px}
+.login-card>p{font-size:.82rem;color:#888;margin-bottom:20px}
+
+/* NAV */
+.nav{background:linear-gradient(135deg,var(--verde-o),var(--verde));color:#fff;padding:16px;display:flex;align-items:center;gap:10px;box-shadow:0 3px 10px rgba(0,0,0,.25);position:sticky;top:0;z-index:100}
+.nav h1{font-size:1rem;font-weight:700;flex:1}
+.nav-user{font-size:.72rem;opacity:.85;cursor:pointer;background:rgba(255,255,255,.15);padding:4px 8px;border-radius:10px;white-space:nowrap}
+.nav-user:hover{background:rgba(255,255,255,.25)}
+
+/* TABS */
+.tabs{display:flex;background:#fff;border-bottom:2px solid var(--gris-b);position:sticky;top:54px;z-index:99}
+.tab{flex:1;padding:12px 4px;text-align:center;font-size:.75rem;font-weight:700;color:#888;cursor:pointer;border-bottom:3px solid transparent;transition:.2s}
+.tab.active{color:var(--verde);border-bottom-color:var(--verde)}
+
+/* PAGES */
+.page{display:none;padding:14px}
+.page.active{display:block}
+
+/* CARD */
+.card{background:#fff;border-radius:var(--radio);box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:12px;overflow:hidden}
+.card-header{background:var(--gris-b);padding:10px 14px;font-size:.72rem;font-weight:700;color:#546e7a;text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid #dde1e7;display:flex;align-items:center;justify-content:space-between}
+.card-body{padding:14px}
+
+/* LOTES SELECTOR */
+.lotes-btns{display:flex;gap:8px;flex-wrap:wrap}
+.lote-btn{flex:1;min-width:80px;padding:12px 8px;border:2px solid #cfd8dc;border-radius:10px;background:#fff;font-size:.82rem;font-weight:700;color:#546e7a;cursor:pointer;text-align:center;transition:.2s}
+.lote-btn.activo{border-color:var(--verde);background:var(--verde);color:#fff;box-shadow:0 3px 10px rgba(46,125,50,.3)}
+.lote-info{font-size:.68rem;font-weight:400;opacity:.8;display:block;margin-top:2px}
+
+/* INFO GRID */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.info-item{background:var(--gris-b);border-radius:8px;padding:10px 12px}
+.info-label{font-size:.68rem;color:#78909c;text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:3px}
+.info-value{font-size:1.1rem;font-weight:700;color:var(--verde-o)}
+.info-value.sm{font-size:.9rem}
+
+/* FECHA */
+.fecha-row{display:flex;align-items:center;gap:8px}
+.fecha-input{flex:1;padding:12px;border:2px solid #cfd8dc;border-radius:10px;font-size:1rem;font-weight:600;outline:none;transition:.2s}
+.fecha-input:focus{border-color:var(--verde-c)}
+.fecha-btn{width:44px;height:44px;border:2px solid #cfd8dc;border-radius:10px;background:#fff;font-size:1rem;color:#546e7a;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
+.fecha-btn:active{background:var(--gris-b)}
+
+/* CAMPO */
+.campo-row{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #eef1f3}
+.campo-row:last-child{border-bottom:none}
+.campo-label{flex:1;font-size:.92rem;font-weight:500;display:flex;align-items:center;gap:8px}
+.campo-icon{font-size:1.1rem}
+.campo-input{width:100px;padding:10px;border:2px solid #cfd8dc;border-radius:8px;font-size:1.1rem;font-weight:700;text-align:center;outline:none;background:#fafbfc;transition:.2s}
+.campo-input:focus{border-color:var(--verde-c);background:#fff}
+.campo-input.error{border-color:var(--rojo)!important;background:#fff5f5!important}
+
+/* TAMAÑOS */
+.tamano-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tamano-item{background:#fafbfc;border:1px solid #e8ecee;border-radius:8px;padding:8px 4px;text-align:center}
+.tamano-label{font-size:.68rem;color:#546e7a;font-weight:700;text-transform:uppercase;margin-bottom:1px}
+.tamano-rango{font-size:.6rem;color:#90a4ae;margin-bottom:5px}
+.tamano-input{width:100%;padding:8px 2px;border:2px solid #cfd8dc;border-radius:7px;font-size:1rem;font-weight:700;text-align:center;outline:none;background:#fff;transition:.2s}
+.tamano-input:focus{border-color:var(--naranja)}
+.total-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:9px 12px;background:#fff8e1;border:1px solid #ffe082;border-radius:8px}
+.total-label{font-size:.82rem;font-weight:600;color:#5d4037}
+.total-val{font-size:1.1rem;font-weight:700;color:var(--naranja)}
+.total-diff{font-size:.75rem;font-weight:700;margin-left:6px}
+.total-diff.ok{color:var(--verde)}.total-diff.warn{color:var(--naranja)}.total-diff.err{color:var(--rojo)}
+
+/* CALIDAD */
+.calidad-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.calidad-item{background:#fafbfc;border:1px solid #e8ecee;border-radius:8px;padding:10px 6px;text-align:center}
+.calidad-label{font-size:.72rem;color:#546e7a;font-weight:700;text-transform:uppercase;margin-bottom:6px}
+.calidad-input{width:100%;padding:9px 4px;border:2px solid #cfd8dc;border-radius:7px;font-size:1.05rem;font-weight:700;text-align:center;outline:none;background:#fff;transition:.2s}
+.calidad-input:focus{border-color:var(--amarillo)}
+
+/* BANNER EDICION */
+.banner-edicion{display:none;background:linear-gradient(135deg,#bf360c,#e64a19);color:#fff;padding:12px 14px;border-radius:10px;margin-bottom:12px;font-size:.85rem;font-weight:600;align-items:center;gap:10px;box-shadow:0 3px 10px rgba(230,81,0,.3)}
+.banner-edicion.visible{display:flex}
+.btn-cancelar-ed{padding:7px 12px;border:2px solid rgba(255,255,255,.7);border-radius:8px;background:transparent;color:#fff;font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap}
+
+/* ALERTA HUECOS */
+.aviso-huecos{margin-top:8px;padding:9px 12px;background:#ffebee;border:1px solid #ffcdd2;border-radius:8px;font-size:.8rem;color:var(--rojo);display:none}
+.aviso-huecos.visible{display:block}
+.aviso-huevos{margin-top:6px;padding:7px 10px;background:#ffebee;border:1px solid #ffcdd2;border-radius:7px;font-size:.78rem;color:var(--rojo);font-weight:600;display:none}
+.aviso-huevos.visible{display:flex;align-items:center;gap:6px}
+
+/* TOGGLE CLAS */
+.btn-toggle{padding:4px 8px;border:none;border-radius:6px;background:#eceff1;color:#546e7a;font-size:.68rem;font-weight:700;cursor:pointer}
+.btn-toggle.on{background:var(--naranja);color:#fff}
+
+/* BTNS */
+.btn{width:100%;padding:15px;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-verde{background:linear-gradient(135deg,var(--verde),var(--verde-c));color:#fff;box-shadow:0 4px 12px rgba(46,125,50,.35)}
+.btn-verde.edicion{background:linear-gradient(135deg,#bf360c,#e64a19);box-shadow:0 4px 12px rgba(191,54,12,.35)}
+.btn-azul{background:linear-gradient(135deg,#1565c0,#42a5f5);color:#fff}
+.btn-gris{background:#eceff1;color:#546e7a}
+.btn-rojo{background:var(--rojo);color:#fff}
+.btn-sm{width:auto;padding:7px 12px;font-size:.78rem;margin-top:0}
+
+/* FORM INPUTS */
+select,input[type=text],input[type=number],input[type=date],input[type=email],input[type=password]{
+  width:100%;padding:11px 12px;border:1.5px solid #cfd8dc;border-radius:8px;font-size:1rem;margin-top:5px;background:#fff;-webkit-appearance:none;outline:none
+}
+select:focus,input:focus{border-color:var(--verde-c)}
+label{font-size:.82rem;color:#546e7a;font-weight:600;display:block;margin-top:10px}
+label:first-child{margin-top:0}
+
+/* GRÁFICOS */
+.graficos-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.gtab{flex:1;min-width:80px;padding:9px 6px;background:#fff;border:2px solid #cfd8dc;border-radius:8px;font-size:.75rem;font-weight:700;color:#546e7a;cursor:pointer;text-align:center;transition:.2s}
+.gtab.activo{border-color:var(--azul);color:var(--azul);background:#e3f2fd}
+.chart-wrap{position:relative;height:320px;display:none}
+.chart-wrap.visible{display:block}
+.resumen-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.r-card{border-radius:10px;padding:12px 8px;text-align:center}
+.r-card.azul{background:linear-gradient(135deg,#e3f2fd,#bbdefb);border:1px solid #90caf9}
+.r-card.verde{background:linear-gradient(135deg,#e8f5e9,#c8e6c9);border:1px solid #a5d6a7}
+.r-card.naranja{background:linear-gradient(135deg,#fff3e0,#ffe0b2);border:1px solid #ffcc80}
+.r-card-titulo{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;opacity:.7}
+.r-card.azul .r-card-titulo{color:var(--azul)}.r-card.verde .r-card-titulo{color:var(--verde)}.r-card.naranja .r-card-titulo{color:var(--naranja)}
+.r-card-valor{font-size:1.4rem;font-weight:800;line-height:1}
+.r-card.azul .r-card-valor{color:var(--azul)}.r-card.verde .r-card-valor{color:var(--verde)}.r-card.naranja .r-card-valor{color:var(--naranja)}
+.r-card-sub{font-size:.62rem;opacity:.65;margin-top:2px}
+
+/* TABLA SEMANAL */
+.tabla-wrap{overflow-x:auto;border-radius:8px;border:1px solid #e0e0e0}
+.tabla-semanal{width:100%;border-collapse:collapse;font-size:.78rem}
+.tabla-semanal th{background:#37474f;color:#fff;padding:8px 6px;text-align:center;font-size:.68rem;font-weight:700;text-transform:uppercase;white-space:nowrap}
+.tabla-semanal td{padding:7px 6px;text-align:center;border-bottom:1px solid #eee}
+.tabla-semanal tr:nth-child(even) td{background:#f5f5f5}
+
+/* IMPORT CSV */
+.drop-zone{border:2px dashed #cfd8dc;border-radius:10px;padding:24px;text-align:center;color:#90a4ae;font-size:.85rem;cursor:pointer;transition:.2s}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--verde-c);background:#e8f5e9;color:var(--verde)}
+.import-preview{background:#fafafa;border:1px solid #e0e0e0;border-radius:8px;padding:12px;margin-top:10px;font-size:.78rem;max-height:160px;overflow-y:auto}
+
+/* LOTES LISTA */
+.lote-card{background:#fff;border-radius:var(--radio);box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:10px;padding:14px;border-left:4px solid var(--verde)}
+.lote-card.archivado{border-left-color:#bdbdbd;opacity:.65}
+
+/* MODAL SOBREESCRIBIR */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:300;opacity:0;pointer-events:none;transition:.25s;padding:20px}
+.modal.visible{opacity:1;pointer-events:all}
+.modal-box{background:#fff;border-radius:16px;max-width:380px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.3);overflow:hidden}
+.modal-header-rojo{background:linear-gradient(135deg,#bf360c,#e64a19);color:#fff;padding:18px;display:flex;align-items:center;gap:10px}
+.modal-body{padding:20px}
+
+/* SPINNER */
+.spinner{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* LOADING */
+.loading{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;opacity:0;pointer-events:none;transition:.2s}
+.loading.visible{opacity:1;pointer-events:all}
+.loading-spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+.loading-text{color:#fff;margin-top:14px;font-size:.9rem}
+
+/* TOAST */
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(100px);background:#263238;color:#fff;padding:12px 22px;border-radius:20px;font-size:.88rem;z-index:999;opacity:0;transition:.3s;pointer-events:none;max-width:90vw;text-align:center;white-space:pre-line;line-height:1.4}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.ok{background:var(--verde-o)}
+#toast.err{background:var(--rojo)}
+#toast.warn{background:var(--naranja)}
+
+/* ALERTA */
+.alerta{padding:9px 12px;border-radius:8px;font-size:.82rem;margin-top:8px}
+.alerta-info{background:#e3f2fd;color:var(--azul)}
+.alerta-ok{background:#e8f5e9;color:var(--verde)}
+.alerta-warn{background:#fff8e1;color:#7b5e00}
+.alerta-err{background:#ffebee;color:var(--rojo)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="pantalla-login">
+  <div class="login-card">
+    <div class="login-logo">🐔</div>
+    <h2>Registro Productivo</h2>
+    <p>avivet.cl</p>
+    <label>Correo electrónico
+      <input type="email" id="login-email" placeholder="correo@ejemplo.com"
+        onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+    </label>
+    <label>Contraseña
+      <input type="password" id="login-pass" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter')login()">
+    </label>
+    <button class="btn btn-verde" onclick="login()" style="margin-top:16px" id="btn-login">Entrar</button>
+    <div id="login-error" class="alerta alerta-err" style="display:none"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+
+<nav class="nav">
+  <h1>🐔 Registro Productivo</h1>
+  <span class="nav-user" id="nav-user" onclick="logout()">— sesión —</span>
+</nav>
+
+<div class="tabs">
+  <div class="tab active" onclick="irTab('registro')">📋 Registro</div>
+  <div class="tab" onclick="irTab('graficos')">📊 Gráficos</div>
+  <div class="tab" onclick="irTab('lotes')">🐔 Lotes</div>
+</div>
+
+<!-- ══ TAB REGISTRO ══════════════════════════════════════ -->
+<div class="page active" id="page-registro">
+
+  <div class="banner-edicion" id="banner-edicion">
+    <span style="font-size:1.3rem">✏️</span>
+    <div style="flex:1"><div style="font-size:.9rem;font-weight:700">Modo edición</div><div style="font-size:.75rem;opacity:.9">Registro existente — se sobreescribirá al guardar</div></div>
+    <button class="btn-cancelar-ed" onclick="cancelarEdicion()">✕ Cancelar</button>
+  </div>
+
+  <div class="card">
+    <div class="card-header">📋 Lote</div>
+    <div class="card-body">
+      <div class="lotes-btns" id="lotes-btns"><span style="color:#aaa;font-size:.85rem">Cargando…</span></div>
+    </div>
+  </div>
+
+  <div class="card" id="card-info" style="display:none">
+    <div class="card-header">📊 Información del lote</div>
+    <div class="card-body">
+      <div class="info-grid">
+        <div class="info-item"><div class="info-label">Edad actual</div><div class="info-value" id="info-edad">—</div></div>
+        <div class="info-item"><div class="info-label">% Esperado</div><div class="info-value" id="info-esperado">—</div></div>
+        <div class="info-item"><div class="info-label">Línea genética</div><div class="info-value sm" id="info-linea">—</div></div>
+        <div class="info-item"><div class="info-label">N° Aves</div><div class="info-value" id="info-aves">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">📅 Fecha</div>
+    <div class="card-body">
+      <div class="fecha-row">
+        <button class="fecha-btn" onclick="cambiarFecha(-1)">◀</button>
+        <input type="date" class="fecha-input" id="fecha-input" onchange="onFechaChange()">
+        <button class="fecha-btn" onclick="cambiarFecha(1)">▶</button>
+      </div>
+      <div class="aviso-huecos" id="aviso-huecos"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">🐣 Datos de producción</div>
+    <div class="card-body">
+      <div class="campo-row">
+        <div class="campo-label"><span class="campo-icon">🐓</span>N° de aves</div>
+        <input type="number" class="campo-input" id="f-aves" min="0" inputmode="numeric" oninput="validarHuevos()">
+      </div>
+      <div class="campo-row">
+        <div class="campo-label"><span class="campo-icon">⚠️</span>Mortalidad</div>
+        <input type="number" class="campo-input" id="f-mort" min="0" value="0" inputmode="numeric">
+      </div>
+      <div class="campo-row">
+        <div class="campo-label"><span class="campo-icon">🌾</span>Kg alimento</div>
+        <input type="number" class="campo-input" id="f-kg" min="0" step="0.1" value="0" inputmode="decimal">
+      </div>
+      <div class="campo-row" style="flex-direction:column;align-items:stretch;gap:0">
+        <div style="display:flex;align-items:center">
+          <div class="campo-label"><span class="campo-icon">🥚</span>N° de huevos</div>
+          <input type="number" class="campo-input" id="f-huevos" min="0" value="0" inputmode="numeric"
+            oninput="validarHuevos();actualizarTotales()">
+        </div>
+        <div class="aviso-huevos" id="aviso-huevos"><span>⛔</span><span id="aviso-huevos-txt"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="card-tamano">
+    <div class="card-header">
+      📏 Clasificación por tamaño
+      <button class="btn-toggle" id="btn-toggle-clas" onclick="toggleClas()">⏭ Después</button>
+    </div>
+    <div id="cuerpo-tamano">
+      <div class="card-body">
+        <div class="tamano-grid">
+          <div class="tamano-item"><div class="tamano-label">Chico</div><div class="tamano-rango">&lt;47g</div><input type="number" class="tamano-input" id="f-chico" min="0" value="0" inputmode="numeric" oninput="actualizarTotales()"></div>
+          <div class="tamano-item"><div class="tamano-label">Mediano</div><div class="tamano-rango">47–54g</div><input type="number" class="tamano-input" id="f-mediano" min="0" value="0" inputmode="numeric" oninput="actualizarTotales()"></div>
+          <div class="tamano-item"><div class="tamano-label">Grande</div><div class="tamano-rango">54–61g</div><input type="number" class="tamano-input" id="f-grande" min="0" value="0" inputmode="numeric" oninput="actualizarTotales()"></div>
+          <div class="tamano-item"><div class="tamano-label">XL</div><div class="tamano-rango">61–68g</div><input type="number" class="tamano-input" id="f-xl" min="0" value="0" inputmode="numeric" oninput="actualizarTotales()"></div>
+          <div class="tamano-item"><div class="tamano-label">Super XL</div><div class="tamano-rango">+68g</div><input type="number" class="tamano-input" id="f-superxl" min="0" value="0" inputmode="numeric" oninput="actualizarTotales()"></div>
+          <div class="tamano-item"><div class="tamano-label">Jumbo</div><div class="tamano-rango">+76g</div><input type="number" class="tamano-input" id="f-jumbo" min="0" value="0" inputmode="numeric" oninput="actualizarTotales()"></div>
+        </div>
+        <div class="total-row">
+          <span class="total-label">Total clasificado (tamaños + no vendibles):</span>
+          <span><span class="total-val" id="total-tamano">0</span><span class="total-diff" id="diff-tamano"></span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="card-calidad">
+    <div class="card-header">⚠️ No vendibles <span style="font-weight:400;font-size:.68rem;text-transform:none">(incluidos en el total)</span></div>
+    <div id="cuerpo-calidad">
+      <div class="card-body">
+        <div class="calidad-grid">
+          <div class="calidad-item"><div class="calidad-label">Sucios</div><input type="number" class="calidad-input" id="f-sucios" min="0" value="0" inputmode="numeric" oninput="actualizarTotales()"></div>
+          <div class="calidad-item"><div class="calidad-label">Rotos</div><input type="number" class="calidad-input" id="f-rotos" min="0" value="0" inputmode="numeric" oninput="actualizarTotales()"></div>
+          <div class="calidad-item"><div class="calidad-label">Trizados</div><input type="number" class="calidad-input" id="f-trizados" min="0" value="0" inputmode="numeric" oninput="actualizarTotales()"></div>
+          <div class="calidad-item"><div class="calidad-label">Con sangre</div><input type="number" class="calidad-input" id="f-sangre" min="0" value="0" inputmode="numeric" oninput="actualizarTotales()"></div>
+        </div>
+        <div class="total-row" style="background:#fff3e0;border-color:#ffcc80;margin-top:10px">
+          <span class="total-label" style="color:#6d4c41">Total no vendibles:</span>
+          <span><span class="total-val" id="total-calidad" style="color:var(--naranja)">0</span><span class="total-diff" id="diff-calidad"></span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">📝 Observaciones</div>
+    <div class="card-body">
+      <textarea id="f-obs" rows="3" placeholder="Notas del día (opcional)"
+        style="width:100%;border:1.5px solid #cfd8dc;border-radius:8px;padding:10px;font-size:.9rem;font-family:inherit;resize:vertical;outline:none"
+        onfocus="this.style.borderColor='var(--verde-c)'" onblur="this.style.borderColor='#cfd8dc'"></textarea>
+    </div>
+  </div>
+
+  <button class="btn btn-verde" id="btn-guardar" onclick="guardarRegistro(false)" disabled>✅ Guardar registro</button>
+  <div style="height:8px"></div>
+</div>
+
+<!-- ══ TAB GRÁFICOS ══════════════════════════════════════ -->
+<div class="page" id="page-graficos">
+  <div class="card">
+    <div class="card-header">📊 Gráficos</div>
+    <div class="card-body">
+      <div id="g-sin-lote" class="alerta alerta-info">Selecciona un lote en la pestaña Registro para ver los gráficos</div>
+      <div id="g-contenido" style="display:none">
+        <div class="resumen-cards">
+          <div class="r-card azul"><div class="r-card-titulo">📦 Acumulado</div><div class="r-card-valor" id="g-acumulado">—</div><div class="r-card-sub">huevos</div></div>
+          <div class="r-card verde"><div class="r-card-titulo">📅 Prom. 7 días</div><div class="r-card-valor" id="g-semana">—</div><div class="r-card-sub">% postura</div></div>
+          <div class="r-card naranja"><div class="r-card-titulo">🥚 Último día</div><div class="r-card-valor" id="g-ultimo">—</div><div class="r-card-sub">% postura</div></div>
+        </div>
+        <div class="graficos-tabs">
+          <button class="gtab activo" onclick="cambiarGtab('curva')" id="gtab-curva">📈 Postura</button>
+          <button class="gtab" onclick="cambiarGtab('acumulado')" id="gtab-acumulado">📊 Acumulado</button>
+          <button class="gtab" onclick="cambiarGtab('tamano')" id="gtab-tamano">📏 Tamaños</button>
+          <button class="gtab" onclick="cambiarGtab('tabla')" id="gtab-tabla">📋 Tabla</button>
+        </div>
+        <div class="chart-wrap visible" id="wrap-curva"><canvas id="chart-curva"></canvas></div>
+        <div class="chart-wrap" id="wrap-acumulado"><canvas id="chart-acumulado"></canvas></div>
+        <div class="chart-wrap" id="wrap-tamano"><canvas id="chart-tamano"></canvas></div>
+        <div id="wrap-tabla" style="display:none">
+          <div class="tabla-wrap">
+            <table class="tabla-semanal">
+              <thead><tr>
+                <th>Sem</th><th>Días</th><th>Aves</th><th>Huevos</th>
+                <th style="background:var(--verde)">% Post</th>
+                <th style="background:var(--azul)">% Esp</th>
+                <th>Dif</th><th>Mort</th><th>Kg Alim</th>
+              </tr></thead>
+              <tbody id="tabla-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB LOTES ══════════════════════════════════════ -->
+<div class="page" id="page-lotes">
+
+  <div class="card">
+    <div class="card-header">➕ Nuevo lote</div>
+    <div class="card-body">
+      <label>Nombre del lote
+        <input type="text" id="nl-nombre" placeholder="Ej: Lote Primavera 2026">
+      </label>
+      <label>Fecha de nacimiento (BB)
+        <input type="date" id="nl-fecha">
+      </label>
+      <label>N° de aves
+        <input type="number" id="nl-aves" placeholder="Ej: 5000" min="1">
+      </label>
+      <label>Línea genética
+        <select id="nl-linea">
+          <option>Hy-line Brown</option>
+          <option>Hy-line W-80</option>
+          <option>Lohmann Brown</option>
+          <option>Lohmann White</option>
+          <option>Hy-line Brown Jaula</option>
+        </select>
+      </label>
+      <button class="btn btn-verde" onclick="crearLote()" id="btn-crear-lote" style="margin-top:14px">+ Crear lote</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">📁 Importar historial CSV</div>
+    <div class="card-body">
+      <p style="font-size:.8rem;color:#78909c;margin-bottom:10px">
+        Exporta cada pestaña del Google Sheet como CSV (Archivo → Descargar → CSV) y súbela aquí para migrar el historial.
+      </p>
+      <label>Lote destino
+        <select id="imp-lote"></select>
+      </label>
+      <div style="margin-top:10px">
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('imp-file').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="event.preventDefault();this.classList.remove('drag');procesarArchivoImport(event.dataTransfer.files[0])">
+          📄 Toca para seleccionar CSV o arrastra aquí
+        </div>
+        <input type="file" id="imp-file" accept=".csv" style="display:none" onchange="procesarArchivoImport(this.files[0])">
+      </div>
+      <div id="imp-preview" style="display:none">
+        <div class="import-preview" id="imp-preview-txt"></div>
+        <button class="btn btn-azul" onclick="confirmarImport()" id="btn-import" style="margin-top:8px">📥 Importar registros</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="lista-lotes"><div class="alerta alerta-info" style="margin:0">Cargando lotes…</div></div>
+</div>
+
+</div><!-- /#app -->
+
+<!-- MODAL SOBREESCRIBIR -->
+<div class="modal" id="modal-sobrescribir">
+  <div class="modal-box">
+    <div class="modal-header-rojo"><span style="font-size:1.5rem">⚠️</span><span style="font-size:1rem;font-weight:700">Sobreescribir registro</span></div>
+    <div class="modal-body">
+      <p style="font-size:.88rem;color:#455a64;line-height:1.6">Ya existe un registro para esta fecha. Si continúas, <strong>los datos serán reemplazados</strong>.</p>
+      <div style="background:#fff3e0;border:1px solid #ffcc80;border-radius:8px;padding:10px;margin:12px 0;font-size:.82rem;color:var(--naranja);font-weight:600" id="modal-detalle"></div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn btn-gris" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn btn-rojo" onclick="guardarRegistro(true)">⚠️ Sobreescribir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="loading" id="loading"><div class="loading-spinner"></div><div class="loading-text" id="loading-txt">Cargando…</div></div>
+<div id="toast"></div>
+
+<script>
+// ══ SUPABASE ═══════════════════════════════════════════════════
+const SUPABASE_URL = 'https://xewujmpycclqjhlmiica.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_v5_FU1w-7P7oeNrW6FYRBQ_cuX-pa9_';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ══ CURVAS ══════════════════════════════════════════════════════
+const CURVAS = {
+  'Hy-line Brown': {18:0.011,19:0.082,20:0.308,21:0.614,22:0.824,23:0.906,24:0.932,25:0.942,26:0.946,27:0.948,28:0.948,29:0.948,30:0.948,31:0.947,32:0.947,33:0.947,34:0.944,35:0.942,36:0.94,37:0.937,38:0.935,39:0.933,40:0.931,41:0.928,42:0.925,43:0.921,44:0.918,45:0.915,46:0.912,47:0.909,48:0.907,49:0.904,50:0.9,51:0.898,52:0.896,53:0.894,54:0.893,55:0.889,56:0.887,57:0.884,58:0.882,59:0.879,60:0.876,61:0.873,62:0.87,63:0.867,64:0.863,65:0.861,66:0.856,67:0.851,68:0.845,69:0.838,70:0.832,71:0.827,72:0.82,73:0.814,74:0.814,75:0.801,76:0.795,77:0.785,78:0.783,79:0.777,80:0.771,81:0.766,82:0.761,83:0.756,84:0.752,85:0.748,86:0.744,87:0.74,88:0.736,89:0.733,90:0.73,91:0.727,92:0.724,93:0.721,94:0.718,95:0.715,96:0.712,97:0.709,98:0.706,99:0.703,100:0.7},
+  'Hy-line W-80': {18:0.095,19:0.375,20:0.716,21:0.843,22:0.895,23:0.924,24:0.942,25:0.953,26:0.961,27:0.966,28:0.968,29:0.968,30:0.968,31:0.968,32:0.967,33:0.967,34:0.966,35:0.966,36:0.965,37:0.964,38:0.963,39:0.963,40:0.962,41:0.963,42:0.962,43:0.961,44:0.96,45:0.958,46:0.958,47:0.957,48:0.955,49:0.953,50:0.952,51:0.95,52:0.948,53:0.946,54:0.943,55:0.941,56:0.939,57:0.937,58:0.934,59:0.931,60:0.929,61:0.926,62:0.923,63:0.921,64:0.918,65:0.915,66:0.912,67:0.909,68:0.906,69:0.903,70:0.9,71:0.896,72:0.893,73:0.89,74:0.886,75:0.883,76:0.88,77:0.877,78:0.873,79:0.87,80:0.867,81:0.863,82:0.86,83:0.858,84:0.854,85:0.851,86:0.848,87:0.845,88:0.842,89:0.838,90:0.834,91:0.831,92:0.827,93:0.823,94:0.82,95:0.817,96:0.813,97:0.811,98:0.807,99:0.804,100:0.801},
+  'Lohmann Brown': {18:0.01,19:0.093,20:0.367,21:0.547,22:0.722,23:0.826,24:0.882,25:0.914,26:0.932,27:0.943,28:0.949,29:0.952,30:0.954,31:0.956,32:0.957,33:0.958,34:0.958,35:0.957,36:0.956,37:0.954,38:0.952,39:0.951,40:0.949,41:0.947,42:0.945,43:0.943,44:0.941,45:0.938,46:0.936,47:0.933,48:0.93,49:0.927,50:0.923,51:0.92,52:0.917,53:0.913,54:0.91,55:0.906,56:0.902,57:0.899,58:0.895,59:0.891,60:0.888,61:0.884,62:0.88,63:0.876,64:0.872,65:0.868,66:0.865,67:0.861,68:0.856,69:0.852,70:0.847,71:0.843,72:0.837,73:0.832,74:0.827,75:0.822,76:0.817,77:0.811,78:0.806,79:0.8,80:0.795,81:0.789,82:0.783,83:0.778,84:0.772,85:0.766,86:0.76,87:0.753,88:0.747,89:0.741,90:0.735,91:0.73,92:0.73,93:0.72,94:0.72,95:0.72,96:0.71,97:0.71,98:0.71,99:0.7,100:0.7},
+  'Lohmann White': {18:0.01,19:0.08,20:0.31,21:0.61,22:0.82,23:0.91,24:0.93,25:0.94,26:0.95,27:0.95,28:0.95,29:0.95,30:0.95,31:0.95,32:0.95,33:0.95,34:0.94,35:0.94,36:0.94,37:0.94,38:0.94,39:0.93,40:0.93,41:0.93,42:0.93,43:0.92,44:0.92,45:0.92,46:0.91,47:0.91,48:0.91,49:0.9,50:0.9,51:0.9,52:0.9,53:0.89,54:0.89,55:0.89,56:0.89,57:0.88,58:0.88,59:0.88,60:0.88,61:0.87,62:0.87,63:0.87,64:0.86,65:0.86,66:0.86,67:0.85,68:0.85,69:0.84,70:0.83,71:0.83,72:0.82,73:0.81,74:0.81,75:0.8,76:0.8,77:0.79,78:0.78,79:0.78,80:0.77,81:0.77,82:0.76,83:0.76,84:0.75,85:0.75,86:0.74,87:0.74,88:0.74,89:0.73,90:0.73,91:0.73,92:0.72,93:0.72,94:0.72,95:0.72,96:0.71,97:0.71,98:0.71,99:0.7,100:0.7},
+  'Hy-line Brown Jaula': {18:0.044,19:0.177,20:0.441,21:0.71,22:0.865,23:0.924,24:0.944,25:0.952,26:0.955,27:0.957,28:0.957,29:0.957,30:0.957,31:0.956,32:0.956,33:0.955,34:0.953,35:0.951,36:0.949,37:0.947,38:0.945,39:0.943,40:0.941,41:0.939,42:0.936,43:0.933,44:0.93,45:0.927,46:0.924,47:0.921,48:0.919,49:0.916,50:0.914,51:0.911,52:0.909,53:0.907,54:0.905,55:0.902,56:0.901,57:0.898,58:0.896,59:0.894,60:0.891,61:0.888,62:0.885,63:0.883,64:0.88,65:0.877,66:0.873,67:0.869,68:0.864,69:0.859,70:0.854,71:0.849,72:0.842,73:0.836,74:0.83,75:0.824,76:0.818,77:0.812,78:0.806,79:0.8,80:0.794,81:0.788,82:0.783,83:0.777,84:0.772,85:0.767,86:0.762,87:0.757,88:0.752,89:0.748,90:0.744,91:0.74,92:0.737,93:0.733,94:0.73,95:0.726,96:0.723,97:0.719,98:0.716,99:0.712,100:0.709}
+};
+
+// ══ ESTADO ══════════════════════════════════════════════════════
+let lotes = [], loteActual = null, registrosLote = [];
+let modoEdicion = false, registroEdicion = null;
+let currentUser = null, clasOculta = false;
+let csvPendiente = null;
+let chartsInst = {};
+
+// ══ AUTH ════════════════════════════════════════════════════════
+window.onload = async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) { currentUser = session.user; mostrarApp(); }
+  sb.auth.onAuthStateChange((_e, s) => {
+    currentUser = s?.user || null;
+    if (currentUser) mostrarApp(); else mostrarLogin();
+  });
+};
+
+function mostrarLogin() {
+  document.getElementById('pantalla-login').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  const btn   = document.getElementById('btn-login');
+  if (!email || !pass) { errEl.textContent='Completa correo y contraseña'; errEl.style.display='block'; return; }
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Entrando…';
+  errEl.style.display = 'none';
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) { errEl.textContent='Correo o contraseña incorrectos'; errEl.style.display='block'; btn.disabled=false; btn.textContent='Entrar'; }
+}
+
+async function logout() {
+  if (!confirm('¿Cerrar sesión?')) return;
+  await sb.auth.signOut();
+}
+
+async function mostrarApp() {
+  document.getElementById('pantalla-login').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('nav-user').textContent = '👤 ' + currentUser.email + ' · salir';
+  document.getElementById('fecha-input').value = hoy();
+  await cargarLotes();
+}
+
+// ══ TABS ════════════════════════════════════════════════════════
+function irTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['registro','graficos','lotes'][i]===tab));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  if (tab === 'graficos') renderGraficosTab();
+  if (tab === 'lotes')    renderListaLotes();
+}
+
+// ══ LOTES ═══════════════════════════════════════════════════════
+async function cargarLotes() {
+  const { data, error } = await sb.from('lotes_produccion').select('*').order('created_at');
+  if (!error) lotes = data;
+  renderSelectorLotes();
+  poblarSelectImport();
+}
+
+function renderSelectorLotes() {
+  const cont = document.getElementById('lotes-btns');
+  if (!lotes.filter(l=>l.activo).length) { cont.innerHTML='<span style="color:#aaa;font-size:.85rem">Sin lotes activos. Crea uno en la pestaña Lotes.</span>'; return; }
+  cont.innerHTML = lotes.filter(l=>l.activo).map((l,i) => {
+    const sem = calcEdad(l.fecha_nac);
+    return `<button class="lote-btn" id="lbtn-${l.id}" onclick="seleccionarLote('${l.id}')">${l.nombre}<span class="lote-info">${sem} sem</span></button>`;
+  }).join('');
+}
+
+async function seleccionarLote(id) {
+  loteActual = lotes.find(l => l.id === id);
+  document.querySelectorAll('.lote-btn').forEach(b => b.classList.remove('activo'));
+  document.getElementById('lbtn-'+id)?.classList.add('activo');
+  document.getElementById('card-info').style.display = 'block';
+  document.getElementById('btn-guardar').disabled = false;
+  mostrarLoading(true, 'Cargando registros…');
+  const { data } = await sb.from('registros').select('*').eq('lote_id', id).order('fecha');
+  registrosLote = data || [];
+  mostrarLoading(false);
+  actualizarInfoLote();
+  onFechaChange();
+  mostrarHuecos();
+}
+
+function actualizarInfoLote() {
+  if (!loteActual) return;
+  const fecha = document.getElementById('fecha-input').value;
+  const sem   = fecha ? calcEdadFecha(loteActual.fecha_nac, fecha) : calcEdad(loteActual.fecha_nac);
+  const esp   = pctEsperado(sem, loteActual.linea_genetica);
+  document.getElementById('info-edad').textContent     = sem + ' semanas';
+  document.getElementById('info-esperado').textContent = (esp*100).toFixed(1)+'%';
+  document.getElementById('info-linea').textContent    = loteActual.linea_genetica;
+  document.getElementById('info-aves').textContent     = Number(loteActual.n_aves_inicio).toLocaleString('es-CL');
+}
+
+function mostrarHuecos() {
+  if (!registrosLote.length) return;
+  const fechas = new Set(registrosLote.map(r => r.fecha));
+  const sorted = [...fechas].sort();
+  const faltantes = [];
+  const cursor = new Date(sorted[0]+'T12:00:00');
+  cursor.setDate(cursor.getDate()+1);
+  const fin = new Date(sorted[sorted.length-1]+'T12:00:00');
+  while (cursor < fin) {
+    const str = cursor.toISOString().slice(0,10);
+    if (!fechas.has(str)) faltantes.push(str.split('-').reverse().join('/'));
+    cursor.setDate(cursor.getDate()+1);
+  }
+  const el = document.getElementById('aviso-huecos');
+  if (faltantes.length) { el.textContent = `⚠️ Días sin registro: ${faltantes.slice(0,5).join(', ')}${faltantes.length>5?' y '+(faltantes.length-5)+' más':''}`;  el.classList.add('visible'); }
+  else el.classList.remove('visible');
+}
+
+async function crearLote() {
+  const nombre = document.getElementById('nl-nombre').value.trim();
+  const fecha  = document.getElementById('nl-fecha').value;
+  const aves   = document.getElementById('nl-aves').value;
+  const linea  = document.getElementById('nl-linea').value;
+  if (!nombre || !fecha) { toast('Completa nombre y fecha de nacimiento','warn'); return; }
+  const btn = document.getElementById('btn-crear-lote');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
+  const { error } = await sb.from('lotes_produccion').insert({ nombre, fecha_nac:fecha, n_aves_inicio:parseInt(aves)||0, linea_genetica:linea, user_id:currentUser.id });
+  if (!error) {
+    toast('✅ Lote creado','ok');
+    document.getElementById('nl-nombre').value=''; document.getElementById('nl-fecha').value=''; document.getElementById('nl-aves').value='';
+    await cargarLotes(); renderListaLotes();
+  } else toast('Error: '+error.message,'err');
+  btn.disabled=false; btn.textContent='+ Crear lote';
+}
+
+function renderListaLotes() {
+  const cont = document.getElementById('lista-lotes');
+  if (!lotes.length) { cont.innerHTML='<div class="alerta alerta-info" style="margin:0">Sin lotes. Crea el primero arriba.</div>'; return; }
+  cont.innerHTML = lotes.map(l => `
+    <div class="lote-card ${l.activo?'':'archivado'}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-weight:700;font-size:.95rem">${l.nombre}</div>
+          <div style="font-size:.78rem;color:#78909c;margin-top:3px">${l.linea_genetica} · Nacido: ${l.fecha_nac} · ${Number(l.n_aves_inicio).toLocaleString('es-CL')} aves</div>
+          <div style="font-size:.78rem;color:var(--verde);margin-top:2px">Semana ${calcEdad(l.fecha_nac)}</div>
+        </div>
+        ${l.activo
+          ? `<button class="btn btn-rojo btn-sm" onclick="archivarLote('${l.id}')">Archivar</button>`
+          : '<span style="font-size:.72rem;color:#bbb">Archivado</span>'}
+      </div>
+    </div>`).join('');
+}
+
+async function archivarLote(id) {
+  const l = lotes.find(x=>x.id===id);
+  if (!confirm(`¿Archivar "${l?.nombre}"?`)) return;
+  const { error } = await sb.from('lotes_produccion').update({activo:false}).eq('id',id);
+  if (!error) { toast('Lote archivado','warn'); await cargarLotes(); renderListaLotes(); }
+  else toast('Error: '+error.message,'err');
+}
+
+function poblarSelectImport() {
+  const sel = document.getElementById('imp-lote');
+  sel.innerHTML = lotes.filter(l=>l.activo).map(l=>`<option value="${l.id}">${l.nombre}</option>`).join('');
+}
+
+// ══ REGISTRO DIARIO ═════════════════════════════════════════════
+function cambiarFecha(dias) {
+  const inp = document.getElementById('fecha-input');
+  const d   = new Date(inp.value+'T12:00:00');
+  d.setDate(d.getDate()+dias);
+  inp.value = d.toISOString().slice(0,10);
+  onFechaChange();
+}
+
+function onFechaChange() {
+  if (!loteActual) return;
+  const fechaStr = document.getElementById('fecha-input').value;
+  if (!fechaStr) return;
+  actualizarInfoLote();
+  const reg = registrosLote.find(r => r.fecha === fechaStr);
+  if (reg) { cargarEnFormulario(reg); setModoEdicion(true, reg); }
+  else      { setModoEdicion(false); }
+}
+
+function setModoEdicion(activo, reg=null) {
+  modoEdicion    = activo;
+  registroEdicion = reg;
+  const banner = document.getElementById('banner-edicion');
+  const btn    = document.getElementById('btn-guardar');
+  if (activo) { banner.classList.add('visible'); btn.classList.add('edicion'); btn.textContent='✏️ Actualizar registro'; }
+  else        { banner.classList.remove('visible'); btn.classList.remove('edicion'); btn.textContent='✅ Guardar registro'; }
+}
+
+function cancelarEdicion() {
+  setModoEdicion(false);
+  limpiarFormulario();
+  const last = registrosLote.slice(-1)[0];
+  if (last) { document.getElementById('fecha-input').value = nuevoDia(last.fecha); document.getElementById('f-aves').value = (last.n_aves||0)-(last.mortalidad||0); }
+}
+
+function cargarEnFormulario(r) {
+  document.getElementById('f-aves').value    = r.n_aves    || 0;
+  document.getElementById('f-mort').value    = r.mortalidad || 0;
+  document.getElementById('f-kg').value      = r.kg_alimento || 0;
+  document.getElementById('f-huevos').value  = r.n_huevos  || 0;
+  document.getElementById('f-chico').value   = r.chico     || 0;
+  document.getElementById('f-mediano').value = r.mediano   || 0;
+  document.getElementById('f-grande').value  = r.grande    || 0;
+  document.getElementById('f-xl').value      = r.xl        || 0;
+  document.getElementById('f-superxl').value = r.super_xl  || 0;
+  document.getElementById('f-jumbo').value   = r.jumbo     || 0;
+  document.getElementById('f-sucios').value  = r.sucios    || 0;
+  document.getElementById('f-rotos').value   = r.rotos     || 0;
+  document.getElementById('f-trizados').value= r.trizados  || 0;
+  document.getElementById('f-sangre').value  = r.sangre    || 0;
+  document.getElementById('f-obs').value     = r.observaciones || '';
+  actualizarTotales();
+}
+
+function limpiarFormulario() {
+  ['f-mort','f-kg','f-huevos','f-chico','f-mediano','f-grande','f-xl','f-superxl','f-jumbo','f-sucios','f-rotos','f-trizados','f-sangre'].forEach(id => document.getElementById(id).value=0);
+  document.getElementById('f-obs').value='';
+  actualizarTotales();
+}
+
+async function guardarRegistro(sobreescribir=false) {
+  if (!loteActual) { toast('Selecciona un lote','warn'); return; }
+  const fecha = document.getElementById('fecha-input').value;
+  if (!fecha) { toast('Selecciona una fecha','warn'); return; }
+
+  if (modoEdicion && !sobreescribir) {
+    document.getElementById('modal-detalle').textContent = `📅 ${fmtFecha(fecha)} · ${loteActual.nombre}`;
+    document.getElementById('modal-sobrescribir').classList.add('visible');
+    return;
+  }
+  document.getElementById('modal-sobrescribir').classList.remove('visible');
+
+  const nAves   = parseInt(document.getElementById('f-aves').value)    || 0;
+  const mort    = parseInt(document.getElementById('f-mort').value)    || 0;
+  const kgAlim  = parseFloat(document.getElementById('f-kg').value)   || 0;
+  const nHuevos = parseInt(document.getElementById('f-huevos').value) || 0;
+  const chico   = parseInt(document.getElementById('f-chico').value)   || 0;
+  const mediano = parseInt(document.getElementById('f-mediano').value) || 0;
+  const grande  = parseInt(document.getElementById('f-grande').value)  || 0;
+  const xl      = parseInt(document.getElementById('f-xl').value)      || 0;
+  const superXl = parseInt(document.getElementById('f-superxl').value) || 0;
+  const jumbo   = parseInt(document.getElementById('f-jumbo').value)   || 0;
+  const sucios  = parseInt(document.getElementById('f-sucios').value)  || 0;
+  const rotos   = parseInt(document.getElementById('f-rotos').value)   || 0;
+  const trizados= parseInt(document.getElementById('f-trizados').value)|| 0;
+  const sangre  = parseInt(document.getElementById('f-sangre').value)  || 0;
+  const obs     = document.getElementById('f-obs').value.trim();
+
+  const sem     = calcEdadFecha(loteActual.fecha_nac, fecha);
+  const kgPorAve= nAves > 0 ? Math.round(kgAlim/nAves*1000)/1000 : 0;
+  const pctPost = nAves > 0 ? Math.round(nHuevos/nAves*10000)/10000 : 0;
+  const pctEsp  = pctEsperado(sem, loteActual.linea_genetica);
+  const dif     = Math.round((pctPost - pctEsp)*10000)/10000;
+
+  const payload = {
+    lote_id:loteActual.id, fecha, semana_vida:sem, n_aves:nAves, mortalidad:mort,
+    kg_alimento:kgAlim, n_huevos:nHuevos, chico, mediano, grande, xl, super_xl:superXl, jumbo,
+    sucios, rotos, trizados, sangre, kg_por_ave:kgPorAve,
+    pct_postura:pctPost, pct_esperado:pctEsp, diferencia:dif,
+    observaciones:obs, user_id:currentUser.id,
+  };
+
+  const btn = document.getElementById('btn-guardar');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
+
+  let error;
+  if (modoEdicion && registroEdicion) {
+    ({ error } = await sb.from('registros').update(payload).eq('id', registroEdicion.id));
+  } else {
+    ({ error } = await sb.from('registros').insert(payload));
+  }
+
+  if (!error) {
+    toast(modoEdicion ? '✏️ Registro actualizado' : `✅ Guardado — ${(pctPost*100).toFixed(1)}% postura (esp: ${(pctEsp*100).toFixed(1)}%)`,'ok',3500);
+    await seleccionarLote(loteActual.id);
+    const sig = nuevoDia(fecha);
+    document.getElementById('fecha-input').value = sig;
+    document.getElementById('f-aves').value = nAves - mort;
+    onFechaChange();
+  } else toast('Error: '+error.message,'err');
+
+  btn.disabled=false; btn.innerHTML = modoEdicion ? '✏️ Actualizar registro' : '✅ Guardar registro';
+  btn.className = 'btn btn-verde' + (modoEdicion?' edicion':'');
+}
+
+function cerrarModal() { document.getElementById('modal-sobrescribir').classList.remove('visible'); }
+
+// ══ VALIDACIONES ════════════════════════════════════════════════
+function validarHuevos() {
+  const aves   = parseInt(document.getElementById('f-aves').value)   || 0;
+  const huevos = parseInt(document.getElementById('f-huevos').value) || 0;
+  const el     = document.getElementById('aviso-huevos');
+  const inp    = document.getElementById('f-huevos');
+  if (aves>0 && huevos>0 && huevos > aves*1.05) {
+    document.getElementById('aviso-huevos-txt').textContent = `${(huevos/aves*100).toFixed(1)}% de postura — máximo 105% (${Math.ceil(aves*1.05)} huevos)`;
+    el.classList.add('visible'); inp.classList.add('error');
+  } else { el.classList.remove('visible'); inp.classList.remove('error'); }
+}
+
+function actualizarTotales() {
+  const v = id => parseInt(document.getElementById(id).value)||0;
+  const huevos  = v('f-huevos');
+  const noVend  = v('f-sucios')+v('f-rotos')+v('f-trizados')+v('f-sangre');
+  const tamano  = v('f-chico')+v('f-mediano')+v('f-grande')+v('f-xl')+v('f-superxl')+v('f-jumbo')+noVend;
+
+  document.getElementById('total-tamano').textContent = tamano.toLocaleString('es-CL');
+  document.getElementById('total-calidad').textContent= noVend.toLocaleString('es-CL');
+
+  const dEl = document.getElementById('diff-tamano');
+  if (huevos===0||tamano===0) { dEl.textContent=''; }
+  else { const d=tamano-huevos; dEl.textContent=d===0?'✓ Cuadra':d>0?`+${d} exceso`:`${d} faltan`; dEl.className='total-diff '+(d===0?'ok':d>0?'err':'warn'); }
+
+  const cEl = document.getElementById('diff-calidad');
+  if (huevos===0||noVend===0) { cEl.textContent=''; }
+  else { const pct=(noVend/huevos*100).toFixed(1); cEl.textContent=pct+'% no vendible'; cEl.className='total-diff '+(parseFloat(pct)<=3?'ok':parseFloat(pct)<=6?'warn':'err'); }
+}
+
+let _clastoggle = false;
+function toggleClas() {
+  _clastoggle = !_clastoggle;
+  ['cuerpo-tamano','cuerpo-calidad'].forEach(id => document.getElementById(id).style.display = _clastoggle?'none':'');
+  document.getElementById('card-calidad').style.display = _clastoggle?'none':'';
+  const btn = document.getElementById('btn-toggle-clas');
+  btn.textContent = _clastoggle ? '✏️ Clasificar' : '⏭ Después';
+  btn.className   = 'btn-toggle'+(_clastoggle?' on':'');
+}
+
+// ══ GRÁFICOS ════════════════════════════════════════════════════
+function renderGraficosTab() {
+  const sinLote = document.getElementById('g-sin-lote');
+  const cont    = document.getElementById('g-contenido');
+  if (!loteActual || !registrosLote.length) { sinLote.style.display='block'; cont.style.display='none'; return; }
+  sinLote.style.display='none'; cont.style.display='block';
+  actualizarResumenCards();
+  renderChart('curva');
+}
+
+function actualizarResumenCards() {
+  const total = registrosLote.reduce((s,r)=>s+(r.n_huevos||0),0);
+  const ult7  = registrosLote.slice(-7);
+  const prom7 = ult7.length ? ult7.reduce((s,r)=>s+(r.pct_postura||0),0)/ult7.length : 0;
+  const ultimo= registrosLote[registrosLote.length-1];
+  document.getElementById('g-acumulado').textContent = total.toLocaleString('es-CL');
+  document.getElementById('g-semana').textContent    = (prom7*100).toFixed(1)+'%';
+  document.getElementById('g-ultimo').textContent    = ultimo ? (((ultimo.pct_postura||0)*100).toFixed(1)+'%') : '—';
+}
+
+function cambiarGtab(tipo) {
+  ['curva','acumulado','tamano','tabla'].forEach(t => {
+    document.getElementById('gtab-'+t).classList.toggle('activo', t===tipo);
+    const wrap = document.getElementById('wrap-'+t);
+    if (t==='tabla') wrap.style.display = tipo==='tabla'?'block':'none';
+    else wrap.classList.toggle('visible', t===tipo);
+  });
+  if (tipo==='tabla') renderTablaSemanal();
+  else renderChart(tipo);
+}
+
+function renderChart(tipo) {
+  if (chartsInst[tipo]) { chartsInst[tipo].destroy(); delete chartsInst[tipo]; }
+  const canvas = document.getElementById('chart-'+tipo);
+  if (!canvas || !registrosLote.length) return;
+  const ctx = canvas.getContext('2d');
+
+  if (tipo==='curva') {
+    const labels   = registrosLote.map(r => r.fecha.slice(5).replace('-','/'));
+    const postura  = registrosLote.map(r => ((r.pct_postura||0)*100).toFixed(1));
+    const esperado = registrosLote.map(r => ((r.pct_esperado||0)*100).toFixed(1));
+    chartsInst[tipo] = new Chart(ctx, { type:'line', data:{ labels, datasets:[
+      { label:'% Postura real', data:postura, borderColor:'#2e7d32', backgroundColor:'rgba(46,125,50,.1)', borderWidth:2, tension:.3, pointRadius:2 },
+      { label:'% Esperado curva', data:esperado, borderColor:'#1565c0', backgroundColor:'transparent', borderWidth:1.5, borderDash:[5,4], tension:.3, pointRadius:0 }
+    ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}}, scales:{ y:{ min:0, max:100, ticks:{callback:v=>v+'%'} } } }});
+  } else if (tipo==='acumulado') {
+    const labels  = registrosLote.map(r => r.fecha.slice(5).replace('-','/'));
+    let acum=0; const acumulado = registrosLote.map(r=>(acum+=(r.n_huevos||0),acum));
+    chartsInst[tipo] = new Chart(ctx, { type:'bar', data:{ labels, datasets:[
+      { label:'Acumulado huevos', data:acumulado, backgroundColor:'rgba(21,101,192,.7)', borderColor:'#1565c0', borderWidth:1 }
+    ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}}, scales:{y:{beginAtZero:true}} }});
+  } else if (tipo==='tamano') {
+    const labels = registrosLote.slice(-28).map(r => r.fecha.slice(5).replace('-','/'));
+    const last28 = registrosLote.slice(-28);
+    const mk = (key,col) => ({ label:key, data:last28.map(r=>r[key]||0), backgroundColor:col, stack:'s' });
+    chartsInst[tipo] = new Chart(ctx, { type:'bar', data:{ labels, datasets:[
+      mk('jumbo','#7b1fa2'), mk('super_xl','#1565c0'), mk('xl','#0288d1'),
+      mk('grande','#2e7d32'), mk('mediano','#f9a825'), mk('chico','#e65100')
+    ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}}, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}} }});
+  }
+}
+
+function renderTablaSemanal() {
+  const semanas = {};
+  registrosLote.forEach(r => {
+    const sem = r.semana_vida || 0;
+    if (!semanas[sem]) semanas[sem] = { sem, dias:0, aves:0, huevos:0, pct:[], esp:[], mort:0, kg:0 };
+    semanas[sem].dias++;
+    semanas[sem].aves  = r.n_aves || semanas[sem].aves;
+    semanas[sem].huevos+= r.n_huevos || 0;
+    semanas[sem].pct.push(r.pct_postura || 0);
+    semanas[sem].esp.push(r.pct_esperado || 0);
+    semanas[sem].mort += r.mortalidad || 0;
+    semanas[sem].kg   += r.kg_alimento || 0;
+  });
+  const body = document.getElementById('tabla-body');
+  body.innerHTML = Object.values(semanas).sort((a,b)=>a.sem-b.sem).map(s => {
+    const pct = s.pct.length ? s.pct.reduce((a,b)=>a+b,0)/s.pct.length : 0;
+    const esp = s.esp.length ? s.esp.reduce((a,b)=>a+b,0)/s.esp.length : 0;
+    const dif = pct - esp;
+    const difStr = (dif>=0?'+':'')+( dif*100).toFixed(1)+'%';
+    const difCol = dif>=0?'color:var(--verde)':'color:var(--rojo)';
+    return `<tr><td>${s.sem}</td><td>${s.dias}</td><td>${s.aves.toLocaleString('es-CL')}</td><td>${s.huevos.toLocaleString('es-CL')}</td>
+      <td style="font-weight:700">${(pct*100).toFixed(1)}%</td><td>${(esp*100).toFixed(1)}%</td>
+      <td style="${difCol};font-weight:700">${difStr}</td><td>${s.mort}</td><td>${s.kg.toFixed(0)}</td></tr>`;
+  }).join('');
+}
+
+// ══ IMPORTAR CSV ════════════════════════════════════════════════
+let importRows = [];
+
+function procesarArchivoImport(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => parsearCSV(e.target.result);
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parsearCSV(texto) {
+  const lineas = texto.split(/\r?\n/).filter(l=>l.trim());
+  importRows = [];
+  for (const linea of lineas) {
+    const cols = linea.split(',').map(c=>c.trim().replace(/^"|"$/g,''));
+    const fechaStr = parseFecha(cols[0]);
+    if (!fechaStr) continue;
+    importRows.push({
+      fecha:    fechaStr,
+      n_aves:   parseInt(cols[2])||0,
+      mortalidad:parseInt(cols[3])||0,
+      kg_alimento:parseFloat(cols[4].replace(',','.'))||0,
+      n_huevos: parseInt(cols[5])||0,
+      chico:    parseInt(cols[6])||0,
+      mediano:  parseInt(cols[7])||0,
+      grande:   parseInt(cols[8])||0,
+      xl:       parseInt(cols[9])||0,
+      super_xl: parseInt(cols[10])||0,
+      jumbo:    parseInt(cols[11])||0,
+      sucios:   parseInt(cols[12])||0,
+      rotos:    parseInt(cols[13])||0,
+      trizados: parseInt(cols[14])||0,
+      sangre:   parseInt(cols[15])||0,
+      observaciones: cols[20]||'',
+    });
+  }
+  if (!importRows.length) { toast('No se encontraron filas válidas en el CSV','err'); return; }
+  const prev = document.getElementById('imp-preview');
+  document.getElementById('imp-preview-txt').textContent =
+    `✅ ${importRows.length} registros detectados\n` +
+    `Primer registro: ${importRows[0].fecha}\nÚltimo: ${importRows[importRows.length-1].fecha}`;
+  prev.style.display='block';
+}
+
+async function confirmarImport() {
+  const loteId = document.getElementById('imp-lote').value;
+  if (!loteId) { toast('Selecciona un lote destino','warn'); return; }
+  if (!importRows.length) { toast('Sin datos para importar','warn'); return; }
+  const lote = lotes.find(l=>l.id===loteId);
+  if (!lote) return;
+
+  const btn = document.getElementById('btn-import');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Importando…';
+
+  let ok=0, err=0;
+  for (const r of importRows) {
+    const sem = calcEdadFecha(lote.fecha_nac, r.fecha);
+    const kgPorAve = r.n_aves>0 ? Math.round(r.kg_alimento/r.n_aves*1000)/1000 : 0;
+    const pctPost  = r.n_aves>0 ? Math.round(r.n_huevos/r.n_aves*10000)/10000 : 0;
+    const pctEsp   = pctEsperado(sem, lote.linea_genetica);
+    const { error } = await sb.from('registros').upsert({
+      ...r, lote_id:loteId, semana_vida:sem, kg_por_ave:kgPorAve,
+      pct_postura:pctPost, pct_esperado:pctEsp, diferencia:Math.round((pctPost-pctEsp)*10000)/10000,
+      user_id:currentUser.id,
+    }, { onConflict:'lote_id,fecha', ignoreDuplicates:false });
+    if (error) err++; else ok++;
+  }
+  toast(`📥 Importados: ${ok} registros${err?' · Errores: '+err:''}`, ok>0?'ok':'err', 4000);
+  document.getElementById('imp-preview').style.display='none';
+  importRows=[];
+  btn.disabled=false; btn.textContent='📥 Importar registros';
+  if (loteActual?.id===loteId) await seleccionarLote(loteId);
+}
+
+// ══ UTILS ═══════════════════════════════════════════════════════
+function calcEdad(fechaNac) {
+  return Math.max(1, Math.floor((new Date()-new Date(fechaNac+'T12:00:00'))/(7*86400*1000))+1);
+}
+function calcEdadFecha(fechaNac, fechaReg) {
+  return Math.max(1, Math.floor((new Date(fechaReg+'T12:00:00')-new Date(fechaNac+'T12:00:00'))/(7*86400*1000))+1);
+}
+function pctEsperado(sem, linea) {
+  const curva = CURVAS[linea] || CURVAS['Hy-line Brown'];
+  return curva[sem] || 0;
+}
+function hoy() { return new Date().toISOString().slice(0,10); }
+function nuevoDia(fechaStr) { const d=new Date(fechaStr+'T12:00:00'); d.setDate(d.getDate()+1); return d.toISOString().slice(0,10); }
+function fmtFecha(str) { return str.split('-').reverse().join('/'); }
+function parseFecha(str) {
+  if (!str) return null;
+  let m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return str;
+  const n = parseFloat(str);
+  if (!isNaN(n) && n>40000) { const d=new Date((n-25569)*86400*1000); return d.toISOString().slice(0,10); }
+  return null;
+}
+function toast(msg, tipo='', dur=2800) {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className='show '+(tipo==='ok'?'ok':tipo==='err'?'err':tipo==='warn'?'warn':'');
+  setTimeout(()=>el.classList.remove('show'),dur);
+}
+function mostrarLoading(show, txt='Cargando…') {
+  document.getElementById('loading').classList.toggle('visible',show);
+  document.getElementById('loading-txt').textContent=txt;
+}
+</script>
+</body>
+</html>
