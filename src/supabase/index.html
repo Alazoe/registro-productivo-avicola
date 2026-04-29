@@ -1018,10 +1018,14 @@ async function confirmarImport() {
 
 // ══ UTILS ═══════════════════════════════════════════════════════
 function calcEdad(fechaNac) {
-  return Math.max(1, Math.floor((new Date()-new Date(fechaNac+'T12:00:00'))/(7*86400*1000))+1);
+  const d0 = new Date(fechaNac + 'T00:00:00Z');
+  const d1 = new Date(new Date().toISOString().slice(0,10) + 'T00:00:00Z');
+  return Math.max(1, Math.floor(Math.round((d1-d0)/86400000)/7)+1);
 }
 function calcEdadFecha(fechaNac, fechaReg) {
-  return Math.max(1, Math.floor((new Date(fechaReg+'T12:00:00')-new Date(fechaNac+'T12:00:00'))/(7*86400*1000))+1);
+  const d0 = new Date(fechaNac + 'T00:00:00Z');
+  const d1 = new Date(fechaReg  + 'T00:00:00Z');
+  return Math.max(1, Math.floor(Math.round((d1-d0)/86400000)/7)+1);
 }
 function pctEsperado(sem, linea) {
   const curva = CURVAS[linea] || CURVAS['Hy-line Brown'];
