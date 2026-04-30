@@ -184,6 +184,20 @@ label:first-child{margin-top:0}
 #toast.err{background:var(--rojo)}
 #toast.warn{background:var(--naranja)}
 
+/* KPIs */
+.kpi-seccion{background:#fff;border-radius:var(--radio);box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:12px;overflow:hidden}
+.kpi-sec-header{background:var(--gris-b);padding:9px 14px;font-size:.68rem;font-weight:700;color:#546e7a;text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid #dde1e7}
+.kpi-grid{display:grid;gap:1px;background:#e8ecee}
+.kpi-grid.col2{grid-template-columns:1fr 1fr}
+.kpi-grid.col3{grid-template-columns:1fr 1fr 1fr}
+.kpi-item{background:#fff;padding:12px 8px;text-align:center}
+.kpi-label{font-size:.6rem;color:#78909c;text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:5px}
+.kpi-val{font-size:1.15rem;font-weight:700;color:var(--verde-o);line-height:1.1}
+.kpi-val.rojo{color:var(--rojo)}
+.kpi-val.naranja{color:var(--naranja)}
+.kpi-val.azul{color:var(--azul)}
+.kpi-sub{font-size:.66rem;color:#90a4ae;margin-top:3px}
+
 /* ALERTA */
 .alerta{padding:9px 12px;border-radius:8px;font-size:.82rem;margin-top:8px}
 .alerta-info{background:#e3f2fd;color:var(--azul)}
@@ -361,12 +375,14 @@ label:first-child{margin-top:0}
           <div class="r-card naranja"><div class="r-card-titulo">🥚 Último día</div><div class="r-card-valor" id="g-ultimo">—</div><div class="r-card-sub">% postura</div></div>
         </div>
         <div class="graficos-tabs">
-          <button class="gtab activo" onclick="cambiarGtab('curva')" id="gtab-curva">📈 Postura</button>
-          <button class="gtab" onclick="cambiarGtab('acumulado')" id="gtab-acumulado">📊 Acumulado</button>
-          <button class="gtab" onclick="cambiarGtab('tamano')" id="gtab-tamano">📏 Tamaños</button>
+          <button class="gtab activo" onclick="cambiarGtab('kpis')" id="gtab-kpis">🎯 KPIs</button>
+          <button class="gtab" onclick="cambiarGtab('curva')" id="gtab-curva">📈 Postura</button>
+          <button class="gtab" onclick="cambiarGtab('acumulado')" id="gtab-acumulado">📊 Acum</button>
+          <button class="gtab" onclick="cambiarGtab('tamano')" id="gtab-tamano">📏 Tam</button>
           <button class="gtab" onclick="cambiarGtab('tabla')" id="gtab-tabla">📋 Tabla</button>
         </div>
-        <div class="chart-wrap visible" id="wrap-curva"><canvas id="chart-curva"></canvas></div>
+        <div id="wrap-kpis"><div id="kpis-contenido"></div></div>
+        <div class="chart-wrap" id="wrap-curva"><canvas id="chart-curva"></canvas></div>
         <div class="chart-wrap" id="wrap-acumulado"><canvas id="chart-acumulado"></canvas></div>
         <div class="chart-wrap" id="wrap-tamano"><canvas id="chart-tamano"></canvas></div>
         <div id="wrap-tabla" style="display:none">
@@ -842,7 +858,7 @@ function renderGraficosTab() {
   if (!loteActual || !registrosLote.length) { sinLote.style.display='block'; cont.style.display='none'; return; }
   sinLote.style.display='none'; cont.style.display='block';
   actualizarResumenCards();
-  renderChart('curva');
+  cambiarGtab('kpis');
 }
 
 function actualizarResumenCards() {
@@ -856,13 +872,14 @@ function actualizarResumenCards() {
 }
 
 function cambiarGtab(tipo) {
-  ['curva','acumulado','tamano','tabla'].forEach(t => {
+  ['kpis','curva','acumulado','tamano','tabla'].forEach(t => {
     document.getElementById('gtab-'+t).classList.toggle('activo', t===tipo);
     const wrap = document.getElementById('wrap-'+t);
-    if (t==='tabla') wrap.style.display = tipo==='tabla'?'block':'none';
+    if (t==='tabla' || t==='kpis') wrap.style.display = tipo===t ? 'block' : 'none';
     else wrap.classList.toggle('visible', t===tipo);
   });
   if (tipo==='tabla') renderTablaSemanal();
+  else if (tipo==='kpis') renderKPIs();
   else renderChart(tipo);
 }
 
@@ -1044,6 +1061,157 @@ function parseFecha(str) {
   if (!isNaN(n) && n>40000) { const d=new Date((n-25569)*86400*1000); return d.toISOString().slice(0,10); }
   return null;
 }
+function renderKPIs() {
+  const cont = document.getElementById('kpis-contenido');
+  if (!loteActual || !registrosLote.length) { cont.innerHTML = ''; return; }
+
+  const ult  = registrosLote[registrosLote.length - 1];
+  const ult7 = registrosLote.slice(-7);
+  const all  = registrosLote;
+
+  // Aves
+  const avesActual  = ult.n_aves || 0;
+  const avesInicio  = loteActual.n_aves || avesActual;
+  const semActual   = ult.semana_vida || 0;
+
+  // Mortalidad
+  const mortDia      = ult.mortalidad || 0;
+  const mortPctDia   = avesActual > 0 ? mortDia / avesActual * 100 : 0;
+  const mortSem      = ult7.reduce((s, r) => s + (r.mortalidad || 0), 0);
+  const avesIniSem   = ult7[0]?.n_aves || avesActual;
+  const mortPctSem   = avesIniSem > 0 ? mortSem / avesIniSem * 100 : 0;
+  const mortAcum     = all.reduce((s, r) => s + (r.mortalidad || 0), 0);
+  const mortPctAcum  = avesInicio > 0 ? mortAcum / avesInicio * 100 : 0;
+
+  // Postura
+  const postDia     = (ult.pct_postura || 0) * 100;
+  const postSem     = ult7.length ? ult7.reduce((s, r) => s + (r.pct_postura || 0), 0) / ult7.length * 100 : 0;
+  const totalHuevos = all.reduce((s, r) => s + (r.n_huevos || 0), 0);
+  const diasTotales = all.length;
+  const postAcum    = avesInicio > 0 && diasTotales > 0 ? totalHuevos / (avesInicio * diasTotales) * 100 : 0;
+  const hxAve       = avesInicio > 0 ? (totalHuevos / avesInicio).toFixed(1) : '—';
+
+  // No vendibles
+  const nvHoy    = (ult.sucios||0)+(ult.rotos||0)+(ult.trizados||0)+(ult.sangre||0);
+  const pctNVDia = (ult.n_huevos||0) > 0 ? nvHoy / ult.n_huevos * 100 : 0;
+  const nvSem    = ult7.reduce((s,r)=>s+(r.sucios||0)+(r.rotos||0)+(r.trizados||0)+(r.sangre||0), 0);
+  const huevSem  = ult7.reduce((s,r)=>s+(r.n_huevos||0), 0);
+  const pctNVSem = huevSem > 0 ? nvSem / huevSem * 100 : 0;
+
+  // Conversión kg alimento / N° huevos
+  const kgSem   = ult7.reduce((s,r)=>s+(r.kg_alimento||0), 0);
+  const convSem = huevSem > 0 ? (kgSem / huevSem).toFixed(4) : '—';
+  const convDia = (ult.n_huevos||0) > 0 ? ((ult.kg_alimento||0) / ult.n_huevos).toFixed(4) : '—';
+
+  // Colores
+  const cM = v => v > 0.3 ? 'rojo' : v > 0.1 ? 'naranja' : '';
+  const cP = v => v < 80  ? 'rojo' : v < 90  ? 'naranja' : '';
+  const cN = v => v > 5   ? 'rojo' : v > 2   ? 'naranja' : '';
+
+  const f1 = v => v.toFixed(1);
+  const f2 = v => v.toFixed(2);
+  const fN = v => Number(v).toLocaleString('es-CL');
+
+  cont.innerHTML = `
+    <div class="kpi-seccion">
+      <div class="kpi-sec-header">🐔 Situación actual — Sem ${semActual} · ${fmtFecha(ult.fecha)}</div>
+      <div class="kpi-grid col2">
+        <div class="kpi-item">
+          <div class="kpi-label">Aves actuales</div>
+          <div class="kpi-val azul">${fN(avesActual)}</div>
+          <div class="kpi-sub">inicio: ${fN(avesInicio)}</div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-label">% Postura real hoy</div>
+          <div class="kpi-val ${cP(postDia)}">${f1(postDia)}%</div>
+          <div class="kpi-sub">prom 7 días: ${f1(postSem)}%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-seccion">
+      <div class="kpi-sec-header">💀 Mortalidad</div>
+      <div class="kpi-grid col3">
+        <div class="kpi-item">
+          <div class="kpi-label">Diaria</div>
+          <div class="kpi-val ${cM(mortPctDia)}">${mortDia} aves</div>
+          <div class="kpi-sub">${f2(mortPctDia)}%</div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-label">Semanal (7d)</div>
+          <div class="kpi-val ${cM(mortPctSem/7)}">${mortSem} aves</div>
+          <div class="kpi-sub">${f2(mortPctSem)}%</div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-label">Acumulada</div>
+          <div class="kpi-val">${mortAcum} aves</div>
+          <div class="kpi-sub">${f2(mortPctAcum)}%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-seccion">
+      <div class="kpi-sec-header">🥚 Tasa de puesta</div>
+      <div class="kpi-grid col3">
+        <div class="kpi-item">
+          <div class="kpi-label">Diaria</div>
+          <div class="kpi-val ${cP(postDia)}">${f1(postDia)}%</div>
+          <div class="kpi-sub">${fN(ult.n_huevos||0)} huevos</div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-label">Semanal (7d)</div>
+          <div class="kpi-val ${cP(postSem)}">${f1(postSem)}%</div>
+          <div class="kpi-sub">prom últimos 7</div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-label">Acumulada</div>
+          <div class="kpi-val ${cP(postAcum)}">${f1(postAcum)}%</div>
+          <div class="kpi-sub">${diasTotales} días reg.</div>
+        </div>
+      </div>
+      <div class="kpi-grid col2" style="border-top:1px solid #e8ecee">
+        <div class="kpi-item">
+          <div class="kpi-label">H. × ave alojada</div>
+          <div class="kpi-val azul">${hxAve}</div>
+          <div class="kpi-sub">desde inicio postura</div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-label">Total acumulado</div>
+          <div class="kpi-val azul">${fN(totalHuevos)}</div>
+          <div class="kpi-sub">huevos producidos</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-seccion">
+      <div class="kpi-sec-header">⚠️ Calidad y conversión alimenticia</div>
+      <div class="kpi-grid col2">
+        <div class="kpi-item">
+          <div class="kpi-label">No vendibles hoy</div>
+          <div class="kpi-val ${cN(pctNVDia)}">${f1(pctNVDia)}%</div>
+          <div class="kpi-sub">${nvHoy} huevos</div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-label">No vendibles 7d</div>
+          <div class="kpi-val ${cN(pctNVSem)}">${f1(pctNVSem)}%</div>
+          <div class="kpi-sub">${nvSem} de ${fN(huevSem)}</div>
+        </div>
+      </div>
+      <div class="kpi-grid col2" style="border-top:1px solid #e8ecee">
+        <div class="kpi-item">
+          <div class="kpi-label">Conversión hoy</div>
+          <div class="kpi-val">${convDia}</div>
+          <div class="kpi-sub">kg alimento / huevo</div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-label">Conversión 7d</div>
+          <div class="kpi-val">${convSem}</div>
+          <div class="kpi-sub">kg alimento / huevo</div>
+        </div>
+      </div>
+    </div>`;
+}
+
 async function verificarAlertas(loteNombre, fecha, nAves, mort, pctPost, prevReg) {
   const alertas = [];
 
