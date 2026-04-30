@@ -71,7 +71,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gris-f);col
 .campo-row:last-child{border-bottom:none}
 .campo-label{flex:1;font-size:.92rem;font-weight:500;display:flex;align-items:center;gap:8px}
 .campo-icon{font-size:1.1rem}
-.campo-input{width:110px;min-width:110px;flex-shrink:0;padding:10px;border:2px solid #cfd8dc;border-radius:8px;font-size:1.1rem;font-weight:700;text-align:center;outline:none;background:#fafbfc;transition:.2s}
+.campo-input{padding:10px;border:2px solid #cfd8dc;border-radius:8px;font-size:1.1rem;font-weight:700;text-align:center;outline:none;background:#fafbfc;transition:.2s}
+.campo-row .campo-input{width:110px;min-width:110px;flex-shrink:0;margin-top:0}
 .campo-input:focus{border-color:var(--verde-c);background:#fff}
 .campo-input.error{border-color:var(--rojo)!important;background:#fff5f5!important}
 
@@ -940,25 +941,55 @@ function renderChart(tipo) {
       mk('grande','#2e7d32'), mk('mediano','#f9a825'), mk('chico','#e65100')
     ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}}, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}} }});
   } else if (tipo==='dona') {
-    const semAct = registrosLote.length ? (registrosLote[registrosLote.length-1].semana_vida || 0) : 0;
-    const semAnt = semAct > 1 ? semAct - 1 : null;
-    const huevAct = registrosLote.filter(r => r.semana_vida === semAct).reduce((s,r)=>s+(r.n_huevos||0),0);
-    const huevAnt = semAnt ? registrosLote.filter(r => r.semana_vida === semAnt).reduce((s,r)=>s+(r.n_huevos||0),0) : 0;
-    const labels  = [`Sem ${semAct} — actual (${huevAct.toLocaleString('es-CL')} huevos)`];
-    const datos   = [huevAct];
-    const colors  = ['rgba(46,125,50,.85)'];
-    const borders = ['#2e7d32'];
-    if (semAnt) { labels.push(`Sem ${semAnt} — anterior (${huevAnt.toLocaleString('es-CL')} huevos)`); datos.push(huevAnt); colors.push('rgba(21,101,192,.65)'); borders.push('#1565c0'); }
+    // Agrupar por semana — solo semanas con exactamente 7 días registrados
+    const semMap = {};
+    registrosLote.forEach(r => {
+      const s = r.semana_vida || 0;
+      if (!semMap[s]) semMap[s] = { dias:0, chico:0, mediano:0, grande:0, xl:0, super_xl:0, jumbo:0 };
+      semMap[s].dias++;
+      ['chico','mediano','grande','xl','super_xl','jumbo'].forEach(k => semMap[s][k] += r[k]||0);
+    });
+    const semsComp = Object.entries(semMap)
+      .filter(([,v]) => v.dias === 7)
+      .sort((a,b) => Number(b[0]) - Number(a[0]));
+
+    if (!semsComp.length) {
+      ctx.canvas.parentElement.innerHTML = '<div style="padding:40px;text-align:center;color:#90a4ae;font-size:.85rem">Sin semanas completas (7 días) aún</div>';
+      return;
+    }
+
+    const KEYS   = ['chico','mediano','grande','xl','super_xl','jumbo'];
+    const LABELS = ['Chico','Mediano','Grande','XL','Super XL','Jumbo'];
+    const COLS   = ['#e65100','#f9a825','#2e7d32','#0288d1','#1565c0','#7b1fa2'];
+
+    const datasets = [];
+    const semAct = semsComp[0], semAnt = semsComp[1] || null;
+
+    if (semAnt) {
+      datasets.push({
+        label: `Sem ${semAnt[0]} — anterior`,
+        data: KEYS.map(k => semAnt[1][k]),
+        backgroundColor: COLS.map(c => c + '55'),
+        borderColor: COLS, borderWidth:1
+      });
+    }
+    datasets.push({
+      label: `Sem ${semAct[0]} — actual`,
+      data: KEYS.map(k => semAct[1][k]),
+      backgroundColor: COLS.map(c => c + 'CC'),
+      borderColor: COLS, borderWidth:2
+    });
+
     chartsInst[tipo] = new Chart(ctx, {
       type: 'doughnut',
-      data: { labels, datasets:[{ data:datos, backgroundColor:colors, borderColor:borders, borderWidth:2, hoverOffset:8 }] },
+      data: { labels: LABELS, datasets },
       options: {
         responsive:true, maintainAspectRatio:false,
         plugins:{
-          legend:{ position:'bottom', labels:{ font:{size:12}, padding:16 } },
-          tooltip:{ callbacks:{ label: c => ` ${c.raw.toLocaleString('es-CL')} huevos` } }
+          legend:{ position:'bottom', labels:{ font:{size:11}, padding:12 } },
+          tooltip:{ callbacks:{ label: c => ` ${c.dataset.label} · ${c.label}: ${c.raw.toLocaleString('es-CL')}` } }
         },
-        cutout:'60%'
+        cutout:'48%'
       }
     });
   }
