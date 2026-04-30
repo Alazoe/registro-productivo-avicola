@@ -55,6 +55,9 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gris-f);col
 .info-label{font-size:.68rem;color:#78909c;text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:3px}
 .info-value{font-size:1.1rem;font-weight:700;color:var(--verde-o)}
 .info-value.sm{font-size:.9rem}
+.info-value.rojo{color:var(--rojo)}
+.info-value.naranja{color:var(--naranja)}
+.info-value.azul{color:var(--azul)}
 
 /* FECHA */
 .fecha-row{display:flex;align-items:center;gap:8px}
@@ -68,7 +71,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gris-f);col
 .campo-row:last-child{border-bottom:none}
 .campo-label{flex:1;font-size:.92rem;font-weight:500;display:flex;align-items:center;gap:8px}
 .campo-icon{font-size:1.1rem}
-.campo-input{width:100px;padding:10px;border:2px solid #cfd8dc;border-radius:8px;font-size:1.1rem;font-weight:700;text-align:center;outline:none;background:#fafbfc;transition:.2s}
+.campo-input{width:110px;min-width:110px;flex-shrink:0;padding:10px;border:2px solid #cfd8dc;border-radius:8px;font-size:1.1rem;font-weight:700;text-align:center;outline:none;background:#fafbfc;transition:.2s}
 .campo-input:focus{border-color:var(--verde-c);background:#fff}
 .campo-input.error{border-color:var(--rojo)!important;background:#fff5f5!important}
 
@@ -262,10 +265,12 @@ label:first-child{margin-top:0}
     <div class="card-header">📊 Información del lote</div>
     <div class="card-body">
       <div class="info-grid">
-        <div class="info-item"><div class="info-label">Edad actual</div><div class="info-value" id="info-edad">—</div></div>
-        <div class="info-item"><div class="info-label">% Esperado</div><div class="info-value" id="info-esperado">—</div></div>
-        <div class="info-item"><div class="info-label">Línea genética</div><div class="info-value sm" id="info-linea">—</div></div>
-        <div class="info-item"><div class="info-label">N° Aves</div><div class="info-value" id="info-aves">—</div></div>
+        <div class="info-item"><div class="info-label">N° Aves actuales</div><div class="info-value azul" id="info-aves">—</div></div>
+        <div class="info-item"><div class="info-label">Conversión (kg/huevo 7d)</div><div class="info-value" id="info-conv">—</div></div>
+        <div class="info-item"><div class="info-label">Mortalidad hoy</div><div class="info-value" id="info-mort-hoy">—</div></div>
+        <div class="info-item"><div class="info-label">Mortalidad 7 días</div><div class="info-value" id="info-mort-7d">—</div></div>
+        <div class="info-item"><div class="info-label">Edad actual</div><div class="info-value sm" id="info-edad">—</div></div>
+        <div class="info-item"><div class="info-label">% Postura esperado</div><div class="info-value" id="info-esperado">—</div></div>
       </div>
     </div>
   </div>
@@ -380,11 +385,13 @@ label:first-child{margin-top:0}
           <button class="gtab" onclick="cambiarGtab('acumulado')" id="gtab-acumulado">📊 Acum</button>
           <button class="gtab" onclick="cambiarGtab('tamano')" id="gtab-tamano">📏 Tam</button>
           <button class="gtab" onclick="cambiarGtab('tabla')" id="gtab-tabla">📋 Tabla</button>
+          <button class="gtab" onclick="cambiarGtab('dona')" id="gtab-dona">🍩 Semanal</button>
         </div>
         <div id="wrap-kpis"><div id="kpis-contenido"></div></div>
         <div class="chart-wrap" id="wrap-curva"><canvas id="chart-curva"></canvas></div>
         <div class="chart-wrap" id="wrap-acumulado"><canvas id="chart-acumulado"></canvas></div>
         <div class="chart-wrap" id="wrap-tamano"><canvas id="chart-tamano"></canvas></div>
+        <div class="chart-wrap" id="wrap-dona" style="height:360px"><canvas id="chart-dona"></canvas></div>
         <div id="wrap-tabla" style="display:none">
           <div class="tabla-wrap">
             <table class="tabla-semanal">
@@ -609,10 +616,31 @@ function actualizarInfoLote() {
   const fecha = document.getElementById('fecha-input').value;
   const sem   = fecha ? calcEdadFecha(loteActual.fecha_nac, fecha) : calcEdad(loteActual.fecha_nac);
   const esp   = pctEsperado(sem, loteActual.linea_genetica);
-  document.getElementById('info-edad').textContent     = sem + ' semanas';
-  document.getElementById('info-esperado').textContent = (esp*100).toFixed(1)+'%';
-  document.getElementById('info-linea').textContent    = loteActual.linea_genetica;
-  document.getElementById('info-aves').textContent     = Number(loteActual.n_aves).toLocaleString('es-CL');
+
+  const ult        = registrosLote.length ? registrosLote[registrosLote.length - 1] : null;
+  const avesActual = ult ? (ult.n_aves || loteActual.n_aves) : loteActual.n_aves;
+  const mortHoy    = ult ? (ult.mortalidad || 0) : 0;
+  const mortPctHoy = avesActual > 0 ? (mortHoy / avesActual * 100) : 0;
+
+  const ult7    = registrosLote.slice(-7);
+  const mort7d  = ult7.reduce((s, r) => s + (r.mortalidad || 0), 0);
+  const avesIni7= ult7.length ? (ult7[0].n_aves || avesActual) : avesActual;
+  const mortPct7= avesIni7 > 0 ? (mort7d / avesIni7 * 100) : 0;
+  const kg7d    = ult7.reduce((s, r) => s + (r.kg_alimento || 0), 0);
+  const huev7d  = ult7.reduce((s, r) => s + (r.n_huevos || 0), 0);
+  const conv7d  = huev7d > 0 ? (kg7d / huev7d).toFixed(4) : '—';
+
+  document.getElementById('info-edad').textContent      = sem + ' sem';
+  document.getElementById('info-esperado').textContent  = (esp*100).toFixed(1)+'%';
+  document.getElementById('info-aves').textContent      = Number(avesActual).toLocaleString('es-CL');
+  document.getElementById('info-conv').textContent      = conv7d !== '—' ? conv7d + ' kg' : '—';
+  document.getElementById('info-mort-hoy').textContent  = mortHoy > 0 ? `${mortHoy} av. (${mortPctHoy.toFixed(2)}%)` : '0';
+  document.getElementById('info-mort-7d').textContent   = mort7d  > 0 ? `${mort7d} av. (${mortPct7.toFixed(2)}%)` : '0';
+
+  const mortHoyEl = document.getElementById('info-mort-hoy');
+  const mort7dEl  = document.getElementById('info-mort-7d');
+  mortHoyEl.className = 'info-value ' + (mortPctHoy > 0.3 ? 'rojo' : mortPctHoy > 0 ? 'naranja' : '');
+  mort7dEl.className  = 'info-value ' + (mortPct7  > 2.1 ? 'rojo' : mortPct7  > 0.7 ? 'naranja' : '');
 }
 
 function mostrarHuecos() {
@@ -872,7 +900,7 @@ function actualizarResumenCards() {
 }
 
 function cambiarGtab(tipo) {
-  ['kpis','curva','acumulado','tamano','tabla'].forEach(t => {
+  ['kpis','curva','acumulado','tamano','dona','tabla'].forEach(t => {
     document.getElementById('gtab-'+t).classList.toggle('activo', t===tipo);
     const wrap = document.getElementById('wrap-'+t);
     if (t==='tabla' || t==='kpis') wrap.style.display = tipo===t ? 'block' : 'none';
@@ -911,6 +939,28 @@ function renderChart(tipo) {
       mk('jumbo','#7b1fa2'), mk('super_xl','#1565c0'), mk('xl','#0288d1'),
       mk('grande','#2e7d32'), mk('mediano','#f9a825'), mk('chico','#e65100')
     ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}}, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}} }});
+  } else if (tipo==='dona') {
+    const semAct = registrosLote.length ? (registrosLote[registrosLote.length-1].semana_vida || 0) : 0;
+    const semAnt = semAct > 1 ? semAct - 1 : null;
+    const huevAct = registrosLote.filter(r => r.semana_vida === semAct).reduce((s,r)=>s+(r.n_huevos||0),0);
+    const huevAnt = semAnt ? registrosLote.filter(r => r.semana_vida === semAnt).reduce((s,r)=>s+(r.n_huevos||0),0) : 0;
+    const labels  = [`Sem ${semAct} — actual (${huevAct.toLocaleString('es-CL')} huevos)`];
+    const datos   = [huevAct];
+    const colors  = ['rgba(46,125,50,.85)'];
+    const borders = ['#2e7d32'];
+    if (semAnt) { labels.push(`Sem ${semAnt} — anterior (${huevAnt.toLocaleString('es-CL')} huevos)`); datos.push(huevAnt); colors.push('rgba(21,101,192,.65)'); borders.push('#1565c0'); }
+    chartsInst[tipo] = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels, datasets:[{ data:datos, backgroundColor:colors, borderColor:borders, borderWidth:2, hoverOffset:8 }] },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{ position:'bottom', labels:{ font:{size:12}, padding:16 } },
+          tooltip:{ callbacks:{ label: c => ` ${c.raw.toLocaleString('es-CL')} huevos` } }
+        },
+        cutout:'60%'
+      }
+    });
   }
 }
 
