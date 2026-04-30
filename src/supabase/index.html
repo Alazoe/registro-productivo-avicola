@@ -1209,6 +1209,84 @@ function renderKPIs() {
           <div class="kpi-sub">kg alimento / huevo</div>
         </div>
       </div>
+    </div>
+
+    <div class="kpi-seccion">
+      <div class="kpi-sec-header">💰 Costo de alimentación</div>
+      <div style="padding:10px 14px;background:#fff;border-bottom:1px solid #e8ecee;display:flex;align-items:center;gap:10px">
+        <span style="font-size:.78rem;font-weight:600;color:#546e7a;white-space:nowrap">Precio kg alimento</span>
+        <input type="number" id="inp-precio-kg"
+          value="${parseFloat(localStorage.getItem('precio_kg_'+loteActual.id))||''}"
+          placeholder="ej: 380" min="0" step="1"
+          style="width:110px;padding:8px 10px;border:2px solid #cfd8dc;border-radius:8px;font-size:1rem;font-weight:700;text-align:right;outline:none;margin-left:auto"
+          oninput="actualizarCostos(parseFloat(this.value)||0)">
+        <span style="font-size:.78rem;color:#90a4ae">$/kg</span>
+      </div>
+      <div id="kpi-costos"></div>
+    </div>`;
+
+  actualizarCostos(parseFloat(localStorage.getItem('precio_kg_'+loteActual.id))||0);
+}
+
+function actualizarCostos(precio) {
+  if (!loteActual) return;
+  if (precio > 0) localStorage.setItem('precio_kg_'+loteActual.id, precio);
+  const cont = document.getElementById('kpi-costos');
+  if (!cont) return;
+
+  if (!precio) {
+    cont.innerHTML = `<div class="kpi-item" style="text-align:center;padding:12px;color:#90a4ae;font-size:.8rem">Ingresa el precio por kg para ver los costos</div>`;
+    return;
+  }
+
+  const ult  = registrosLote[registrosLote.length - 1];
+  const ult7 = registrosLote.slice(-7);
+  const all  = registrosLote;
+
+  const kgHoy   = ult.kg_alimento || 0;
+  const huevHoy = ult.n_huevos    || 0;
+  const kgSem_  = ult7.reduce((s,r)=>s+(r.kg_alimento||0), 0);
+  const huevSem_= ult7.reduce((s,r)=>s+(r.n_huevos||0), 0);
+  const kgAcum  = all.reduce((s,r)=>s+(r.kg_alimento||0), 0);
+
+  const costoHoy  = kgHoy   * precio;
+  const costoSem  = kgSem_  * precio;
+  const costoAcum = kgAcum  * precio;
+  const cxHuevHoy = huevHoy  > 0 ? costoHoy  / huevHoy  : 0;
+  const cxHuevSem = huevSem_ > 0 ? costoSem  / huevSem_ : 0;
+
+  const f$ = v => '$ ' + Math.round(v).toLocaleString('es-CL');
+  const fD = v => '$ ' + v.toFixed(1);
+
+  cont.innerHTML = `
+    <div class="kpi-grid col3">
+      <div class="kpi-item">
+        <div class="kpi-label">Costo hoy</div>
+        <div class="kpi-val azul">${f$(costoHoy)}</div>
+        <div class="kpi-sub">${kgHoy.toFixed(2)} kg</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Costo 7 días</div>
+        <div class="kpi-val azul">${f$(costoSem)}</div>
+        <div class="kpi-sub">${kgSem_.toFixed(1)} kg</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Costo acumulado</div>
+        <div class="kpi-val azul">${f$(costoAcum)}</div>
+        <div class="kpi-sub">${kgAcum.toFixed(0)} kg total</div>
+      </div>
+    </div>
+    <div class="kpi-grid col2" style="border-top:1px solid #e8ecee">
+      <div class="kpi-item">
+        <div class="kpi-label">Costo / huevo hoy</div>
+        <div class="kpi-val">${fD(cxHuevHoy)}</div>
+        <div class="kpi-sub">alimento por unidad</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Costo / huevo 7d</div>
+        <div class="kpi-val">${fD(cxHuevSem)}</div>
+        <div class="kpi-sub">alimento por unidad</div>
+      </div>
     </div>`;
 }
 
