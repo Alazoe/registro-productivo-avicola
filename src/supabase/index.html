@@ -693,9 +693,13 @@ function renderListaLotes() {
           <div style="font-size:.78rem;color:#78909c;margin-top:3px">${l.linea_genetica} · Nacido: ${l.fecha_nac} · ${Number(l.n_aves).toLocaleString('es-CL')} aves</div>
           <div style="font-size:.78rem;color:var(--verde);margin-top:2px">Semana ${calcEdad(l.fecha_nac)}</div>
         </div>
-        ${l.activo
-          ? `<button class="btn btn-rojo btn-sm" onclick="archivarLote('${l.id}')">Archivar</button>`
-          : '<span style="font-size:.72rem;color:#bbb">Archivado</span>'}
+        <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+          ${l.activo
+            ? `<button class="btn btn-rojo btn-sm" onclick="archivarLote('${l.id}')">Archivar</button>`
+            : '<span style="font-size:.72rem;color:#bbb">Archivado</span>'}
+          <button class="btn btn-sm" style="background:#ffebee;color:var(--rojo);border:1px solid #ffcdd2"
+            onclick="eliminarLote('${l.id}','${l.nombre.replace(/'/g,"\\'")}')">🗑️ Eliminar</button>
+        </div>
       </div>
     </div>`).join('');
 }
@@ -706,6 +710,18 @@ async function archivarLote(id) {
   const { error } = await sb.from('lotes').update({activo:false}).eq('id',id);
   if (!error) { toast('Lote archivado','warn'); await cargarLotes(); renderListaLotes(); }
   else toast('Error: '+error.message,'err');
+}
+
+async function eliminarLote(id, nombre) {
+  const confirmado = prompt(`⚠️ Esto eliminará "${nombre}" y TODOS sus registros permanentemente.\n\nEscribe el nombre exacto del lote para confirmar:`);
+  if (confirmado === null) return;
+  if (confirmado !== nombre) { toast('Nombre incorrecto — no se eliminó','warn'); return; }
+  const { error } = await sb.from('lotes').delete().eq('id', id);
+  if (!error) {
+    toast('🗑️ Lote eliminado permanentemente','warn',4000);
+    if (loteActual?.id === id) { loteActual = null; registrosLote = []; document.getElementById('card-info').style.display='none'; document.getElementById('btn-guardar').disabled=true; }
+    await cargarLotes(); renderListaLotes();
+  } else toast('Error: '+error.message,'err');
 }
 
 function poblarSelectImport() {
