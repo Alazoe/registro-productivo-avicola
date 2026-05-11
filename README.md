@@ -41,7 +41,7 @@ src/supabase/
 └── supabase-schema.sql   ← Tablas y políticas RLS
 ```
 
-**URL:** pendiente de configurar en GitHub Pages  
+**URL:** http://avivet.cl/registro-productivo-avicola/src/supabase/  
 **Supabase project:** `xewujmpycclqjhlmiica.supabase.co` (mismo proyecto que pesaje-pollitas)
 
 ### Tablas
