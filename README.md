@@ -18,12 +18,12 @@ El sistema está en transición de Google Apps Script (GAS) + Google Sheets a un
 | Etapa | Estado |
 |-------|--------|
 | Nueva app Supabase (`src/supabase/`) | ✅ Lista |
-| Schema + RLS en Supabase | ⏳ Pendiente deploy |
+| Schema + RLS en Supabase | ✅ Activo desde 2026-04-29 |
 | Migración historial Avícola GH | ⏳ Pendiente |
 | Migración historial Avícola Clarita | ⏳ Pendiente |
 | Migración historial Praderas de Ranco | ⏳ Pendiente |
 | Migración historial Reinhard | ⏳ Pendiente |
-| Productores usando nueva app | ⏳ Pendiente |
+| Productores usando nueva app | ⏳ En proceso |
 
 ---
 
@@ -67,6 +67,7 @@ Ambas tablas tienen Row Level Security activado: cada usuario ve y modifica solo
 - **Gráficos** — curva de postura vs esperado, acumulado, distribución por tamaño, tabla semanal por semana de vida
 - **Importar CSV** — herramienta integrada para migrar historial desde Google Sheets (tab Lotes → Importar)
 - **KPIs calculados client-side** — semana de vida, kg/ave, % postura, % esperado por línea genética, diferencia vs curva
+- **Alertas por email** — notificación automática vía Resend cuando mortalidad > 0,30% o caída de postura > 3% en un día (activo desde 2026-04-29)
 
 ### Cómo activar Supabase (una sola vez)
 
@@ -124,6 +125,8 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-05 | CLAUDE.md + URL GitHub Pages configurada |
+| 2026-04-29 | Alerta por email activa (Resend + Supabase Edge Function) |
 | 2026-04 | Nueva app Supabase + herramienta de importación CSV |
 | 2026-04 | Inicio migración GAS → Supabase |
 | 2026-04 | Exportar PDF semanal con gráfico y tabla |
