@@ -126,7 +126,7 @@ src/avicolas/<nombre>/
 | Fecha | Cambio |
 |-------|--------|
 | 2026-05 | CLAUDE.md + URL GitHub Pages configurada |
-| 2026-04-29 | Alerta por email activa (Resend + Supabase Edge Function) |
+| 2026-04-29 | Alerta por email activa y verificada (Resend + Supabase Edge Function → andres.lazomv@outlook.com) |
 | 2026-04 | Nueva app Supabase + herramienta de importación CSV |
 | 2026-04 | Inicio migración GAS → Supabase |
 | 2026-04 | Exportar PDF semanal con gráfico y tabla |
