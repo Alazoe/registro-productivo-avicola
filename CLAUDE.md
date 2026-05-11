@@ -28,7 +28,7 @@ dashboard.html         ← dashboard multi-granja GAS (obsoleto al terminar migr
 ## Alertas por email
 Edge Function `alerta-produccion` activa desde 2026-04-29. Secrets ya configurados en Supabase:
 - `RESEND_API_KEY` ✅
-- `ALERTA_EMAIL` → `alazoemv@gmail.com` ✅
+- `ALERTA_EMAIL` → `andres.lazomv@outlook.com` ✅
 - `ALERTA_FROM` → `alertas@avivet.cl` ✅
 
 Condiciones que disparan alerta: mortalidad > 0,30% del lote, o caída de postura > 3% en un día.
