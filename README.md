@@ -5,6 +5,12 @@ Sistema de registro diario de producción para gallinas ponedoras.
 
 ---
 
+## Documentación para Claude Code
+
+Este repositorio incluye un [`CLAUDE.md`](./CLAUDE.md) en la raíz con el stack, la arquitectura y comportamientos no obvios del proyecto. Claude Code lo carga automáticamente al trabajar en el repo, reduciendo el contexto necesario en cada sesión.
+
+---
+
 ## Estado actual de la migración
 
 El sistema está en transición de Google Apps Script (GAS) + Google Sheets a una arquitectura centralizada en **Supabase**.
