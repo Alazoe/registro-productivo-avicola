@@ -25,10 +25,13 @@ dashboard.html         ← dashboard multi-granja GAS (obsoleto al terminar migr
 - El remitente de email (`ALERTA_FROM`) debe ser un dominio verificado en Resend. `onboarding@resend.dev` solo funciona en modo test de Resend.
 - GitHub Pages sirve la raíz del repo públicamente — no incluir archivos con credenciales reales.
 
-## Secrets en Supabase (Edge Functions → Secrets)
-- `RESEND_API_KEY` — clave API de resend.com
-- `ALERTA_EMAIL` — destino de alertas (`alazoemv@gmail.com`)
-- `ALERTA_FROM` — remitente verificado en Resend (`alertas@avivet.cl`)
+## Alertas por email
+Edge Function `alerta-produccion` activa desde 2026-04-29. Secrets ya configurados en Supabase:
+- `RESEND_API_KEY` ✅
+- `ALERTA_EMAIL` → `alazoemv@gmail.com` ✅
+- `ALERTA_FROM` → `alertas@avivet.cl` ✅
+
+Condiciones que disparan alerta: mortalidad > 0,30% del lote, o caída de postura > 3% en un día.
 
 ## Líneas genéticas disponibles
 Hy-line Brown, Lohmann Brown, Bovans Brown, ISA Brown — curvas de postura hardcodeadas en `index.html`.
