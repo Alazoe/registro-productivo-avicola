@@ -1073,8 +1073,7 @@ function parseCSVLine(line) {
 }
 
 function parsearCSV(texto) {
-  const lineas = texto.split(/?
-/);
+  const lineas = texto.split(/\r?\n/);
   importRows = [];
   for (const linea of lineas) {
     if (!linea.trim()) continue;
