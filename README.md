@@ -125,6 +125,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-05 | Curva Dominat agregada + curvas extendidas a semana 150 |
 | 2026-05 | CLAUDE.md + URL GitHub Pages configurada |
 | 2026-04-29 | Alerta por email activa y verificada (Resend + Supabase Edge Function → andres.lazomv@outlook.com) |
 | 2026-04 | Nueva app Supabase + herramienta de importación CSV |
