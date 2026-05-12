@@ -455,6 +455,7 @@ label:first-child{margin-top:0}
           <option>Lohmann White</option>
           <option>Hy-line Brown Jaula</option>
           <option>Dekalb Brown</option>
+          <option>Dominat</option>
         </select>
       </label>
       <button class="btn btn-verde" onclick="crearLote()" id="btn-crear-lote" style="margin-top:14px">+ Crear lote</button>
@@ -699,7 +700,7 @@ function renderListaLotes() {
             ? `<button class="btn btn-rojo btn-sm" onclick="archivarLote('${l.id}')">Archivar</button>`
             : '<span style="font-size:.72rem;color:#bbb">Archivado</span>'}
           <button class="btn btn-sm" style="background:#ffebee;color:var(--rojo);border:1px solid #ffcdd2"
-            onclick="eliminarLote('${l.id}','${l.nombre.replace(/'/g,"\\'")}')">🗑️ Eliminar</button>
+            onclick="eliminarLote('${l.id}','${l.nombre.replace(/'/g,"\'")}')">🗑️ Eliminar</button>
         </div>
       </div>
     </div>`).join('');
@@ -714,7 +715,9 @@ async function archivarLote(id) {
 }
 
 async function eliminarLote(id, nombre) {
-  const confirmado = prompt(`⚠️ Esto eliminará "${nombre}" y TODOS sus registros permanentemente.\n\nEscribe el nombre exacto del lote para confirmar:`);
+  const confirmado = prompt(`⚠️ Esto eliminará "${nombre}" y TODOS sus registros permanentemente.
+
+Escribe el nombre exacto del lote para confirmar:`);
   if (confirmado === null) return;
   if (confirmado !== nombre) { toast('Nombre incorrecto — no se eliminó','warn'); return; }
   const { error } = await sb.from('lotes').delete().eq('id', id);
@@ -1070,7 +1073,8 @@ function parseCSVLine(line) {
 }
 
 function parsearCSV(texto) {
-  const lineas = texto.split(/\r?\n/);
+  const lineas = texto.split(/?
+/);
   importRows = [];
   for (const linea of lineas) {
     if (!linea.trim()) continue;
@@ -1099,8 +1103,10 @@ function parsearCSV(texto) {
   if (!importRows.length) { toast('No se encontraron filas válidas en el CSV','err'); return; }
   const prev = document.getElementById('imp-preview');
   document.getElementById('imp-preview-txt').textContent =
-    `✅ ${importRows.length} registros detectados\n` +
-    `Primer registro: ${importRows[0].fecha}\nÚltimo: ${importRows[importRows.length-1].fecha}`;
+    `✅ ${importRows.length} registros detectados
+` +
+    `Primer registro: ${importRows[0].fecha}
+Último: ${importRows[importRows.length-1].fecha}`;
   prev.style.display='block';
 }
 
