@@ -86,17 +86,11 @@ button { cursor:pointer; font-family:inherit; border:none; background:none; colo
 
 <script>
 // ── CONFIGURACIÓN ─────────────────────────────────────────────────────────
-const GRANJAS = [
-  { id:"reinhard", nombre:"Reinhard",
-    webAppUrl:"https://script.google.com/macros/s/AKfycbw-I_G2J0tp1qHb38NUACbqJ854m4Wm3wbKQNKSGP4AOu8vJF_GFoNMLl443WcZvC1CTQ/exec",
-    color:"#f0a500", unidad:"Carro", tieneClasificacion:false },
-  { id:"clarita", nombre:"Avícola Clarita",
-    webAppUrl:"https://script.google.com/macros/s/AKfycbyRqXzKicCFBMb_VXxGXdEb0KpzaLP6I19HcMZqYohHQJCQi5CINvemDEKudEqzLmi2/exec",
-    color:"#00d97e", unidad:"Lote", tieneClasificacion:true },
-  { id:"gh", nombre:"Avícola GH",
-    webAppUrl:"https://script.google.com/macros/s/AKfycbz_KZacc8oOBfhWAIbFMSfDqrxfhiAJr0xTdKHov2ShSwyHQh91JXkoRylWafmkc6M/exec",
-    color:"#58a6ff", unidad:"Lote", tieneClasificacion:true },
-];
+const SUPABASE_URL  = "https://xewujmpycclqjhlmiica.supabase.co";
+const SUPABASE_ANON = "sb_publishable_v5_FU1w-7P7oeNrW6FYRBQ_cuX-pa9_";
+const PALETTE = ["#f0a500","#00d97e","#58a6ff","#ff6b6b","#c678dd","#56b6c2","#e5c07b","#98c379"];
+
+let GRANJAS = [];
 
 const CATEGORIAS = [
   {key:"chico",   label:"Chico",    color:"#78909c"},
@@ -115,7 +109,7 @@ const NO_CONFORMES = [
 
 // ── ESTADO ────────────────────────────────────────────────────────────────
 const state = {
-  granjaId: "reinhard",
+  granjaId: null,
   loteIdx:  0,
   datos:    {},
   estados:  {}
@@ -339,8 +333,9 @@ function renderSidebar(){
 function renderMain(){
   const main=document.getElementById("contenido");
   main.innerHTML="";
-  const est=state.estados[state.granjaId];
   const granja=GRANJAS.find(g=>g.id===state.granjaId);
+  if(!granja){ main.innerHTML='<div class="estado-msg"><div style="color:#484f58">Cargando productores···</div></div>'; return; }
+  const est=state.estados[state.granjaId];
   const datosG=state.datos[state.granjaId];
   const lotes=datosG?.lotes||[];
   const lote=lotes[state.loteIdx];
@@ -349,7 +344,7 @@ function renderMain(){
     main.innerHTML='<div class="estado-msg"><div style="color:#484f58">Cargando datos···</div></div>'; return;
   }
   if(!lote && est==="error"){
-    main.innerHTML=`<div class="estado-msg"><div style="font-size:32px">⚠</div><div style="color:#ff5252">No se pudo conectar con ${granja.nombre}</div><div style="font-size:11px;color:#484f58;text-align:center;max-width:320px">Verifica que el Apps Script tenga getDashboard y esté publicado.</div></div>`; return;
+    main.innerHTML=`<div class="estado-msg"><div style="font-size:32px">⚠</div><div style="color:#ff5252">No se pudo conectar con ${granja.nombre}</div><div style="font-size:11px;color:#484f58;text-align:center;max-width:320px">Verifica la conexión con Supabase.</div></div>`; return;
   }
   if(!lote) return;
 
@@ -459,19 +454,79 @@ function renderMain(){
 // ── RENDER COMPLETO ───────────────────────────────────────────────────────
 function render(){ renderSidebar(); renderMain(); }
 
-// ── CARGA DATOS ───────────────────────────────────────────────────────────
-function cargarGranja(g){
-  state.estados[g.id]="cargando";
-  render();
-  fetch(g.webAppUrl+"?action=getDashboard")
-    .then(r=>{ if(!r.ok) throw new Error(); return r.json(); })
-    .then(json=>{ if(json.error) throw new Error(json.error); state.datos[g.id]=json; state.estados[g.id]="ok"; render(); })
-    .catch(()=>{ state.estados[g.id]="error"; render(); });
+// ── SUPABASE ──────────────────────────────────────────────────────────────
+async function sbFetch(tabla, params={}){
+  const url=new URL(SUPABASE_URL+"/rest/v1/"+tabla);
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+  const r=await fetch(url.toString(),{headers:{"apikey":SUPABASE_ANON,"Authorization":"Bearer "+SUPABASE_ANON}});
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+
+function procesarLote(lote, registros){
+  if(!registros.length) return null;
+  const hoy=new Date().toISOString().slice(0,10);
+  const u=registros[0];
+  const dias=Math.max(0,Math.round((new Date(hoy)-new Date(u.fecha))/86400000));
+  const pct=v=>v!=null?parseFloat((v*100).toFixed(1)):null;
+  return {
+    nombre:          lote.nombre,
+    semanaVida:      u.semana_vida,
+    aves:            u.n_aves||lote.n_aves,
+    ultimaFecha:     u.fecha,
+    diasPendientes:  dias,
+    postura:         pct(u.pct_postura),
+    posturaEsperada: pct(u.pct_esperado),
+    diferencia:      pct(u.diferencia),
+    mortalidadHoy:   u.mortalidad,
+    huevos:          u.n_huevos,
+    gAlimPorHuevo:   (u.kg_alimento&&u.n_huevos)?Math.round(u.kg_alimento*1000/u.n_huevos):null,
+    clasificacion:{chico:u.chico,mediano:u.mediano,grande:u.grande,xl:u.xl,superXl:u.super_xl,
+                   jumbo:u.jumbo,sucios:u.sucios,rotos:u.rotos,trizados:u.trizados,sangre:u.sangre},
+    registros:[...registros].reverse().map(r=>({fecha:r.fecha,postura:pct(r.pct_postura),esperado:pct(r.pct_esperado)}))
+  };
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────
 render();
-GRANJAS.forEach(cargarGranja);
+
+(async()=>{
+  try{
+    const lotes=await sbFetch("lotes",{"activo":"eq.true","select":"*","order":"nombre.asc"});
+    const porUsuario={};
+    lotes.forEach(l=>{
+      if(!porUsuario[l.user_id]) porUsuario[l.user_id]={uid:l.user_id,nombre:l.productor||l.user_id.slice(0,8),lotes:[]};
+      porUsuario[l.user_id].lotes.push(l);
+    });
+    GRANJAS=Object.values(porUsuario).sort((a,b)=>a.nombre.localeCompare(b.nombre)).map((g,i)=>({
+      id:g.uid, nombre:g.nombre, color:PALETTE[i%PALETTE.length],
+      unidad:"Lote", tieneClasificacion:true, _lotes:g.lotes
+    }));
+    if(GRANJAS.length) state.granjaId=GRANJAS[0].id;
+    GRANJAS.forEach(g=>{ state.estados[g.id]="cargando"; });
+    render();
+
+    for(const granja of GRANJAS){
+      try{
+        const lotesData=[];
+        for(const lote of granja._lotes){
+          const regs=await sbFetch("registros",{
+            "lote_id":"eq."+lote.id,
+            "select":"fecha,semana_vida,n_aves,mortalidad,kg_alimento,n_huevos,chico,mediano,grande,xl,super_xl,jumbo,sucios,rotos,trizados,sangre,pct_postura,pct_esperado,diferencia",
+            "order":"fecha.desc","limit":"28"
+          });
+          const p=procesarLote(lote,regs);
+          if(p) lotesData.push(p);
+        }
+        state.datos[granja.id]={fechaConsulta:new Date().toISOString().slice(0,10),lotes:lotesData};
+        state.estados[granja.id]="ok";
+      }catch(e){ state.estados[granja.id]="error"; }
+      render();
+    }
+  }catch(e){
+    console.error("Error cargando Supabase:",e);
+  }
+})();
 </script>
 </body>
 </html>
