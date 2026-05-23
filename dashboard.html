@@ -273,7 +273,7 @@ function renderSidebar(){
   // Lotes
   const granja=GRANJAS.find(g=>g.id===state.granjaId);
   const lotes=state.datos[state.granjaId]?.lotes||[];
-  document.getElementById("label-lotes").textContent=granja.unidad.toUpperCase()+"S";
+  document.getElementById("label-lotes").textContent=granja?granja.unidad.toUpperCase()+"S":"LOTES";
   const listaLotes=document.getElementById("lista-lotes");
   listaLotes.innerHTML="";
   lotes.forEach((l,i)=>{
