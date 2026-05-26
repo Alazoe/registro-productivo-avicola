@@ -7,6 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>AviVet — Monitor de Producción</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:#070b10; color:#e6edf3; font-family:'IBM Plex Mono','Courier New',monospace; font-size:13px; min-height:100vh; }
@@ -14,7 +15,21 @@ button { cursor:pointer; font-family:inherit; border:none; background:none; colo
 ::-webkit-scrollbar { width:6px; }
 ::-webkit-scrollbar-track { background:#0d1117; }
 ::-webkit-scrollbar-thumb { background:#30363d; border-radius:3px; }
-#app { display:flex; flex-direction:column; min-height:100vh; }
+
+/* LOGIN */
+#login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; background:#070b10; }
+#login-card { background:#0d1117; border:1px solid #21262d; border-radius:12px; padding:36px 32px; width:320px; }
+#login-card .logo { font-size:20px; font-weight:700; letter-spacing:2px; text-align:center; margin-bottom:6px; }
+#login-card .logo span { color:#f0a500; }
+#login-card .sub { font-size:10px; color:#484f58; letter-spacing:2px; text-align:center; margin-bottom:28px; }
+#login-card input { width:100%; background:#161b22; border:1px solid #30363d; border-radius:7px; padding:11px 14px; color:#e6edf3; font-family:inherit; font-size:13px; margin-bottom:10px; outline:none; }
+#login-card input:focus { border-color:#f0a500; }
+#login-card .btn-login { width:100%; background:#f0a500; color:#070b10; border-radius:7px; padding:12px; font-size:13px; font-weight:700; letter-spacing:1px; margin-top:4px; transition:opacity .2s; }
+#login-card .btn-login:hover { opacity:.85; }
+#login-card .btn-login:disabled { opacity:.5; cursor:default; }
+#login-error { color:#ff5252; font-size:11px; margin-top:10px; text-align:center; min-height:16px; }
+
+#app { display:none; flex-direction:column; min-height:100vh; }
 #topbar { background:#0d1117; border-bottom:1px solid #21262d; padding:12px 24px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:100; }
 #body { display:grid; grid-template-columns:210px 1fr; flex:1; }
 #sidebar { background:#0d1117; border-right:1px solid #21262d; padding:18px 0; display:flex; flex-direction:column; }
@@ -47,9 +62,25 @@ button { cursor:pointer; font-family:inherit; border:none; background:none; colo
 .estado-msg { display:flex; flex-direction:column; align-items:center; justify-content:center; height:300px; gap:12px; }
 .header-lote { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
 .dias-badge { border-radius:10px; padding:12px 18px; text-align:center; min-width:80px; }
+.btn-logout { font-size:10px; color:#484f58; letter-spacing:1px; padding:4px 10px; border:1px solid #21262d; border-radius:5px; transition:color .2s,border-color .2s; }
+.btn-logout:hover { color:#ff5252; border-color:#ff525245; }
 </style>
 </head>
 <body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div id="login-card">
+    <div class="logo">AVI<span>VET</span></div>
+    <div class="sub">MONITOR DE PRODUCCIÓN</div>
+    <input type="email" id="login-email" placeholder="Correo electrónico" autocomplete="email">
+    <input type="password" id="login-pass" placeholder="Contraseña" autocomplete="current-password">
+    <button class="btn-login" id="btn-login" onclick="login()">ENTRAR</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
 <div id="app">
   <div id="topbar">
     <div style="display:flex;align-items:center">
@@ -60,6 +91,7 @@ button { cursor:pointer; font-family:inherit; border:none; background:none; colo
     <div style="display:flex;align-items:center;gap:16px">
       <div id="alerta-global"></div>
       <div id="fecha-hoy" style="font-size:11px;color:#8b949e;text-transform:capitalize"></div>
+      <button class="btn-logout" onclick="logout()">SALIR</button>
     </div>
   </div>
   <div id="body">
@@ -90,6 +122,8 @@ const SUPABASE_URL  = "https://xewujmpycclqjhlmiica.supabase.co";
 const SUPABASE_ANON = "sb_publishable_v5_FU1w-7P7oeNrW6FYRBQ_cuX-pa9_";
 const PALETTE = ["#f0a500","#00d97e","#58a6ff","#ff6b6b","#c678dd","#56b6c2","#e5c07b","#98c379"];
 
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let currentToken = null;
 let GRANJAS = [];
 
 const CATEGORIAS = [
@@ -115,23 +149,61 @@ const state = {
   estados:  {}
 };
 
+// ── AUTH ──────────────────────────────────────────────────────────────────
+window.onload = async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    currentToken = session.access_token;
+    mostrarApp();
+  }
+};
+
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  const btn   = document.getElementById('btn-login');
+  if (!email || !pass) { errEl.textContent = 'Completa correo y contraseña'; return; }
+  btn.disabled = true; btn.textContent = 'Entrando…';
+  errEl.textContent = '';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) {
+    errEl.textContent = 'Correo o contraseña incorrectos';
+    btn.disabled = false; btn.textContent = 'ENTRAR';
+    return;
+  }
+  currentToken = data.session.access_token;
+  mostrarApp();
+}
+
+async function logout() {
+  if (!confirm('¿Cerrar sesión?')) return;
+  await sb.auth.signOut();
+  currentToken = null;
+  GRANJAS = []; Object.assign(state, { granjaId:null, loteIdx:0, datos:{}, estados:{} });
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('btn-login').disabled = false;
+  document.getElementById('btn-login').textContent = 'ENTRAR';
+}
+
+function mostrarApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  render();
+  cargarDatos();
+}
+
 // ── HELPERS ───────────────────────────────────────────────────────────────
 function alertColor(d){ return d===0?"#00d97e":d===1?"#f0a500":d===2?"#ff8c00":"#ff3b3b"; }
 function alertLabel(d){ return d===0?"AL DÍA":d===1?"1 DÍA":d+" DÍAS"; }
-function el(tag,attrs,...children){
-  const e=document.createElement(tag);
-  if(attrs) Object.entries(attrs).forEach(([k,v])=>{ if(k==="style") Object.assign(e.style,v); else if(k==="class") e.className=v; else e[k]=v; });
-  children.forEach(c=>{ if(c==null||c===false) return; if(typeof c==="string"||typeof c==="number") e.appendChild(document.createTextNode(c)); else if(c instanceof Node) e.appendChild(c); });
-  return e;
-}
-function set(id,node){ const c=document.getElementById(id); if(!c) return; c.innerHTML=""; if(node) c.appendChild(node); }
-function setHTML(id,html){ const c=document.getElementById(id); if(c) c.innerHTML=html; }
 
 // ── GRÁFICO SVG POSTURA ──────────────────────────────────────────────────
 function buildChart(registros, color){
   const W=560, H=160, PL=36, PR=12, PT=10, PB=28;
   const data = (registros||[]).filter(r=>r.postura!=null||r.esperado!=null).slice(-28);
-  if(!data.length) return el("div",{style:{color:"#484f58",fontSize:11,textAlign:"center",padding:"30px 0"}},"Sin datos para graficar");
+  if(!data.length) return (() => { const d=document.createElement("div"); Object.assign(d.style,{color:"#484f58",fontSize:"11px",textAlign:"center",padding:"30px 0"}); d.textContent="Sin datos para graficar"; return d; })();
 
   const all=[...data.map(r=>r.postura),...data.map(r=>r.esperado)].filter(v=>v!=null);
   const minV=Math.max(0, Math.floor(Math.min(...all)/10)*10);
@@ -147,7 +219,6 @@ function buildChart(registros, color){
   svg.setAttribute("height",H);
   svg.style.overflow="visible";
 
-  // Grid
   for(let v=minV;v<=maxV;v+=5){
     const y=py(v);
     const g=document.createElementNS(svgNS,"line");
@@ -164,7 +235,6 @@ function buildChart(registros, color){
     }
   }
 
-  // Fechas eje X
   const step=Math.max(1,Math.floor(data.length/7));
   data.forEach((r,i)=>{
     if(i%step===0||i===data.length-1){
@@ -177,7 +247,6 @@ function buildChart(registros, color){
     }
   });
 
-  // Línea esperado
   const expData=data.filter((_,i)=>data[i].esperado!=null);
   if(expData.length>1){
     let d2="";
@@ -189,7 +258,6 @@ function buildChart(registros, color){
     svg.appendChild(path);
   }
 
-  // Línea real
   let dReal="";
   data.forEach((r,i)=>{ if(r.postura!=null) dReal+=(dReal?"L":"M")+px(i)+","+py(r.postura); });
   if(dReal){
@@ -197,13 +265,11 @@ function buildChart(registros, color){
     path.setAttribute("d",dReal); path.setAttribute("fill","none");
     path.setAttribute("stroke",color); path.setAttribute("stroke-width","2.5");
     svg.appendChild(path);
-    // Puntos
     data.forEach((r,i)=>{
       if(r.postura==null) return;
       const c=document.createElementNS(svgNS,"circle");
       c.setAttribute("cx",px(i)); c.setAttribute("cy",py(r.postura)); c.setAttribute("r","3");
       c.setAttribute("fill",color);
-      // Tooltip on hover via title
       const tt=document.createElementNS(svgNS,"title");
       tt.textContent=r.fecha+": "+r.postura+"%"+(r.esperado!=null?" (esp: "+r.esperado+"%)":"");
       c.appendChild(tt);
@@ -215,37 +281,11 @@ function buildChart(registros, color){
 
 // ── RENDER SIDEBAR ────────────────────────────────────────────────────────
 function renderSidebar(){
-  // Fecha
   document.getElementById("fecha-hoy").textContent =
     new Date().toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"});
 
-  // Granjas
-  const frag=document.createDocumentFragment();
-  GRANJAS.forEach(g=>{
-    const d=state.datos[g.id], est=state.estados[g.id];
-    const nA=(d?.lotes||[]).filter(l=>l.diasPendientes>0).length;
-    const activa=state.granjaId===g.id;
-    const btn=el("button",{
-      class:"granja-btn",
-      style:{ background:activa?g.color+"12":"none",
-              border:activa?"1px solid "+g.color+"45":"1px solid transparent" },
-      onclick:()=>{ state.granjaId=g.id; state.loteIdx=0; render(); }
-    },
-      el("div",{style:{display:"flex",alignItems:"center",gap:8}},
-        el("div",{style:{width:7,height:7,borderRadius:"50%",
-          background:activa?g.color:"#30363d",
-          boxShadow:activa?"0 0 6px "+g.color:"none"}}),
-        el("span",{style:{color:activa?g.color:"#8b949e",fontSize:11,fontWeight:activa?700:400}},g.nombre)
-      )
-    );
-    if(est==="cargando") btn.appendChild(el("span",{style:{color:"#484f58",fontSize:10}},"···"));
-    else if(est==="error") btn.appendChild(el("span",{style:{color:"#ff5252",fontSize:10}},"✗"));
-    else if(est==="ok" && nA>0) btn.appendChild(el("span",{class:"badge",style:{background:"#ff5252",color:"#fff"}},nA));
-    else if(est==="ok") btn.appendChild(el("span",{style:{color:"#00d97e",fontSize:10}},"✓"));
-    frag.appendChild(btn);
-  });
-  set("lista-granjas",el("div",null,...Array.from(frag.childNodes).map(n=>n.cloneNode(true))));
-  document.getElementById("lista-granjas").innerHTML="";
+  const listaGranjas=document.getElementById("lista-granjas");
+  listaGranjas.innerHTML="";
   GRANJAS.forEach(g=>{
     const d=state.datos[g.id], est=state.estados[g.id];
     const nA=(d?.lotes||[]).filter(l=>l.diasPendientes>0).length;
@@ -267,10 +307,9 @@ function renderSidebar(){
     else if(est==="error"){ const s=document.createElement("span"); s.style.cssText="color:#ff5252;font-size:10px"; s.textContent="✗"; btn.appendChild(s); }
     else if(est==="ok"&&nA>0){ const s=document.createElement("span"); s.className="badge"; Object.assign(s.style,{background:"#ff5252",color:"#fff"}); s.textContent=nA; btn.appendChild(s); }
     else if(est==="ok"){ const s=document.createElement("span"); s.style.cssText="color:#00d97e;font-size:10px"; s.textContent="✓"; btn.appendChild(s); }
-    document.getElementById("lista-granjas").appendChild(btn);
+    listaGranjas.appendChild(btn);
   });
 
-  // Lotes
   const granja=GRANJAS.find(g=>g.id===state.granjaId);
   const lotes=state.datos[state.granjaId]?.lotes||[];
   document.getElementById("label-lotes").textContent=granja?granja.unidad.toUpperCase()+"S":"LOTES";
@@ -294,7 +333,6 @@ function renderSidebar(){
     listaLotes.appendChild(btn);
   });
 
-  // Panel alertas globales
   const alertas=GRANJAS.flatMap(g=>{
     const d=state.datos[g.id]; if(!d) return [];
     return (d.lotes||[]).filter(l=>l.diasPendientes>0)
@@ -317,7 +355,6 @@ function renderSidebar(){
     });
     sidebar.appendChild(panel);
 
-    // Alerta global topbar
     const ag=document.getElementById("alerta-global");
     ag.innerHTML=""; const agEl=document.createElement("div");
     Object.assign(agEl.style,{background:"rgba(255,59,59,0.12)",border:"1px solid rgba(255,59,59,0.35)",
@@ -348,7 +385,6 @@ function renderMain(){
   }
   if(!lote) return;
 
-  // Header lote
   const ac=alertColor(lote.diasPendientes);
   const header=document.createElement("div"); header.className="header-lote";
   const hLeft=document.createElement("div");
@@ -367,7 +403,6 @@ function renderMain(){
   header.append(hLeft,diasBadge);
   main.appendChild(header);
 
-  // KPIs
   const kpiGrid=document.createElement("div"); kpiGrid.className="kpi-grid";
   const kpis=[
     {label:"POSTURA",    value:lote.postura!=null?lote.postura+"%":"—",    color:granja.color,  sub:lote.posturaEsperada!=null?"Esperado: "+lote.posturaEsperada+"%":""},
@@ -385,7 +420,6 @@ function renderMain(){
   });
   main.appendChild(kpiGrid);
 
-  // Gráfico
   const chartBox=document.createElement("div"); chartBox.className="chart-box";
   const chartHdr=document.createElement("div"); Object.assign(chartHdr.style,{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"});
   const chartTtl=document.createElement("div"); Object.assign(chartTtl.style,{fontSize:"10px",color:"#8b949e",letterSpacing:"2px"}); chartTtl.textContent="CURVA DE POSTURA — ÚLTIMOS 28 DÍAS";
@@ -402,7 +436,6 @@ function renderMain(){
   }
   main.appendChild(chartBox);
 
-  // Clasificación
   if(granja.tieneClasificacion && lote.clasificacion){
     const clasif=lote.clasificacion;
     const totalCom=CATEGORIAS.reduce((s,c)=>s+(clasif[c.key]||0),0);
@@ -446,7 +479,6 @@ function renderMain(){
     main.appendChild(box);
   }
 
-  // Footer fecha consulta
   const fc=document.getElementById("fecha-consulta");
   if(datosG?.fechaConsulta) fc.textContent="Datos al "+datosG.fechaConsulta; else fc.textContent="";
 }
@@ -454,11 +486,14 @@ function renderMain(){
 // ── RENDER COMPLETO ───────────────────────────────────────────────────────
 function render(){ renderSidebar(); renderMain(); }
 
-// ── SUPABASE ──────────────────────────────────────────────────────────────
+// ── SUPABASE FETCH (con token autenticado) ────────────────────────────────
 async function sbFetch(tabla, params={}){
   const url=new URL(SUPABASE_URL+"/rest/v1/"+tabla);
   Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
-  const r=await fetch(url.toString(),{headers:{"apikey":SUPABASE_ANON,"Authorization":"Bearer "+SUPABASE_ANON}});
+  const r=await fetch(url.toString(),{headers:{
+    "apikey": SUPABASE_ANON,
+    "Authorization": "Bearer " + currentToken
+  }});
   if(!r.ok) throw new Error("HTTP "+r.status);
   return r.json();
 }
@@ -487,10 +522,8 @@ function procesarLote(lote, registros){
   };
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────
-render();
-
-(async()=>{
+// ── CARGA DE DATOS ────────────────────────────────────────────────────────
+async function cargarDatos(){
   try{
     const lotes=await sbFetch("lotes",{"activo":"eq.true","select":"*","order":"nombre.asc"});
     const porUsuario={};
@@ -528,7 +561,7 @@ render();
     const main=document.getElementById("contenido");
     main.innerHTML=`<div class="estado-msg"><div style="font-size:28px">⚠</div><div style="color:#ff5252">Error al conectar con Supabase</div><div style="font-size:11px;color:#8b949e;margin-top:8px;max-width:400px;text-align:center">${e.message}</div></div>`;
   }
-})();
+}
 </script>
 </body>
 </html>
