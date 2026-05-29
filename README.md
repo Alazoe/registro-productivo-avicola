@@ -54,10 +54,12 @@ src/supabase/
 
 | Tabla | Descripción |
 |-------|-------------|
-| `lotes_produccion` | Lotes por usuario (nombre, fecha nac, n° aves, línea genética) |
+| `ubicaciones` | Catálogo de espacios físicos por usuario (Carro 1, Pabellón 2, etc.) |
+| `lotes` | Lotes por usuario (nombre, fecha nac, n° aves, línea genética, ubicación opcional) |
+| `pesajes` | Pesaje semanal en crianza (semanas 1–19) |
 | `registros` | Un registro por día por lote (producción + clasificación + KPIs) |
 
-Ambas tablas tienen Row Level Security activado: cada usuario ve y modifica solo sus propios datos.
+Todas las tablas tienen Row Level Security activado: cada usuario ve y modifica solo sus propios datos.
 
 ### Funcionalidades de la nueva app
 
@@ -68,6 +70,7 @@ Ambas tablas tienen Row Level Security activado: cada usuario ve y modifica solo
 - **Importar CSV** — herramienta integrada para migrar historial desde Google Sheets (tab Lotes → Importar)
 - **KPIs calculados client-side** — semana de vida, kg/ave, % postura, % esperado por línea genética, diferencia vs curva
 - **Alertas por email** — notificación automática vía Resend cuando mortalidad > 0,30% o caída de postura > 3% en un día (activo desde 2026-04-29)
+- **Ubicaciones físicas** — catálogo de espacios por productor (carros, pabellones, galpones); asignación opcional por lote, cambiable en cualquier momento sin afectar registros
 
 ### Cómo activar Supabase (una sola vez)
 
@@ -125,6 +128,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-05 | Ubicaciones físicas por lote (carro, pabellón, galpón) |
 | 2026-05 | Curva Dominat agregada + curvas extendidas a semana 150 |
 | 2026-05 | CLAUDE.md + URL GitHub Pages configurada |
 | 2026-04-29 | Alerta por email activa y verificada (Resend + Supabase Edge Function → andres.lazomv@outlook.com) |
