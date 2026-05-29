@@ -5,6 +5,14 @@
 drop table if exists pesajes cascade;
 drop table if exists registros cascade;
 drop table if exists lotes cascade;
+drop table if exists ubicaciones cascade;
+
+create table ubicaciones (
+  id         uuid        default gen_random_uuid() primary key,
+  nombre     text        not null,
+  user_id    uuid        references auth.users not null,
+  created_at timestamptz default now()
+);
 
 create table lotes (
   id             uuid        default gen_random_uuid() primary key,
@@ -13,6 +21,7 @@ create table lotes (
   n_aves         integer     default 0,
   linea_genetica text        default 'Hy-line Brown',
   activo         boolean     default true,
+  ubicacion_id   uuid        references ubicaciones(id) on delete set null,
   user_id        uuid        references auth.users not null,
   created_at     timestamptz default now()
 );
@@ -67,10 +76,12 @@ create table registros (
 );
 
 -- Row Level Security
-alter table lotes     enable row level security;
-alter table pesajes   enable row level security;
-alter table registros enable row level security;
+alter table ubicaciones enable row level security;
+alter table lotes       enable row level security;
+alter table pesajes     enable row level security;
+alter table registros   enable row level security;
 
-create policy "lotes_user"     on lotes     for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "pesajes_user"   on pesajes   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "registros_user" on registros for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "ubicaciones_user" on ubicaciones for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "lotes_user"       on lotes       for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "pesajes_user"     on pesajes     for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "registros_user"   on registros   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

@@ -458,7 +458,25 @@ label:first-child{margin-top:0}
           <option>Dominat</option>
         </select>
       </label>
+      <label>Ubicación física <span style="font-size:.75rem;color:#aaa;font-weight:400">(opcional)</span>
+        <select id="nl-ubicacion">
+          <option value="">— Sin ubicación asignada —</option>
+        </select>
+      </label>
       <button class="btn btn-verde" onclick="crearLote()" id="btn-crear-lote" style="margin-top:14px">+ Crear lote</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">📍 Ubicaciones físicas</div>
+    <div class="card-body">
+      <p style="font-size:.8rem;color:#78909c;margin-bottom:10px">Define los espacios físicos donde alojas tus lotes: carros, pabellones, galpones, etc.</p>
+      <label>Nueva ubicación
+        <input type="text" id="ub-nombre" placeholder="Ej: Carro 1, Pabellón 2, Galpón Norte…"
+          onkeydown="if(event.key==='Enter')crearUbicacion()">
+      </label>
+      <button class="btn btn-azul btn-sm" onclick="crearUbicacion()" id="btn-crear-ub" style="margin-top:10px;width:auto;padding:10px 18px">+ Agregar</button>
+      <div id="lista-ubicaciones" style="margin-top:12px"></div>
     </div>
   </div>
 
@@ -530,6 +548,7 @@ const CURVAS = {
 
 // ══ ESTADO ══════════════════════════════════════════════════════
 let lotes = [], loteActual = null, registrosLote = [];
+let ubicaciones = [];
 let modoEdicion = false, registroEdicion = null;
 let currentUser = null, clasOculta = false;
 let csvPendiente = null;
@@ -581,16 +600,21 @@ function irTab(tab) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
   if (tab === 'graficos') renderGraficosTab();
-  if (tab === 'lotes')    renderListaLotes();
+  if (tab === 'lotes')    { renderListaLotes(); renderListaUbicaciones(); }
   if (tab === 'datos')    renderHistorial();
 }
 
 // ══ LOTES ═══════════════════════════════════════════════════════
 async function cargarLotes() {
-  const { data, error } = await sb.from('lotes').select('*').order('created_at');
-  if (!error) lotes = data;
+  const [lotesRes, ubicRes] = await Promise.all([
+    sb.from('lotes').select('*').order('created_at'),
+    sb.from('ubicaciones').select('*').order('nombre')
+  ]);
+  if (!lotesRes.error) lotes = lotesRes.data;
+  if (!ubicRes.error) ubicaciones = ubicRes.data;
   renderSelectorLotes();
   poblarSelectImport();
+  poblarSelectUbicacion();
 }
 
 function renderSelectorLotes() {
@@ -598,7 +622,9 @@ function renderSelectorLotes() {
   if (!lotes.filter(l=>l.activo).length) { cont.innerHTML='<span style="color:#aaa;font-size:.85rem">Sin lotes activos. Crea uno en la pestaña Lotes.</span>'; return; }
   cont.innerHTML = lotes.filter(l=>l.activo).map((l,i) => {
     const sem = calcEdad(l.fecha_nac);
-    return `<button class="lote-btn" id="lbtn-${l.id}" onclick="seleccionarLote('${l.id}')">${l.nombre}<span class="lote-info">${sem} sem</span></button>`;
+    const ubic = ubicaciones.find(u => u.id === l.ubicacion_id);
+    const info = ubic ? `${ubic.nombre} · ${sem} sem` : `${sem} sem`;
+    return `<button class="lote-btn" id="lbtn-${l.id}" onclick="seleccionarLote('${l.id}')">${l.nombre}<span class="lote-info">${info}</span></button>`;
   }).join('');
 }
 
@@ -668,18 +694,20 @@ function mostrarHuecos() {
 }
 
 async function crearLote() {
-  const nombre = document.getElementById('nl-nombre').value.trim();
-  const fecha  = document.getElementById('nl-fecha').value;
-  const aves   = document.getElementById('nl-aves').value;
-  const linea  = document.getElementById('nl-linea').value;
+  const nombre      = document.getElementById('nl-nombre').value.trim();
+  const fecha       = document.getElementById('nl-fecha').value;
+  const aves        = document.getElementById('nl-aves').value;
+  const linea       = document.getElementById('nl-linea').value;
+  const ubicacion_id = document.getElementById('nl-ubicacion').value || null;
   if (!nombre || !fecha) { toast('Completa nombre y fecha de nacimiento','warn'); return; }
   const btn = document.getElementById('btn-crear-lote');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
-  const { error } = await sb.from('lotes').insert({ nombre, fecha_nac:fecha, n_aves:parseInt(aves)||0, linea_genetica:linea, user_id:currentUser.id });
+  const { error } = await sb.from('lotes').insert({ nombre, fecha_nac:fecha, n_aves:parseInt(aves)||0, linea_genetica:linea, ubicacion_id, user_id:currentUser.id });
   if (!error) {
     toast('✅ Lote creado','ok');
     document.getElementById('nl-nombre').value=''; document.getElementById('nl-fecha').value=''; document.getElementById('nl-aves').value='';
-    await cargarLotes(); renderListaLotes();
+    document.getElementById('nl-ubicacion').value='';
+    await cargarLotes(); renderListaLotes(); renderListaUbicaciones();
   } else toast('Error: '+error.message,'err');
   btn.disabled=false; btn.textContent='+ Crear lote';
 }
@@ -687,23 +715,30 @@ async function crearLote() {
 function renderListaLotes() {
   const cont = document.getElementById('lista-lotes');
   if (!lotes.length) { cont.innerHTML='<div class="alerta alerta-info" style="margin:0">Sin lotes. Crea el primero arriba.</div>'; return; }
-  cont.innerHTML = lotes.map(l => `
+  cont.innerHTML = lotes.map(l => {
+    const ubic = ubicaciones.find(u => u.id === l.ubicacion_id);
+    const optsUbic = '<option value="">📍 Sin ubicación</option>' +
+      ubicaciones.map(u => `<option value="${u.id}"${l.ubicacion_id===u.id?' selected':''}>${u.nombre}</option>`).join('');
+    return `
     <div class="lote-card ${l.activo?'':'archivado'}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div>
+        <div style="flex:1;min-width:0">
           <div style="font-weight:700;font-size:.95rem">${l.nombre}</div>
           <div style="font-size:.78rem;color:#78909c;margin-top:3px">${l.linea_genetica} · Nacido: ${l.fecha_nac} · ${Number(l.n_aves).toLocaleString('es-CL')} aves</div>
           <div style="font-size:.78rem;color:var(--verde);margin-top:2px">Semana ${calcEdad(l.fecha_nac)}</div>
+          <select style="margin-top:7px;font-size:.75rem;padding:5px 8px;border:1px solid #cfd8dc;border-radius:7px;background:#fff;color:#546e7a;width:auto;max-width:200px"
+            onchange="cambiarUbicacion('${l.id}',this.value)">${optsUbic}</select>
         </div>
-        <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+        <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;margin-left:8px">
           ${l.activo
             ? `<button class="btn btn-rojo btn-sm" onclick="archivarLote('${l.id}')">Archivar</button>`
             : '<span style="font-size:.72rem;color:#bbb">Archivado</span>'}
           <button class="btn btn-sm" style="background:#ffebee;color:var(--rojo);border:1px solid #ffcdd2"
-            onclick="eliminarLote('${l.id}','${l.nombre.replace(/'/g,"\'")}')">🗑️ Eliminar</button>
+            onclick="eliminarLote('${l.id}','${l.nombre.replace(/'/g,"\\'")}')">🗑️ Eliminar</button>
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 async function archivarLote(id) {
@@ -731,6 +766,60 @@ Escribe el nombre exacto del lote para confirmar:`);
 function poblarSelectImport() {
   const sel = document.getElementById('imp-lote');
   sel.innerHTML = lotes.filter(l=>l.activo).map(l=>`<option value="${l.id}">${l.nombre}</option>`).join('');
+}
+
+// ══ UBICACIONES ════════════════════════════════════════════════
+function poblarSelectUbicacion() {
+  const sel = document.getElementById('nl-ubicacion');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Sin ubicación asignada —</option>' +
+    ubicaciones.map(u => `<option value="${u.id}">${u.nombre}</option>`).join('');
+}
+
+function renderListaUbicaciones() {
+  const cont = document.getElementById('lista-ubicaciones');
+  if (!cont) return;
+  if (!ubicaciones.length) { cont.innerHTML='<div style="color:#aaa;font-size:.82rem;padding:4px 0">Sin ubicaciones definidas aún.</div>'; return; }
+  cont.innerHTML = ubicaciones.map(u => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eef1f3">
+      <div style="font-size:.9rem;font-weight:600;color:#37474f">📍 ${u.nombre}</div>
+      <button class="btn btn-sm" style="background:#ffebee;color:var(--rojo);border:1px solid #ffcdd2;margin-top:0"
+        onclick="eliminarUbicacion('${u.id}','${u.nombre.replace(/'/g,"\\'")}')">🗑️</button>
+    </div>`).join('');
+}
+
+async function crearUbicacion() {
+  const nombre = document.getElementById('ub-nombre').value.trim();
+  if (!nombre) { toast('Escribe un nombre para la ubicación','warn'); return; }
+  const btn = document.getElementById('btn-crear-ub');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  const { error } = await sb.from('ubicaciones').insert({ nombre, user_id:currentUser.id });
+  if (!error) {
+    toast('✅ Ubicación creada','ok');
+    document.getElementById('ub-nombre').value='';
+    await cargarLotes(); renderListaLotes(); renderListaUbicaciones();
+  } else toast('Error: '+error.message,'err');
+  btn.disabled=false; btn.textContent='+ Agregar';
+}
+
+async function eliminarUbicacion(id, nombre) {
+  if (!confirm(`¿Eliminar ubicación "${nombre}"?\n\nLos lotes asignados quedarán sin ubicación.`)) return;
+  const { error } = await sb.from('ubicaciones').delete().eq('id', id);
+  if (!error) {
+    toast('Ubicación eliminada','warn');
+    await cargarLotes(); renderListaLotes(); renderListaUbicaciones();
+  } else toast('Error: '+error.message,'err');
+}
+
+async function cambiarUbicacion(loteId, ubicacionId) {
+  const { error } = await sb.from('lotes').update({ ubicacion_id: ubicacionId || null }).eq('id', loteId);
+  if (!error) {
+    const lote = lotes.find(l => l.id === loteId);
+    if (lote) lote.ubicacion_id = ubicacionId || null;
+    const ubic = ubicaciones.find(u => u.id === ubicacionId);
+    toast(ubic ? `📍 Ubicación asignada: ${ubic.nombre}` : '📍 Ubicación removida', 'ok');
+    renderSelectorLotes();
+  } else toast('Error: '+error.message,'err');
 }
 
 // ══ REGISTRO DIARIO ═════════════════════════════════════════════
