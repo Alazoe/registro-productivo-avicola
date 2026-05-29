@@ -191,6 +191,68 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
   background: rgba(183,28,28,.25); color: #ffc4c4; border: 1px solid rgba(183,28,28,.4);
 }
 
+/* RESUMEN */
+.btn-resumen {
+  font-family: var(--fuente-m); font-size: 10px; letter-spacing: .08em;
+  color: rgba(255,255,255,.7); padding: 5px 14px;
+  border: 1px solid rgba(255,255,255,.35); border-radius: 3px;
+  text-transform: uppercase; transition: all .18s; background: rgba(255,255,255,.08);
+}
+.btn-resumen:hover  { background: rgba(255,255,255,.18); color: #fff; }
+.btn-resumen.activo { background: var(--acento); border-color: var(--acento); color: #fff; }
+
+.resumen-wrap { max-width: 900px; }
+.resumen-header { margin-bottom: 28px; border-bottom: 1px solid var(--linea); padding-bottom: 18px; }
+.resumen-titulo { font-family: var(--fuente-t); font-size: 32px; font-weight: 700; color: var(--prim); line-height: 1.1; }
+.resumen-periodo {
+  font-family: var(--fuente-m); font-size: 10px; color: var(--tenue);
+  letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px;
+}
+.resumen-aviso {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+  font-size: 12px; color: #e65100; background: rgba(230,81,0,.07);
+  border: 1px solid rgba(230,81,0,.25); border-radius: 3px; padding: 5px 12px;
+}
+.resumen-acciones { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+.btn-accion {
+  font-family: var(--fuente-c); font-size: 13px; font-weight: 600;
+  padding: 9px 20px; border-radius: 4px; transition: all .15s; display: inline-flex; align-items: center; gap: 7px;
+}
+.btn-accion.prim  { background: var(--prim); color: #fff; }
+.btn-accion.prim:hover { background: var(--prim-osc); }
+.btn-accion.sec   { background: var(--papel); color: var(--suave); border: 1px solid var(--linea-f); }
+.btn-accion.sec:hover { border-color: var(--prim); color: var(--prim); }
+
+.resumen-grid { display: grid; gap: 1px; background: var(--linea); border: 1px solid var(--linea); margin-bottom: 24px; }
+.resumen-fila {
+  display: grid;
+  grid-template-columns: 180px 120px 80px 110px 110px 80px 90px;
+  background: var(--papel);
+  align-items: center;
+}
+.resumen-fila.cabecera { background: var(--prim); }
+.resumen-cel {
+  padding: 10px 14px; font-size: 13px; border-right: 1px solid var(--linea);
+}
+.resumen-cel:last-child { border-right: none; }
+.resumen-fila.cabecera .resumen-cel {
+  font-family: var(--fuente-m); font-size: 9px; letter-spacing: .1em;
+  text-transform: uppercase; color: rgba(255,255,255,.75); border-right-color: rgba(255,255,255,.1);
+}
+.resumen-fila:not(.cabecera):hover { background: var(--fondo); }
+.resumen-productor { font-weight: 600; font-size: 13px; }
+.resumen-lote { font-size: 11px; color: var(--tenue); margin-top: 1px; }
+.resumen-num { font-family: var(--fuente-t); font-size: 22px; font-weight: 700; line-height: 1; }
+.resumen-sub { font-family: var(--fuente-m); font-size: 9px; color: var(--tenue); margin-top: 2px; }
+.semaforo { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; }
+.semaforo-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.delta-chip {
+  font-family: var(--fuente-m); font-size: 11px; font-weight: 700;
+  padding: 3px 8px; border-radius: 3px; display: inline-block;
+}
+.resumen-pendiente { background: repeating-linear-gradient(45deg, var(--fondo), var(--fondo) 4px, var(--papel) 4px, var(--papel) 8px); }
+.resumen-pie { font-size: 12px; color: var(--tenue); line-height: 1.6; padding: 14px; background: var(--papel); border: 1px solid var(--linea); }
+
 /* FOOTER */
 #footer {
   background: var(--papel); border-top: 1px solid var(--linea);
@@ -225,6 +287,7 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
     <div class="topbar-right">
       <div id="alerta-global"></div>
       <div id="fecha-hoy"></div>
+      <button class="btn-resumen" id="btn-resumen" onclick="toggleResumen()">Resumen Semanal</button>
       <button class="btn-logout" onclick="logout()">Salir</button>
     </div>
   </div>
@@ -255,6 +318,7 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 
 <script>
 // ── CONFIG ─────────────────────────────────────────────────────────────
+let modoResumen = false;
 const SUPABASE_URL  = "https://xewujmpycclqjhlmiica.supabase.co";
 const SUPABASE_ANON = "sb_publishable_v5_FU1w-7P7oeNrW6FYRBQ_cuX-pa9_";
 const PALETTE = ["#1b4332","#1565c0","#6a1e9e","#b71c1c","#e65100","#00695c","#4527a0","#2e7d32"];
@@ -746,11 +810,247 @@ function procesarLote(lote, registros) {
     },
     // Todos los registros ordenados del más antiguo al más reciente
     registros: [...registros].reverse().map(r=>({
-      fecha:    r.fecha,
-      postura:  pct(r.pct_postura),
-      esperado: pct(r.pct_esperado),
+      fecha:      r.fecha,
+      postura:    pct(r.pct_postura),
+      esperado:   pct(r.pct_esperado),
+      n_huevos:   r.n_huevos || 0,
+      mortalidad: r.mortalidad || 0,
     })),
   };
+}
+
+// ── RESUMEN SEMANAL ────────────────────────────────────────────────────
+
+function toggleResumen() {
+  modoResumen = !modoResumen;
+  document.getElementById('btn-resumen').classList.toggle('activo', modoResumen);
+  document.getElementById('sidebar').style.display = modoResumen ? 'none' : '';
+  document.getElementById('body').style.gridTemplateColumns = modoResumen ? '1fr' : '220px 1fr';
+  if (modoResumen) renderResumen();
+  else render();
+}
+
+function getPeriodoSemana() {
+  // Última semana completa (lun-dom) donde el período de gracia de 3 días ya pasó
+  const hoy = new Date();
+  const diaSem = hoy.getDay(); // 0=dom
+  // Último domingo pasado
+  const diasHastaDom = diaSem === 0 ? 7 : diaSem;
+  const ultimoDom = new Date(hoy);
+  ultimoDom.setDate(hoy.getDate() - diasHastaDom);
+  // Período de gracia: dom + 3 días
+  const graciaPasa = new Date(ultimoDom);
+  graciaPasa.setDate(ultimoDom.getDate() + 3);
+  // Si la gracia ya pasó usamos esa semana, si no, la anterior
+  let domSemana = hoy >= graciaPasa ? ultimoDom : new Date(ultimoDom.getTime() - 7*86400000);
+  const lunSemana = new Date(domSemana);
+  lunSemana.setDate(domSemana.getDate() - 6);
+  const fmt = d => d.toISOString().slice(0,10);
+  return { inicio: fmt(lunSemana), fin: fmt(domSemana) };
+}
+
+function getPeriodoMesAnterior() {
+  const hoy = new Date();
+  const mesAnt = hoy.getMonth() === 0 ? 11 : hoy.getMonth() - 1;
+  const anioAnt = hoy.getMonth() === 0 ? hoy.getFullYear()-1 : hoy.getFullYear();
+  const primerDia = `${anioAnt}-${String(mesAnt+1).padStart(2,'0')}-01`;
+  const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+  return {
+    inicio:   primerDia,
+    fin:      ultimoDia.toISOString().slice(0,10),
+    etiqueta: new Date(anioAnt, mesAnt, 15).toLocaleDateString('es-CL', {month:'long', year:'numeric'}),
+  };
+}
+
+function calcularPromedioRegistros(registros, fechaInicio, fechaFin) {
+  const filtrados = registros.filter(r => r.fecha >= fechaInicio && r.fecha <= fechaFin);
+  if (!filtrados.length) return null;
+  const posturas = filtrados.map(r => r.postura).filter(v => v != null);
+  if (!posturas.length) return null;
+  return parseFloat((posturas.reduce((a,b)=>a+b,0) / posturas.length).toFixed(1));
+}
+
+function renderResumen() {
+  const main = document.getElementById('contenido');
+  main.innerHTML = '';
+  if (chartInst) { chartInst.destroy(); chartInst = null; }
+
+  const semana = getPeriodoSemana();
+  const mes    = getPeriodoMesAnterior();
+
+  const fmtFecha = s => new Date(s+'T12:00:00').toLocaleDateString('es-CL', {day:'numeric',month:'short'});
+
+  // ── Header ──
+  const wrap = document.createElement('div'); wrap.className = 'resumen-wrap';
+
+  const hdr = document.createElement('div'); hdr.className = 'resumen-header';
+  const periodo = document.createElement('div'); periodo.className = 'resumen-periodo';
+  periodo.textContent = 'Resumen semanal';
+  const titulo = document.createElement('div'); titulo.className = 'resumen-titulo';
+  titulo.textContent = fmtFecha(semana.inicio) + ' — ' + fmtFecha(semana.fin);
+  hdr.append(periodo, titulo);
+
+  // Verificar si hay lotes con datos incompletos en la semana
+  const pendientes = [];
+  GRANJAS.forEach(g => {
+    const d = state.datos[g.id]; if (!d) return;
+    d.lotes.forEach(l => {
+      const enSemana = l.registros.filter(r => r.fecha >= semana.inicio && r.fecha <= semana.fin);
+      if (enSemana.length < 5) pendientes.push(g.nombre + ' / ' + l.nombre);
+    });
+  });
+  if (pendientes.length) {
+    const aviso = document.createElement('div'); aviso.className = 'resumen-aviso';
+    aviso.innerHTML = `⚠ ${pendientes.length} lote${pendientes.length>1?'s':''} con datos incompletos esta semana`;
+    hdr.appendChild(aviso);
+  }
+  wrap.appendChild(hdr);
+
+  // ── Acciones ──
+  const acciones = document.createElement('div'); acciones.className = 'resumen-acciones';
+  const btnPrint = document.createElement('button');
+  btnPrint.className = 'btn-accion prim';
+  btnPrint.innerHTML = '🖨 Imprimir / PDF';
+  btnPrint.onclick = () => window.print();
+  const btnCopiar = document.createElement('button');
+  btnCopiar.className = 'btn-accion sec';
+  btnCopiar.innerHTML = '📋 Copiar texto';
+  btnCopiar.onclick = () => copiarResumenTexto(semana, mes);
+  acciones.append(btnPrint, btnCopiar);
+  wrap.appendChild(acciones);
+
+  // ── Tabla ──
+  const grid = document.createElement('div'); grid.className = 'resumen-grid';
+
+  // Cabecera
+  const cab = document.createElement('div'); cab.className = 'resumen-fila cabecera';
+  ['Productor / Lote','Estado','Sem. vida','Postura sem.','Mes ant. ('+mes.etiqueta.split(' ')[0]+')','Δ vs mes','Huevos sem.']
+    .forEach(t => { const c=document.createElement('div'); c.className='resumen-cel'; c.textContent=t; cab.appendChild(c); });
+  grid.appendChild(cab);
+
+  // Filas por lote
+  let hayDatos = false;
+  GRANJAS.forEach((g, gi) => {
+    const d = state.datos[g.id]; if (!d) return;
+    d.lotes.forEach(l => {
+      hayDatos = true;
+      const semRegistros = l.registros.filter(r => r.fecha >= semana.inicio && r.fecha <= semana.fin);
+      const mesRegistros = l.registros.filter(r => r.fecha >= mes.inicio && r.fecha <= mes.fin);
+
+      const pSem = calcularPromedioRegistros(l.registros, semana.inicio, semana.fin);
+      const pMes = calcularPromedioRegistros(l.registros, mes.inicio, mes.fin);
+      const delta = (pSem != null && pMes != null) ? parseFloat((pSem - pMes).toFixed(1)) : null;
+      const huevosSem = semRegistros.reduce((s,r) => {
+        // recuperar del registro raw no disponible aquí, usamos postura×aves como estimado
+        return s;
+      }, 0);
+
+      // Estado semáforo
+      const diasConDatos = semRegistros.length;
+      const incompleto = diasConDatos < 5;
+      let color, etiq;
+      if (incompleto)        { color='#e65100'; etiq='Incompleto'; }
+      else if (pSem==null)   { color='#888';    etiq='Sin datos';  }
+      else if (delta>= 0)    { color='#1b5e20'; etiq='Sobre curva';}
+      else if (delta >= -2)  { color='#f9a825'; etiq='Leve baja';  }
+      else                   { color='#b71c1c'; etiq='Bajo curva'; }
+
+      const fila = document.createElement('div');
+      fila.className = 'resumen-fila' + (incompleto ? ' resumen-pendiente' : '');
+
+      // Productor / Lote
+      const cProd = document.createElement('div'); cProd.className='resumen-cel';
+      cProd.innerHTML=`<div class="resumen-productor" style="color:${g.color}">${g.nombre}</div><div class="resumen-lote">${l.nombre}</div>`;
+
+      // Estado
+      const cEstado = document.createElement('div'); cEstado.className='resumen-cel';
+      cEstado.innerHTML=`<div class="semaforo"><div class="semaforo-dot" style="background:${color}"></div><span style="color:${color}">${etiq}</span></div>`;
+
+      // Sem vida
+      const cSem = document.createElement('div'); cSem.className='resumen-cel';
+      cSem.innerHTML=`<div class="resumen-num" style="color:var(--prim)">${l.semanaVida||'—'}</div><div class="resumen-sub">semanas</div>`;
+
+      // Postura semana
+      const cPSem = document.createElement('div'); cPSem.className='resumen-cel';
+      cPSem.innerHTML=pSem!=null
+        ?`<div class="resumen-num" style="color:${color}">${pSem}%</div><div class="resumen-sub">${diasConDatos} día${diasConDatos!==1?'s':''} registrados</div>`
+        :`<div style="color:var(--tenue);font-size:13px">Sin datos</div>`;
+
+      // Postura mes anterior
+      const cPMes = document.createElement('div'); cPMes.className='resumen-cel';
+      cPMes.innerHTML=pMes!=null
+        ?`<div class="resumen-num" style="color:var(--suave)">${pMes}%</div><div class="resumen-sub">${mesRegistros.length} días</div>`
+        :`<div style="color:var(--tenue);font-size:13px">Sin datos</div>`;
+
+      // Delta
+      const cDelta = document.createElement('div'); cDelta.className='resumen-cel';
+      if (delta != null) {
+        const bg = delta>=0?'rgba(27,94,32,.1)':'rgba(183,28,28,.1)';
+        const col= delta>=0?'var(--ok)':'var(--mal)';
+        cDelta.innerHTML=`<span class="delta-chip" style="background:${bg};color:${col}">${delta>0?'+':''}${delta}%</span>`;
+      } else {
+        cDelta.innerHTML=`<span style="color:var(--tenue)">—</span>`;
+      }
+
+      // Huevos semana
+      const cHuevos = document.createElement('div'); cHuevos.className='resumen-cel';
+      const totalHuevosSem = semRegistros.reduce((s,r) => s + (r.n_huevos||0), 0);
+      cHuevos.innerHTML=totalHuevosSem>0
+        ?`<div class="resumen-num" style="color:var(--prim);font-size:18px">${totalHuevosSem.toLocaleString('es-CL')}</div><div class="resumen-sub">${diasConDatos} días</div>`
+        :`<div style="font-size:12px;color:var(--tenue)">${diasConDatos} días<br>con datos</div>`;
+
+      fila.append(cProd, cEstado, cSem, cPSem, cPMes, cDelta, cHuevos);
+      grid.appendChild(fila);
+    });
+  });
+
+  if (!hayDatos) {
+    const vacia = document.createElement('div');
+    vacia.className='resumen-fila';
+    vacia.style.cssText='grid-column:1/-1;padding:32px;color:var(--tenue);text-align:center;font-size:13px';
+    vacia.textContent='No hay datos cargados aún. Espera que termine de cargar.';
+    grid.appendChild(vacia);
+  }
+  wrap.appendChild(grid);
+
+  // Pie explicativo
+  const pie = document.createElement('div'); pie.className='resumen-pie';
+  pie.innerHTML=`<strong>Período:</strong> ${fmtFecha(semana.inicio)} al ${fmtFecha(semana.fin)} &nbsp;·&nbsp; <strong>Comparación:</strong> promedio ${mes.etiqueta} &nbsp;·&nbsp; <strong>Gracia:</strong> 3 días posterior al domingo de la semana &nbsp;·&nbsp; Los datos de postura son el promedio de los días registrados en el período.`;
+  wrap.appendChild(pie);
+
+  main.appendChild(wrap);
+}
+
+function copiarResumenTexto(semana, mes) {
+  const fmtFecha = s => new Date(s+'T12:00:00').toLocaleDateString('es-CL', {day:'numeric',month:'short'});
+  let txt = `RESUMEN SEMANAL AVIVET\n`;
+  txt += `Período: ${fmtFecha(semana.inicio)} – ${fmtFecha(semana.fin)}\n`;
+  txt += `Comparación: ${mes.etiqueta}\n`;
+  txt += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+  GRANJAS.forEach(g => {
+    const d = state.datos[g.id]; if (!d) return;
+    txt += `▸ ${g.nombre}\n`;
+    d.lotes.forEach(l => {
+      const semRegs  = l.registros.filter(r => r.fecha >= semana.inicio && r.fecha <= semana.fin);
+      const pSem = calcularPromedioRegistros(l.registros, semana.inicio, semana.fin);
+      const pMes = calcularPromedioRegistros(l.registros, mes.inicio, mes.fin);
+      const delta = (pSem!=null&&pMes!=null) ? (pSem-pMes).toFixed(1) : null;
+      txt += `  ${l.nombre} — Sem ${l.semanaVida||'?'}\n`;
+      txt += `  Postura semana: ${pSem!=null?pSem+'%':'Sin datos'} (${semRegs.length} días)\n`;
+      txt += `  Promedio ${mes.etiqueta}: ${pMes!=null?pMes+'%':'Sin datos'}\n`;
+      const huevos = semRegs.reduce((s,r)=>s+(r.n_huevos||0),0);
+      txt += `  Huevos semana: ${huevos>0?huevos.toLocaleString('es-CL'):'—'}\n`;
+      txt += `  Diferencia vs mes: ${delta!=null?(delta>0?'+':'')+delta+'%':'—'}\n\n`;
+    });
+  });
+
+  txt += `\nAviVet.cl · Dr. Andrés Lazo Escobar, MV`;
+  navigator.clipboard.writeText(txt).then(() => {
+    alert('Resumen copiado al portapapeles.');
+  }).catch(() => {
+    prompt('Copia este texto:', txt);
+  });
 }
 
 async function cargarDatos() {
