@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root {
   --fondo:    #f8f6f1;
@@ -31,37 +32,27 @@
 html { scroll-behavior: smooth; }
 body {
   font-family: var(--fuente-c);
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--tinta);
-  background: var(--fondo);
+  font-size: 14px; line-height: 1.6;
+  color: var(--tinta); background: var(--fondo);
   -webkit-font-smoothing: antialiased;
 }
 button { cursor: pointer; font-family: inherit; border: none; background: none; color: inherit; }
 
-/* ── LOGIN ─────────────────────────────────────────────────────────── */
+/* LOGIN */
 #login-screen {
-  display: flex; align-items: center; justify-content: center;
-  min-height: 100vh; background: var(--fondo);
+  display: flex; align-items: center; justify-content: center; min-height: 100vh;
+  background: var(--fondo);
   background-image:
     radial-gradient(circle at 20% 10%, rgba(27,67,50,.06) 0%, transparent 50%),
     radial-gradient(circle at 80% 90%, rgba(240,165,0,.05) 0%, transparent 50%);
 }
 #login-card {
-  background: var(--papel); border: 1px solid var(--linea);
-  border-radius: 4px; padding: 44px 40px; width: 360px;
-  box-shadow: 0 4px 24px rgba(27,67,50,.08);
+  background: var(--papel); border: 1px solid var(--linea); border-radius: 4px;
+  padding: 44px 40px; width: 360px; box-shadow: 0 4px 24px rgba(27,67,50,.08);
 }
-#login-card .marca {
-  font-family: var(--fuente-t); font-size: 28px; font-weight: 700;
-  color: var(--prim); text-align: center; margin-bottom: 4px;
-}
+#login-card .marca { font-family: var(--fuente-t); font-size: 28px; font-weight: 700; color: var(--prim); text-align: center; margin-bottom: 4px; }
 #login-card .marca span { color: var(--acento); }
-#login-card .sub {
-  font-family: var(--fuente-m); font-size: 10px; color: var(--tenue);
-  letter-spacing: .1em; text-transform: uppercase;
-  text-align: center; margin-bottom: 32px;
-}
+#login-card .sub { font-family: var(--fuente-m); font-size: 10px; color: var(--tenue); letter-spacing: .1em; text-transform: uppercase; text-align: center; margin-bottom: 32px; }
 #login-card label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--tenue); display: block; margin-bottom: 5px; }
 #login-card input {
   width: 100%; font-family: var(--fuente-c); font-size: 14px;
@@ -73,56 +64,49 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 #btn-login {
   width: 100%; background: var(--prim); color: #fff;
   font-family: var(--fuente-c); font-size: 14px; font-weight: 600;
-  letter-spacing: .04em; padding: 12px; border-radius: 4px;
-  transition: background .15s; margin-top: 4px;
+  letter-spacing: .04em; padding: 12px; border-radius: 4px; transition: background .15s; margin-top: 4px;
 }
 #btn-login:hover:not(:disabled) { background: var(--prim-osc); }
 #btn-login:disabled { opacity: .55; cursor: default; }
 #login-error { color: var(--mal); font-size: 12px; margin-top: 10px; text-align: center; min-height: 16px; }
 
-/* ── APP LAYOUT ─────────────────────────────────────────────────────── */
+/* APP */
 #app { display: none; flex-direction: column; min-height: 100vh; }
 
-/* ── HEADER ─────────────────────────────────────────────────────────── */
+/* HEADER */
 #topbar {
   background: var(--prim); border-bottom: 3px solid var(--acento);
-  padding: 13px 28px; display: flex; justify-content: space-between;
-  align-items: center; position: sticky; top: 0; z-index: 100;
+  padding: 13px 28px; display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 100;
 }
 .marca-top { display: flex; align-items: baseline; gap: 14px; }
 .marca-titulo { font-family: var(--fuente-t); font-size: 22px; font-weight: 700; color: #fff; }
 .marca-titulo span { color: var(--acento); }
-.marca-sub-top { font-family: var(--fuente-m); font-size: 10px; color: rgba(255,255,255,.55); letter-spacing: .1em; text-transform: uppercase; }
+.marca-sub-top { font-family: var(--fuente-m); font-size: 10px; color: rgba(255,255,255,.5); letter-spacing: .1em; text-transform: uppercase; }
 .topbar-right { display: flex; align-items: center; gap: 20px; }
-#alerta-global { font-size: 12px; }
 #fecha-hoy { font-family: var(--fuente-m); font-size: 11px; color: rgba(255,255,255,.5); text-transform: capitalize; }
 .btn-logout {
   font-family: var(--fuente-m); font-size: 10px; letter-spacing: .08em;
   color: rgba(255,255,255,.6); padding: 4px 12px;
-  border: 1px solid rgba(255,255,255,.25); border-radius: 3px;
-  text-transform: uppercase; transition: all .18s;
+  border: 1px solid rgba(255,255,255,.25); border-radius: 3px; text-transform: uppercase; transition: all .18s;
 }
 .btn-logout:hover { color: #fff; border-color: rgba(255,255,255,.6); }
 
-/* ── BODY ────────────────────────────────────────────────────────────── */
+/* LAYOUT */
 #body { display: grid; grid-template-columns: 220px 1fr; flex: 1; }
 
-/* ── SIDEBAR ─────────────────────────────────────────────────────────── */
+/* SIDEBAR */
 #sidebar {
   background: var(--papel); border-right: 1px solid var(--linea);
   padding: 22px 0; display: flex; flex-direction: column;
 }
 .sidebar-section { padding: 0 16px 18px; border-bottom: 1px solid var(--linea); margin-bottom: 18px; }
 .sidebar-section:last-of-type { border-bottom: none; margin-bottom: 0; }
-.sidebar-label {
-  font-family: var(--fuente-m); font-size: 9px; color: var(--tenue);
-  letter-spacing: .14em; text-transform: uppercase; margin-bottom: 10px;
-}
+.sidebar-label { font-family: var(--fuente-m); font-size: 9px; color: var(--tenue); letter-spacing: .14em; text-transform: uppercase; margin-bottom: 10px; }
 .granja-btn {
   width: 100%; border-radius: 4px; padding: 9px 10px;
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 3px; transition: background .12s;
-  border: 1px solid transparent;
+  margin-bottom: 3px; transition: background .12s; border: 1px solid transparent;
 }
 .granja-btn:hover { background: var(--fondo); }
 .granja-btn.activa { background: var(--fondo); border-color: var(--linea); }
@@ -136,60 +120,58 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 .lote-btn.activo { background: var(--fondo); }
 .lote-nombre { font-size: 13px; color: var(--suave); }
 .lote-btn.activo .lote-nombre { color: var(--tinta); font-weight: 600; }
-.alert-tag {
-  font-family: var(--fuente-m); font-size: 9px; font-weight: 500;
-  padding: 2px 7px; border-radius: 3px; letter-spacing: .04em;
-}
-.badge-num {
-  font-family: var(--fuente-m); font-size: 9px; font-weight: 700;
-  background: var(--mal); color: #fff; padding: 1px 7px; border-radius: 10px;
-}
-.sidebar-alertas {
-  margin: 0 12px; background: rgba(183,28,28,.05);
-  border: 1px solid rgba(183,28,28,.2); border-radius: 4px; padding: 12px;
-}
-.sidebar-alertas-titulo {
-  font-family: var(--fuente-m); font-size: 9px; color: var(--mal);
-  letter-spacing: .12em; text-transform: uppercase; margin-bottom: 8px;
-}
+.alert-tag { font-family: var(--fuente-m); font-size: 9px; font-weight: 500; padding: 2px 7px; border-radius: 3px; letter-spacing: .04em; }
+.badge-num { font-family: var(--fuente-m); font-size: 9px; font-weight: 700; background: var(--mal); color: #fff; padding: 1px 7px; border-radius: 10px; }
+.sidebar-alertas { margin: 0 12px; background: rgba(183,28,28,.05); border: 1px solid rgba(183,28,28,.2); border-radius: 4px; padding: 12px; }
+.sidebar-alertas-titulo { font-family: var(--fuente-m); font-size: 9px; color: var(--mal); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 8px; }
 .alerta-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px; }
-.estado-txt { font-size: 9px; color: var(--tenue); }
 
-/* ── MAIN ────────────────────────────────────────────────────────────── */
+/* MAIN */
 #main { padding: 28px 32px; overflow-y: auto; }
 
-/* ── HEADER LOTE ─────────────────────────────────────────────────────── */
+/* HEADER LOTE */
 .lote-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; border-bottom: 1px solid var(--linea); padding-bottom: 20px; }
 .lote-header-meta { font-family: var(--fuente-m); font-size: 10px; color: var(--tenue); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
-.lote-header-titulo { font-family: var(--fuente-t); font-size: 36px; font-weight: 700; color: var(--prim); line-height: 1.1; }
+.lote-header-titulo { font-family: var(--fuente-t); font-size: 36px; font-weight: 700; line-height: 1.1; }
 .lote-header-sub { font-size: 13px; color: var(--tenue); margin-top: 6px; }
 .dias-badge { text-align: center; padding: 14px 20px; border-radius: 4px; min-width: 88px; border: 1px solid var(--linea); }
 .dias-badge-num { font-family: var(--fuente-t); font-size: 44px; font-weight: 700; line-height: 1; }
 .dias-badge-lbl { font-family: var(--fuente-m); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; margin-top: 4px; }
 
-/* ── KPIs ────────────────────────────────────────────────────────────── */
-.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--linea); border: 1px solid var(--linea); margin-bottom: 28px; }
+/* KPIs */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--linea); border: 1px solid var(--linea); margin-bottom: 24px; }
 .kpi-card { background: var(--papel); padding: 20px 18px; position: relative; }
 .kpi-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
 .kpi-label { font-family: var(--fuente-m); font-size: 9px; color: var(--tenue); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 10px; }
-.kpi-value { font-family: var(--fuente-t); font-size: 40px; font-weight: 700; line-height: 1; color: var(--prim); }
+.kpi-value { font-family: var(--fuente-t); font-size: 40px; font-weight: 700; line-height: 1; }
 .kpi-sub { font-size: 12px; color: var(--tenue); margin-top: 6px; }
 
-/* ── CHART ───────────────────────────────────────────────────────────── */
-.chart-wrap { background: var(--papel); border: 1px solid var(--linea); padding: 24px 22px; margin-bottom: 24px; }
-.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+/* CHART */
+.chart-wrap { background: var(--papel); border: 1px solid var(--linea); padding: 22px 22px 18px; margin-bottom: 24px; }
+.chart-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
 .chart-titulo { font-family: var(--fuente-m); font-size: 10px; color: var(--tenue); letter-spacing: .12em; text-transform: uppercase; }
-.chart-leyenda { display: flex; gap: 18px; font-size: 12px; color: var(--tenue); }
+.chart-controles { display: flex; align-items: center; gap: 16px; }
+.vista-tabs { display: flex; border: 1px solid var(--linea-f); border-radius: 4px; overflow: hidden; }
+.vista-tab {
+  font-family: var(--fuente-m); font-size: 10px; letter-spacing: .06em;
+  text-transform: uppercase; padding: 5px 14px; color: var(--tenue);
+  background: var(--papel); border-right: 1px solid var(--linea-f);
+  transition: all .15s;
+}
+.vista-tab:last-child { border-right: none; }
+.vista-tab:hover { background: var(--fondo); color: var(--tinta); }
+.vista-tab.activo { background: var(--prim); color: #fff; }
+.chart-leyenda { display: flex; gap: 16px; font-size: 12px; color: var(--tenue); }
 .chart-leyenda span { display: inline-flex; align-items: center; gap: 6px; }
+.chart-canvas-wrap { position: relative; height: 230px; width: 100%; }
 .pending-aviso {
-  display: flex; align-items: center; gap: 8px;
-  margin-top: 14px; padding: 9px 14px;
-  border-radius: 3px; font-size: 12px; border: 1px dashed;
+  display: flex; align-items: center; gap: 8px; margin-top: 14px;
+  padding: 9px 14px; border-radius: 3px; font-size: 12px; border: 1px dashed;
 }
 
-/* ── CLASIFICACIÓN ───────────────────────────────────────────────────── */
-.clasif-wrap { background: var(--papel); border: 1px solid var(--linea); padding: 24px 22px; }
-.clasif-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+/* CLASIFICACIÓN */
+.clasif-wrap { background: var(--papel); border: 1px solid var(--linea); padding: 22px; }
+.clasif-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .clasif-titulo { font-family: var(--fuente-m); font-size: 10px; color: var(--tenue); letter-spacing: .12em; text-transform: uppercase; }
 .barra { display: flex; height: 18px; border-radius: 2px; overflow: hidden; gap: 1px; margin-bottom: 14px; }
 .leyenda { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--suave); }
@@ -197,20 +179,19 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 .cuad { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
 .nc-titulo { font-family: var(--fuente-m); font-size: 9px; color: var(--mal); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 8px; }
 
-/* ── ESTADO VACÍO ────────────────────────────────────────────────────── */
+/* ESTADO VACÍO */
 .estado-msg { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 360px; gap: 12px; }
 .estado-msg-titulo { font-family: var(--fuente-t); font-size: 22px; color: var(--tenue); }
 .estado-msg-sub { font-size: 13px; color: var(--tenue); text-align: center; max-width: 380px; line-height: 1.6; }
 
-/* ── ALERTA TOPBAR ───────────────────────────────────────────────────── */
+/* ALERTA TOPBAR */
 .alerta-top {
   font-family: var(--fuente-m); font-size: 10px; letter-spacing: .06em;
   padding: 4px 12px; border-radius: 3px;
-  background: rgba(183,28,28,.25); color: #ffc4c4;
-  border: 1px solid rgba(183,28,28,.4);
+  background: rgba(183,28,28,.25); color: #ffc4c4; border: 1px solid rgba(183,28,28,.4);
 }
 
-/* ── FOOTER ──────────────────────────────────────────────────────────── */
+/* FOOTER */
 #footer {
   background: var(--papel); border-top: 1px solid var(--linea);
   padding: 8px 28px; display: flex; justify-content: space-between;
@@ -273,7 +254,7 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 </div>
 
 <script>
-// ── CONFIGURACIÓN ──────────────────────────────────────────────────────
+// ── CONFIG ─────────────────────────────────────────────────────────────
 const SUPABASE_URL  = "https://xewujmpycclqjhlmiica.supabase.co";
 const SUPABASE_ANON = "sb_publishable_v5_FU1w-7P7oeNrW6FYRBQ_cuX-pa9_";
 const PALETTE = ["#1b4332","#1565c0","#6a1e9e","#b71c1c","#e65100","#00695c","#4527a0","#2e7d32"];
@@ -281,6 +262,8 @@ const PALETTE = ["#1b4332","#1565c0","#6a1e9e","#b71c1c","#e65100","#00695c","#4
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 let currentToken = null;
 let GRANJAS = [];
+let chartInst = null;
+let vistaActual = 'diario'; // 'diario' | 'semanal' | 'mensual'
 
 const CATEGORIAS = [
   {key:"chico",   label:"Chico",    color:"#78909c"},
@@ -327,6 +310,7 @@ async function logout() {
   await sb.auth.signOut();
   currentToken = null;
   GRANJAS = []; Object.assign(state, { granjaId:null, loteIdx:0, datos:{}, estados:{} });
+  if (chartInst) { chartInst.destroy(); chartInst = null; }
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-pass').value = '';
@@ -344,165 +328,225 @@ function mostrarApp() {
 }
 
 // ── HELPERS ────────────────────────────────────────────────────────────
-function alertColor(d){ return d===0?'var(--ok)':d<=1?'#e65100':d<=2?'#bf360c':'var(--mal)'; }
-function alertLabel(d){ return d===0?'Al día':d===1?'1 día':d+' días'; }
+function alertColor(d) { return d===0?'var(--ok)':d<=1?'#e65100':d<=2?'#bf360c':'var(--mal)'; }
+function alertLabel(d) { return d===0?'Al día':d===1?'1 día':d+' días'; }
 
-// ── GRÁFICO SVG ────────────────────────────────────────────────────────
-function buildChart(registros, color) {
-  const W=580, H=170, PL=40, PR=14, PT=10, PB=30;
-  const data=(registros||[]).filter(r=>r.postura!=null||r.esperado!=null).slice(-28);
-  if (!data.length) {
-    const d=document.createElement('div');
-    Object.assign(d.style,{color:'var(--tenue)',fontSize:'13px',textAlign:'center',padding:'36px 0',fontFamily:"'IBM Plex Mono',monospace"});
-    d.textContent='Sin datos para graficar'; return d;
+// ── AGRUPACIONES ───────────────────────────────────────────────────────
+function getLunes(fechaStr) {
+  const d = new Date(fechaStr + 'T12:00:00');
+  const dia = d.getDay(); // 0=Dom
+  const diff = dia === 0 ? -6 : 1 - dia;
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
+
+function agrupar(registros, vista) {
+  if (vista === 'diario') {
+    return registros.map(r => ({
+      label: r.fecha.slice(5),   // MM-DD
+      postura:  r.postura,
+      esperado: r.esperado,
+    }));
   }
-  const all=[...data.map(r=>r.postura),...data.map(r=>r.esperado)].filter(v=>v!=null);
-  const minV=Math.max(0,Math.floor(Math.min(...all)/10)*10);
-  const maxV=Math.ceil(Math.max(...all)/10)*10+5;
-  const W2=W-PL-PR, H2=H-PT-PB;
-  const px=i=>(i/(data.length-1||1))*W2+PL;
-  const py=v=>H-PB-((v-minV)/(maxV-minV||1))*H2;
-  const ns='http://www.w3.org/2000/svg';
-  const svg=document.createElementNS(ns,'svg');
-  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
-  svg.setAttribute('width','100%'); svg.setAttribute('height',H);
-  svg.style.overflow='visible';
-
-  // Grid y etiquetas Y
-  for (let v=minV;v<=maxV;v+=5) {
-    const y=py(v);
-    const g=document.createElementNS(ns,'line');
-    g.setAttribute('x1',PL); g.setAttribute('y1',y);
-    g.setAttribute('x2',W-PR); g.setAttribute('y2',y);
-    g.setAttribute('stroke', v%10===0?'#e0ddd5':'#f0ede6');
-    g.setAttribute('stroke-width','1');
-    svg.appendChild(g);
-    if (v%10===0) {
-      const t=document.createElementNS(ns,'text');
-      t.setAttribute('x',PL-6); t.setAttribute('y',y+4);
-      t.setAttribute('text-anchor','end'); t.setAttribute('font-size','10');
-      t.setAttribute('fill','#aaa'); t.setAttribute('font-family',"'IBM Plex Mono',monospace");
-      t.textContent=v+'%'; svg.appendChild(t);
-    }
-  }
-
-  // Eje X fechas
-  const step=Math.max(1,Math.floor(data.length/7));
-  data.forEach((r,i)=>{
-    if(i%step===0||i===data.length-1){
-      const t=document.createElementNS(ns,'text');
-      t.setAttribute('x',px(i)); t.setAttribute('y',H-PB+16);
-      t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','10');
-      t.setAttribute('fill','#aaa'); t.setAttribute('font-family',"'IBM Plex Mono',monospace");
-      t.textContent=(r.fecha||'').slice(5); svg.appendChild(t);
-    }
+  const grupos = {};
+  registros.forEach(r => {
+    const key = vista === 'semanal'
+      ? getLunes(r.fecha)
+      : r.fecha.slice(0, 7); // YYYY-MM
+    if (!grupos[key]) grupos[key] = { key, posturas:[], esperados:[] };
+    if (r.postura  != null) grupos[key].posturas.push(r.postura);
+    if (r.esperado != null) grupos[key].esperados.push(r.esperado);
   });
+  const avg = arr => arr.length ? parseFloat((arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1)) : null;
+  return Object.values(grupos)
+    .sort((a,b) => a.key.localeCompare(b.key))
+    .map(g => ({
+      label: vista === 'semanal'
+        ? g.key.slice(5)                                      // MM-DD (lunes)
+        : new Date(g.key + '-15').toLocaleDateString('es-CL', {month:'short', year:'2-digit'}),
+      postura:  avg(g.posturas),
+      esperado: avg(g.esperados),
+    }));
+}
 
-  // Línea esperado (punteada)
-  let dExp='';
-  data.forEach((r,i)=>{ if(r.esperado!=null) dExp+=(dExp?'L':'M')+px(i)+','+py(r.esperado); });
-  if (dExp) {
-    const p=document.createElementNS(ns,'path');
-    p.setAttribute('d',dExp); p.setAttribute('fill','none');
-    p.setAttribute('stroke','#c4c0b6'); p.setAttribute('stroke-width','1.5');
-    p.setAttribute('stroke-dasharray','5 3'); svg.appendChild(p);
+// ── CHART ──────────────────────────────────────────────────────────────
+function renderChart(lote, granja, vista) {
+  const canvas = document.getElementById('chart-canvas');
+  if (!canvas) return;
+  if (chartInst) { chartInst.destroy(); chartInst = null; }
+
+  const puntos = agrupar(lote.registros, vista);
+  if (!puntos.length) {
+    canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+    return;
   }
 
-  // Línea real
-  let dReal='';
-  data.forEach((r,i)=>{ if(r.postura!=null) dReal+=(dReal?'L':'M')+px(i)+','+py(r.postura); });
-  if (dReal) {
-    const p=document.createElementNS(ns,'path');
-    p.setAttribute('d',dReal); p.setAttribute('fill','none');
-    p.setAttribute('stroke',color); p.setAttribute('stroke-width','2.5'); svg.appendChild(p);
-    data.forEach((r,i)=>{
-      if (r.postura==null) return;
-      const c=document.createElementNS(ns,'circle');
-      c.setAttribute('cx',px(i)); c.setAttribute('cy',py(r.postura)); c.setAttribute('r','3.5');
-      c.setAttribute('fill',color); c.setAttribute('stroke','#fff'); c.setAttribute('stroke-width','1.5');
-      const tt=document.createElementNS(ns,'title');
-      tt.textContent=r.fecha+': '+r.postura+'%'+(r.esperado!=null?' (esp: '+r.esperado+'%)':'');
-      c.appendChild(tt); svg.appendChild(c);
-    });
-  }
-  return svg;
+  const color = granja.color;
+  const colorAlpha = color + '20';
+
+  chartInst = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: puntos.map(p => p.label),
+      datasets: [
+        {
+          label: 'Postura real',
+          data: puntos.map(p => p.postura),
+          borderColor: color,
+          backgroundColor: colorAlpha,
+          borderWidth: 2.5,
+          pointRadius: puntos.length > 60 ? 0 : 3.5,
+          pointHoverRadius: 5,
+          pointBackgroundColor: color,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1.5,
+          tension: 0.3,
+          fill: false,
+          spanGaps: true,
+        },
+        {
+          label: 'Esperado',
+          data: puntos.map(p => p.esperado),
+          borderColor: '#c4c0b6',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          borderDash: [5, 4],
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          tension: 0.3,
+          fill: false,
+          spanGaps: true,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#fff',
+          titleColor: '#1a1a1a',
+          bodyColor: '#555',
+          borderColor: '#e0ddd5',
+          borderWidth: 1,
+          padding: 10,
+          titleFont: { family: "'IBM Plex Mono'", size: 11 },
+          bodyFont: { family: "'Inter'", size: 12 },
+          callbacks: {
+            title: items => {
+              const lbl = items[0].label;
+              if (vista === 'semanal') return 'Semana del ' + lbl;
+              if (vista === 'mensual') return lbl;
+              return lbl;
+            },
+            label: ctx => {
+              const v = ctx.parsed.y;
+              if (v == null) return null;
+              return ' ' + ctx.dataset.label + ': ' + v + '%';
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: '#f0ede6', drawBorder: false },
+          ticks: {
+            font: { family: "'IBM Plex Mono'", size: 10 },
+            color: '#aaa',
+            maxRotation: 0,
+            maxTicksLimit: vista === 'mensual' ? 12 : vista === 'semanal' ? 16 : 14,
+          },
+          border: { display: false },
+        },
+        y: {
+          grid: { color: '#e0ddd5', drawBorder: false },
+          ticks: {
+            font: { family: "'IBM Plex Mono'", size: 10 },
+            color: '#aaa',
+            callback: v => v + '%',
+            maxTicksLimit: 6,
+          },
+          border: { display: false },
+        },
+      },
+    },
+  });
 }
 
 // ── RENDER SIDEBAR ─────────────────────────────────────────────────────
 function renderSidebar() {
-  const listaG=document.getElementById('lista-granjas');
-  listaG.innerHTML='';
-  GRANJAS.forEach(g=>{
-    const d=state.datos[g.id], est=state.estados[g.id];
-    const nA=(d?.lotes||[]).filter(l=>l.diasPendientes>0).length;
-    const activa=state.granjaId===g.id;
-    const btn=document.createElement('button');
-    btn.className='granja-btn'+(activa?' activa':'');
-    btn.onclick=()=>{ state.granjaId=g.id; state.loteIdx=0; render(); };
-    const left=document.createElement('div');
-    left.style.cssText='display:flex;align-items:center;gap:8px';
-    const dot=document.createElement('div');
-    Object.assign(dot.style,{width:'6px',height:'6px',borderRadius:'50%',
-      background:activa?g.color:'var(--linea-f)',flexShrink:'0',
-      boxShadow:activa?`0 0 0 3px ${g.color}25`:''});
-    const nm=document.createElement('span');
-    nm.className='granja-nombre';
-    nm.style.color=activa?g.color:'var(--suave)';
-    nm.textContent=g.nombre;
-    left.append(dot,nm); btn.appendChild(left);
-    if(est==='cargando'){const s=document.createElement('span'); s.className='estado-txt'; s.textContent='···'; btn.appendChild(s);}
-    else if(est==='error'){const s=document.createElement('span'); s.style.cssText='font-size:11px;color:var(--mal)'; s.textContent='✗'; btn.appendChild(s);}
-    else if(est==='ok'&&nA>0){const s=document.createElement('span'); s.className='badge-num'; s.textContent=nA; btn.appendChild(s);}
-    else if(est==='ok'){const s=document.createElement('span'); s.style.cssText='font-size:11px;color:var(--ok)'; s.textContent='✓'; btn.appendChild(s);}
+  const listaG = document.getElementById('lista-granjas');
+  listaG.innerHTML = '';
+  GRANJAS.forEach(g => {
+    const d = state.datos[g.id], est = state.estados[g.id];
+    const nA = (d?.lotes||[]).filter(l=>l.diasPendientes>0).length;
+    const activa = state.granjaId === g.id;
+    const btn = document.createElement('button');
+    btn.className = 'granja-btn' + (activa ? ' activa' : '');
+    btn.onclick = () => { state.granjaId=g.id; state.loteIdx=0; render(); };
+    const left = document.createElement('div');
+    left.style.cssText = 'display:flex;align-items:center;gap:8px';
+    const dot = document.createElement('div');
+    Object.assign(dot.style, {width:'6px',height:'6px',borderRadius:'50%',flexShrink:'0',
+      background: activa ? g.color : 'var(--linea-f)',
+      boxShadow: activa ? `0 0 0 3px ${g.color}25` : ''});
+    const nm = document.createElement('span');
+    nm.className = 'granja-nombre';
+    nm.style.color = activa ? g.color : 'var(--suave)';
+    nm.textContent = g.nombre;
+    left.append(dot, nm); btn.appendChild(left);
+    if (est==='cargando') { const s=document.createElement('span'); s.style.cssText='font-size:10px;color:var(--tenue)'; s.textContent='···'; btn.appendChild(s); }
+    else if (est==='error') { const s=document.createElement('span'); s.style.cssText='font-size:11px;color:var(--mal)'; s.textContent='✗'; btn.appendChild(s); }
+    else if (est==='ok'&&nA>0) { const s=document.createElement('span'); s.className='badge-num'; s.textContent=nA; btn.appendChild(s); }
+    else if (est==='ok') { const s=document.createElement('span'); s.style.cssText='font-size:11px;color:var(--ok)'; s.textContent='✓'; btn.appendChild(s); }
     listaG.appendChild(btn);
   });
 
-  const granja=GRANJAS.find(g=>g.id===state.granjaId);
-  const lotes=state.datos[state.granjaId]?.lotes||[];
-  document.getElementById('label-lotes').textContent=granja?granja.nombre:'Lotes';
-  const listaL=document.getElementById('lista-lotes');
-  listaL.innerHTML='';
-  lotes.forEach((l,i)=>{
-    const dias=l.diasPendientes||0, ac=alertColor(dias), activo=state.loteIdx===i;
-    const btn=document.createElement('button');
-    btn.className='lote-btn'+(activo?' activo':'');
-    btn.onclick=()=>{ state.loteIdx=i; render(); };
-    const nm=document.createElement('span'); nm.className='lote-nombre'; nm.textContent=l.nombre;
-    const tag=document.createElement('span'); tag.className='alert-tag';
-    Object.assign(tag.style,{background:dias===0?'rgba(27,94,32,.1)':'rgba(183,28,28,.08)',
-      color:ac,border:`1px solid ${ac}30`});
-    tag.textContent=alertLabel(dias);
-    btn.append(nm,tag); listaL.appendChild(btn);
+  const granja = GRANJAS.find(g=>g.id===state.granjaId);
+  const lotes  = state.datos[state.granjaId]?.lotes || [];
+  document.getElementById('label-lotes').textContent = granja ? granja.nombre : 'Lotes';
+  const listaL = document.getElementById('lista-lotes');
+  listaL.innerHTML = '';
+  lotes.forEach((l, i) => {
+    const dias = l.diasPendientes||0, ac = alertColor(dias), activo = state.loteIdx===i;
+    const btn = document.createElement('button');
+    btn.className = 'lote-btn' + (activo ? ' activo' : '');
+    btn.onclick = () => { state.loteIdx=i; render(); };
+    const nm = document.createElement('span'); nm.className='lote-nombre'; nm.textContent=l.nombre;
+    const tag = document.createElement('span'); tag.className='alert-tag';
+    Object.assign(tag.style, {background: dias===0?'rgba(27,94,32,.1)':'rgba(183,28,28,.08)', color:ac, border:`1px solid ${ac}30`});
+    tag.textContent = alertLabel(dias);
+    btn.append(nm, tag); listaL.appendChild(btn);
   });
 
-  const alertas=GRANJAS.flatMap(g=>{
-    const d=state.datos[g.id]; if(!d) return [];
+  const alertas = GRANJAS.flatMap(g => {
+    const d = state.datos[g.id]; if (!d) return [];
     return (d.lotes||[]).filter(l=>l.diasPendientes>0)
       .map(l=>({granja:g.nombre,lote:l.nombre,dias:l.diasPendientes,color:g.color}));
   }).sort((a,b)=>b.dias-a.dias);
 
-  const sbAl=document.getElementById('alertas-panel-sidebar');
-  sbAl.innerHTML='';
-  if(alertas.length){
-    const panel=document.createElement('div'); panel.className='sidebar-alertas';
-    const ttl=document.createElement('div'); ttl.className='sidebar-alertas-titulo'; ttl.textContent='⚠ Pendientes';
+  const sbAl = document.getElementById('alertas-panel-sidebar');
+  sbAl.innerHTML = '';
+  if (alertas.length) {
+    const panel = document.createElement('div'); panel.className='sidebar-alertas';
+    const ttl = document.createElement('div'); ttl.className='sidebar-alertas-titulo'; ttl.textContent='⚠ Pendientes';
     panel.appendChild(ttl);
-    alertas.slice(0,6).forEach(a=>{
-      const row=document.createElement('div'); row.className='alerta-row';
-      const lft=document.createElement('span'); lft.style.color='var(--suave)';
-      const dot=document.createElement('span'); dot.style.color=a.color; dot.textContent='● ';
-      lft.append(dot,a.lote);
-      const rgt=document.createElement('span');
-      Object.assign(rgt.style,{color:alertColor(a.dias),fontWeight:'600',fontFamily:"'IBM Plex Mono',monospace",fontSize:'11px'});
-      rgt.textContent=a.dias+'d';
-      row.append(lft,rgt); panel.appendChild(row);
+    alertas.slice(0,6).forEach(a => {
+      const row = document.createElement('div'); row.className='alerta-row';
+      const lft = document.createElement('span'); lft.style.color='var(--suave)';
+      const dot = document.createElement('span'); dot.style.color=a.color; dot.textContent='● ';
+      lft.append(dot, a.lote);
+      const rgt = document.createElement('span');
+      Object.assign(rgt.style, {color:alertColor(a.dias),fontWeight:'600',fontFamily:"'IBM Plex Mono',monospace",fontSize:'11px'});
+      rgt.textContent = a.dias+'d';
+      row.append(lft, rgt); panel.appendChild(row);
     });
     sbAl.appendChild(panel);
-
-    const ag=document.getElementById('alerta-global');
-    ag.innerHTML='';
-    const agEl=document.createElement('div'); agEl.className='alerta-top';
-    agEl.textContent='⚠ '+alertas.length+(alertas.length===1?' lote':' lotes')+' con datos pendientes';
+    const ag = document.getElementById('alerta-global'); ag.innerHTML='';
+    const agEl = document.createElement('div'); agEl.className='alerta-top';
+    agEl.textContent = '⚠ '+alertas.length+(alertas.length===1?' lote':' lotes')+' con datos pendientes';
     ag.appendChild(agEl);
   } else {
     document.getElementById('alerta-global').innerHTML='';
@@ -511,157 +555,182 @@ function renderSidebar() {
 
 // ── RENDER MAIN ────────────────────────────────────────────────────────
 function renderMain() {
-  const main=document.getElementById('contenido');
-  main.innerHTML='';
-  const granja=GRANJAS.find(g=>g.id===state.granjaId);
-  if(!granja){
-    main.innerHTML='<div class="estado-msg"><div class="estado-msg-titulo">Cargando productores…</div></div>'; return;
-  }
-  const est=state.estados[state.granjaId];
-  const datosG=state.datos[state.granjaId];
-  const lotes=datosG?.lotes||[];
-  const lote=lotes[state.loteIdx];
+  const main = document.getElementById('contenido');
+  main.innerHTML = '';
+  if (chartInst) { chartInst.destroy(); chartInst = null; }
 
-  if(!lote&&est==='cargando'){
-    main.innerHTML='<div class="estado-msg"><div class="estado-msg-titulo">Cargando datos…</div></div>'; return;
-  }
-  if(!lote&&est==='error'){
+  const granja = GRANJAS.find(g=>g.id===state.granjaId);
+  if (!granja) { main.innerHTML='<div class="estado-msg"><div class="estado-msg-titulo">Cargando productores…</div></div>'; return; }
+  const est = state.estados[state.granjaId];
+  const datosG = state.datos[state.granjaId];
+  const lotes = datosG?.lotes || [];
+  const lote  = lotes[state.loteIdx];
+
+  if (!lote && est==='cargando') { main.innerHTML='<div class="estado-msg"><div class="estado-msg-titulo">Cargando datos…</div></div>'; return; }
+  if (!lote && est==='error') {
     main.innerHTML=`<div class="estado-msg"><div style="font-size:32px">⚠</div><div class="estado-msg-titulo" style="color:var(--mal)">Error al conectar</div><div class="estado-msg-sub">No se pudo obtener datos de ${granja.nombre}.</div></div>`; return;
   }
-  if(!lote) return;
+  if (!lote) return;
 
-  // Header
-  const ac=alertColor(lote.diasPendientes);
-  const header=document.createElement('div'); header.className='lote-header';
-  const hLeft=document.createElement('div');
-  const meta=document.createElement('div'); meta.className='lote-header-meta';
-  meta.textContent=granja.nombre+' · Semana '+lote.semanaVida+' de vida';
-  const titulo=document.createElement('div'); titulo.className='lote-header-titulo';
-  titulo.textContent=lote.nombre;
-  titulo.style.color=granja.color;
-  const sub=document.createElement('div'); sub.className='lote-header-sub';
-  sub.textContent=(lote.aves||0).toLocaleString('es-CL')+' aves · último registro: '+lote.ultimaFecha;
-  hLeft.append(meta,titulo,sub);
-
-  const badge=document.createElement('div'); badge.className='dias-badge';
-  if(lote.diasPendientes===0){
+  // ── Header lote ──
+  const ac = alertColor(lote.diasPendientes);
+  const header = document.createElement('div'); header.className='lote-header';
+  const hLeft = document.createElement('div');
+  const meta = document.createElement('div'); meta.className='lote-header-meta';
+  meta.textContent = granja.nombre + ' · Semana ' + lote.semanaVida + ' de vida';
+  const titulo = document.createElement('div'); titulo.className='lote-header-titulo';
+  titulo.textContent = lote.nombre; titulo.style.color = granja.color;
+  const sub = document.createElement('div'); sub.className='lote-header-sub';
+  sub.textContent = (lote.aves||0).toLocaleString('es-CL') + ' aves · último registro: ' + lote.ultimaFecha;
+  hLeft.append(meta, titulo, sub);
+  const badge = document.createElement('div'); badge.className='dias-badge';
+  if (lote.diasPendientes===0) {
     badge.innerHTML=`<div class="dias-badge-num" style="color:var(--ok);font-size:32px">✓</div><div class="dias-badge-lbl" style="color:var(--ok)">Al día</div>`;
   } else {
-    badge.style.borderColor=ac+'60';
+    badge.style.borderColor = ac+'60';
     badge.innerHTML=`<div class="dias-badge-num" style="color:${ac}">${lote.diasPendientes}</div><div class="dias-badge-lbl" style="color:${ac}">${lote.diasPendientes===1?'día sin':'días sin'}<br>registro</div>`;
   }
-  header.append(hLeft,badge); main.appendChild(header);
+  header.append(hLeft, badge); main.appendChild(header);
 
-  // KPIs
-  const kpiGrid=document.createElement('div'); kpiGrid.className='kpi-grid';
-  const kpis=[
-    {label:'Postura',     value:lote.postura!=null?lote.postura+'%':'—',     color:granja.color, sub:lote.posturaEsperada!=null?'Esperado: '+lote.posturaEsperada+'%':''},
-    {label:'Diferencia',  value:lote.diferencia!=null?(lote.diferencia>0?'+':'')+lote.diferencia+'%':'—', color:lote.diferencia>=0?'var(--ok)':'var(--mal)', sub:lote.diferencia>=0?'Sobre curva':'Bajo curva'},
-    {label:'Mortalidad',  value:lote.mortalidadHoy!=null?lote.mortalidadHoy+' aves':'—', color:lote.mortalidadHoy>3?'var(--mal)':'var(--ok)', sub:lote.mortalidadHoy>3?'Alta — revisar':'Normal'},
-    {label:'g Alim/Huevo',value:lote.gAlimPorHuevo!=null?lote.gAlimPorHuevo+' g':'—', color:'#1565c0', sub:(lote.huevos||0).toLocaleString('es-CL')+' huevos'},
+  // ── KPIs ──
+  const kpiGrid = document.createElement('div'); kpiGrid.className='kpi-grid';
+  const kpis = [
+    {label:'Postura',      value: lote.postura!=null?lote.postura+'%':'—',            color: granja.color,         sub: lote.posturaEsperada!=null?'Esperado: '+lote.posturaEsperada+'%':''},
+    {label:'Diferencia',   value: lote.diferencia!=null?(lote.diferencia>0?'+':'')+lote.diferencia+'%':'—', color: lote.diferencia>=0?'var(--ok)':'var(--mal)', sub: lote.diferencia>=0?'Sobre curva':'Bajo curva'},
+    {label:'Mortalidad',   value: lote.mortalidadHoy!=null?lote.mortalidadHoy+' aves':'—', color: lote.mortalidadHoy>3?'var(--mal)':'var(--ok)', sub: lote.mortalidadHoy>3?'Alta — revisar':'Normal'},
+    {label:'g Alim/Huevo', value: lote.gAlimPorHuevo!=null?lote.gAlimPorHuevo+' g':'—', color: '#1565c0', sub: (lote.huevos||0).toLocaleString('es-CL')+' huevos'},
   ];
-  kpis.forEach(kpi=>{
-    const card=document.createElement('div'); card.className='kpi-card';
-    const bar=document.createElement('div'); bar.className='kpi-bar'; bar.style.background=kpi.color;
-    const lbl=document.createElement('div'); lbl.className='kpi-label'; lbl.textContent=kpi.label;
-    const val=document.createElement('div'); val.className='kpi-value'; val.style.color=kpi.color; val.textContent=kpi.value;
-    const sub=document.createElement('div'); sub.className='kpi-sub'; sub.textContent=kpi.sub;
-    card.append(bar,lbl,val,sub); kpiGrid.appendChild(card);
+  kpis.forEach(kpi => {
+    const card = document.createElement('div'); card.className='kpi-card';
+    const bar = document.createElement('div'); bar.className='kpi-bar'; bar.style.background=kpi.color;
+    const lbl = document.createElement('div'); lbl.className='kpi-label'; lbl.textContent=kpi.label;
+    const val = document.createElement('div'); val.className='kpi-value'; val.style.color=kpi.color; val.textContent=kpi.value;
+    const sub = document.createElement('div'); sub.className='kpi-sub'; sub.textContent=kpi.sub;
+    card.append(bar, lbl, val, sub); kpiGrid.appendChild(card);
   });
   main.appendChild(kpiGrid);
 
-  // Gráfico
-  const chartWrap=document.createElement('div'); chartWrap.className='chart-wrap';
-  const chartHdr=document.createElement('div'); chartHdr.className='chart-header';
-  const chartTtl=document.createElement('div'); chartTtl.className='chart-titulo'; chartTtl.textContent='Curva de postura — últimos 28 días';
-  const chartLgnd=document.createElement('div'); chartLgnd.className='chart-leyenda';
-  chartLgnd.innerHTML=`<span><span style="display:inline-block;width:16px;height:2px;background:${granja.color};vertical-align:middle;margin-right:4px"></span>Real</span><span><span style="display:inline-block;width:16px;height:2px;border-top:2px dashed #c4c0b6;vertical-align:middle;margin-right:4px"></span>Esperado</span>`;
-  chartHdr.append(chartTtl,chartLgnd); chartWrap.appendChild(chartHdr);
-  chartWrap.appendChild(buildChart(lote.registros,granja.color));
-  if(lote.diasPendientes>0){
-    const av=document.createElement('div'); av.className='pending-aviso';
-    Object.assign(av.style,{borderColor:ac+'50',color:ac,background:ac+'08'});
+  // ── Gráfico con tabs ──
+  const chartWrap = document.createElement('div'); chartWrap.className='chart-wrap';
+  const chartTop  = document.createElement('div'); chartTop.className='chart-top';
+  const chartTtl  = document.createElement('div'); chartTtl.className='chart-titulo'; chartTtl.textContent='Curva de postura';
+  const controles = document.createElement('div'); controles.className='chart-controles';
+
+  // Tabs diario/semanal/mensual
+  const tabs = document.createElement('div'); tabs.className='vista-tabs';
+  ['diario','semanal','mensual'].forEach(v => {
+    const btn = document.createElement('button');
+    btn.className = 'vista-tab' + (vistaActual===v?' activo':'');
+    btn.textContent = v.charAt(0).toUpperCase()+v.slice(1);
+    btn.onclick = () => {
+      vistaActual = v;
+      tabs.querySelectorAll('.vista-tab').forEach(b => b.classList.remove('activo'));
+      btn.classList.add('activo');
+      renderChart(lote, granja, v);
+    };
+    tabs.appendChild(btn);
+  });
+
+  // Leyenda
+  const leyenda = document.createElement('div'); leyenda.className='chart-leyenda';
+  leyenda.innerHTML=`
+    <span><span style="display:inline-block;width:18px;height:2.5px;background:${granja.color};vertical-align:middle;margin-right:4px;border-radius:2px"></span>Real</span>
+    <span><span style="display:inline-block;width:18px;height:0;border-top:2px dashed #c4c0b6;vertical-align:middle;margin-right:4px"></span>Esperado</span>`;
+
+  controles.append(tabs, leyenda);
+  chartTop.append(chartTtl, controles);
+  chartWrap.appendChild(chartTop);
+
+  // Canvas
+  const canvasWrap = document.createElement('div'); canvasWrap.className='chart-canvas-wrap';
+  const canvas = document.createElement('canvas'); canvas.id='chart-canvas';
+  canvasWrap.appendChild(canvas); chartWrap.appendChild(canvasWrap);
+
+  if (lote.diasPendientes > 0) {
+    const av = document.createElement('div'); av.className='pending-aviso';
+    Object.assign(av.style, {borderColor:ac+'50',color:ac,background:ac+'08'});
     av.innerHTML=`⚠ Faltan <strong style="margin:0 4px">${lote.diasPendientes} ${lote.diasPendientes===1?'día':'días'}</strong> sin registrar desde el ${lote.ultimaFecha}`;
     chartWrap.appendChild(av);
   }
   main.appendChild(chartWrap);
 
-  // Clasificación
-  if(lote.clasificacion){
-    const clasif=lote.clasificacion;
-    const totalCom=CATEGORIAS.reduce((s,c)=>s+(clasif[c.key]||0),0);
-    const totalNC=NO_CONFORMES.reduce((s,c)=>s+(clasif[c.key]||0),0);
-    const total=totalCom+totalNC;
-    if(total>0){
-      const box=document.createElement('div'); box.className='clasif-wrap';
-      const chdr=document.createElement('div'); chdr.className='clasif-header';
-      const ctitl=document.createElement('div'); ctitl.className='clasif-titulo'; ctitl.textContent='Clasificación — último día';
-      const ctots=document.createElement('div'); ctots.style.cssText='display:flex;gap:18px;font-size:13px;color:var(--tenue)';
-      const pctNC=total>0?((totalNC/total)*100).toFixed(1):null;
-      ctots.innerHTML=`<span>Total: <strong style="color:var(--tinta)">${total.toLocaleString('es-CL')}</strong></span>`+(pctNC!==null?`<span>No conf.: <strong style="color:${totalNC>0?'var(--mal)':'var(--ok)'}">${pctNC}%</strong></span>`:'');
-      chdr.append(ctitl,ctots); box.appendChild(chdr);
+  // Render chart en el siguiente tick (el canvas ya está en el DOM)
+  requestAnimationFrame(() => renderChart(lote, granja, vistaActual));
 
-      if(totalCom>0){
-        const barra=document.createElement('div'); barra.className='barra';
-        CATEGORIAS.forEach(c=>{ const n=clasif[c.key]||0; if(!n) return;
+  // ── Clasificación ──
+  if (lote.clasificacion) {
+    const clasif = lote.clasificacion;
+    const totalCom = CATEGORIAS.reduce((s,c)=>s+(clasif[c.key]||0),0);
+    const totalNC  = NO_CONFORMES.reduce((s,c)=>s+(clasif[c.key]||0),0);
+    const total    = totalCom + totalNC;
+    if (total > 0) {
+      const box = document.createElement('div'); box.className='clasif-wrap';
+      const chdr = document.createElement('div'); chdr.className='clasif-header';
+      const ctitl = document.createElement('div'); ctitl.className='clasif-titulo'; ctitl.textContent='Clasificación — último día';
+      const pctNC = total > 0 ? ((totalNC/total)*100).toFixed(1) : null;
+      const ctots = document.createElement('div');
+      ctots.style.cssText='display:flex;gap:18px;font-size:13px;color:var(--tenue)';
+      ctots.innerHTML=`<span>Total: <strong style="color:var(--tinta)">${total.toLocaleString('es-CL')}</strong></span>`
+        +(pctNC!==null?`<span>No conf.: <strong style="color:${totalNC>0?'var(--mal)':'var(--ok)'}">${pctNC}%</strong></span>`:'');
+      chdr.append(ctitl, ctots); box.appendChild(chdr);
+      if (totalCom > 0) {
+        const barra = document.createElement('div'); barra.className='barra';
+        CATEGORIAS.forEach(c => { const n=clasif[c.key]||0; if(!n) return;
           const seg=document.createElement('div');
           Object.assign(seg.style,{width:((n/totalCom)*100)+'%',background:c.color,minWidth:'2px'});
-          seg.title=c.label+': '+n; barra.appendChild(seg);
-        });
+          seg.title=c.label+': '+n; barra.appendChild(seg); });
         box.appendChild(barra);
-        const lgnd=document.createElement('div'); lgnd.className='leyenda';
-        CATEGORIAS.forEach(c=>{ const n=clasif[c.key]||0; if(!n) return;
+        const lgnd = document.createElement('div'); lgnd.className='leyenda';
+        CATEGORIAS.forEach(c => { const n=clasif[c.key]||0; if(!n) return;
           const li=document.createElement('div'); li.className='leyenda-item';
           li.innerHTML=`<span class="cuad" style="background:${c.color}"></span><span style="color:var(--tenue)">${c.label}</span><strong>${n.toLocaleString('es-CL')}</strong><span style="color:var(--tenue)">(${((n/totalCom)*100).toFixed(1)}%)</span>`;
-          lgnd.appendChild(li);
-        });
+          lgnd.appendChild(li); });
         box.appendChild(lgnd);
       }
-      if(totalNC>0){
-        const sep=document.createElement('div');
+      if (totalNC > 0) {
+        const sep = document.createElement('div');
         Object.assign(sep.style,{borderTop:'1px solid var(--linea)',paddingTop:'14px',marginTop:'16px'});
-        const nclbl=document.createElement('div'); nclbl.className='nc-titulo'; nclbl.textContent='No conformes';
-        const ncrow=document.createElement('div'); Object.assign(ncrow.style,{display:'flex',gap:'16px',flexWrap:'wrap'});
-        NO_CONFORMES.forEach(c=>{ const n=clasif[c.key]||0; if(!n) return;
+        const nclbl = document.createElement('div'); nclbl.className='nc-titulo'; nclbl.textContent='No conformes';
+        const ncrow = document.createElement('div');
+        Object.assign(ncrow.style,{display:'flex',gap:'16px',flexWrap:'wrap'});
+        NO_CONFORMES.forEach(c => { const n=clasif[c.key]||0; if(!n) return;
           const li=document.createElement('div'); li.className='leyenda-item';
           li.innerHTML=`<span class="cuad" style="background:${c.color}"></span><span style="color:var(--tenue)">${c.label}:</span><strong style="color:var(--mal)">${n}</strong>`;
-          ncrow.appendChild(li);
-        });
-        sep.append(nclbl,ncrow); box.appendChild(sep);
+          ncrow.appendChild(li); });
+        sep.append(nclbl, ncrow); box.appendChild(sep);
       }
       main.appendChild(box);
     }
   }
 
-  const fc=document.getElementById('fecha-consulta');
-  fc.textContent=datosG?.fechaConsulta?'Datos al '+datosG.fechaConsulta:'';
+  const fc = document.getElementById('fecha-consulta');
+  fc.textContent = datosG?.fechaConsulta ? 'Datos al ' + datosG.fechaConsulta : '';
 }
 
-// ── RENDER ─────────────────────────────────────────────────────────────
-function render(){ renderSidebar(); renderMain(); }
+function render() { renderSidebar(); renderMain(); }
 
-// ── SUPABASE FETCH ──────────────────────────────────────────────────────
-async function sbFetch(tabla, params={}){
-  const url=new URL(SUPABASE_URL+'/rest/v1/'+tabla);
+// ── SUPABASE ───────────────────────────────────────────────────────────
+async function sbFetch(tabla, params={}) {
+  const url = new URL(SUPABASE_URL+'/rest/v1/'+tabla);
   Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
-  const r=await fetch(url.toString(),{headers:{
+  const r = await fetch(url.toString(), { headers: {
     'apikey': SUPABASE_ANON,
-    'Authorization': 'Bearer '+currentToken
+    'Authorization': 'Bearer '+currentToken,
   }});
-  if(!r.ok) throw new Error('HTTP '+r.status);
+  if (!r.ok) throw new Error('HTTP '+r.status);
   return r.json();
 }
 
-function procesarLote(lote, registros){
-  if(!registros.length) return null;
-  const hoy=new Date().toISOString().slice(0,10);
-  const u=registros[0];
-  const dias=Math.max(0,Math.round((new Date(hoy)-new Date(u.fecha))/86400000));
-  const pct=v=>v!=null?parseFloat((v*100).toFixed(1)):null;
+function procesarLote(lote, registros) {
+  if (!registros.length) return null;
+  const hoy = new Date().toISOString().slice(0,10);
+  const u   = registros[0]; // más reciente
+  const dias = Math.max(0, Math.round((new Date(hoy)-new Date(u.fecha))/86400000));
+  const pct  = v => v!=null ? parseFloat((v*100).toFixed(1)) : null;
   return {
     nombre:          lote.nombre,
     semanaVida:      u.semana_vida,
-    aves:            u.n_aves||lote.n_aves,
+    aves:            u.n_aves || lote.n_aves,
     ultimaFecha:     u.fecha,
     diasPendientes:  dias,
     postura:         pct(u.pct_postura),
@@ -669,51 +738,59 @@ function procesarLote(lote, registros){
     diferencia:      pct(u.diferencia),
     mortalidadHoy:   u.mortalidad,
     huevos:          u.n_huevos,
-    gAlimPorHuevo:   (u.kg_alimento&&u.n_huevos)?Math.round(u.kg_alimento*1000/u.n_huevos):null,
-    clasificacion:{chico:u.chico,mediano:u.mediano,grande:u.grande,xl:u.xl,superXl:u.super_xl,
-                   jumbo:u.jumbo,sucios:u.sucios,rotos:u.rotos,trizados:u.trizados,sangre:u.sangre},
-    registros:[...registros].reverse().map(r=>({fecha:r.fecha,postura:pct(r.pct_postura),esperado:pct(r.pct_esperado)}))
+    gAlimPorHuevo:   (u.kg_alimento&&u.n_huevos) ? Math.round(u.kg_alimento*1000/u.n_huevos) : null,
+    clasificacion: {
+      chico:u.chico, mediano:u.mediano, grande:u.grande, xl:u.xl,
+      superXl:u.super_xl, jumbo:u.jumbo, sucios:u.sucios,
+      rotos:u.rotos, trizados:u.trizados, sangre:u.sangre,
+    },
+    // Todos los registros ordenados del más antiguo al más reciente
+    registros: [...registros].reverse().map(r=>({
+      fecha:    r.fecha,
+      postura:  pct(r.pct_postura),
+      esperado: pct(r.pct_esperado),
+    })),
   };
 }
 
-// ── CARGA ──────────────────────────────────────────────────────────────
-async function cargarDatos(){
-  try{
-    const lotes=await sbFetch('lotes',{'activo':'eq.true','select':'*','order':'nombre.asc'});
-    const porUsuario={};
-    lotes.forEach(l=>{
-      if(!porUsuario[l.user_id]) porUsuario[l.user_id]={uid:l.user_id,nombre:l.productor||l.user_id.slice(0,8),lotes:[]};
+async function cargarDatos() {
+  try {
+    const lotes = await sbFetch('lotes', {'activo':'eq.true','select':'*','order':'nombre.asc'});
+    const porUsuario = {};
+    lotes.forEach(l => {
+      if (!porUsuario[l.user_id]) porUsuario[l.user_id] = {uid:l.user_id, nombre:l.productor||l.user_id.slice(0,8), lotes:[]};
       porUsuario[l.user_id].lotes.push(l);
     });
-    GRANJAS=Object.values(porUsuario).sort((a,b)=>a.nombre.localeCompare(b.nombre)).map((g,i)=>({
-      id:g.uid, nombre:g.nombre, color:PALETTE[i%PALETTE.length],
-      unidad:'Lote', tieneClasificacion:true, _lotes:g.lotes
-    }));
-    if(GRANJAS.length) state.granjaId=GRANJAS[0].id;
-    GRANJAS.forEach(g=>{ state.estados[g.id]='cargando'; });
+    GRANJAS = Object.values(porUsuario)
+      .sort((a,b)=>a.nombre.localeCompare(b.nombre))
+      .map((g,i)=>({ id:g.uid, nombre:g.nombre, color:PALETTE[i%PALETTE.length], _lotes:g.lotes }));
+    if (GRANJAS.length) state.granjaId = GRANJAS[0].id;
+    GRANJAS.forEach(g => { state.estados[g.id]='cargando'; });
     render();
 
-    for(const granja of GRANJAS){
-      try{
-        const lotesData=[];
-        for(const lote of granja._lotes){
-          const regs=await sbFetch('registros',{
-            'lote_id':'eq.'+lote.id,
-            'select':'fecha,semana_vida,n_aves,mortalidad,kg_alimento,n_huevos,chico,mediano,grande,xl,super_xl,jumbo,sucios,rotos,trizados,sangre,pct_postura,pct_esperado,diferencia',
-            'order':'fecha.desc','limit':'28'
+    for (const granja of GRANJAS) {
+      try {
+        const lotesData = [];
+        for (const lote of granja._lotes) {
+          // Traer hasta 365 registros para soportar vistas semanal y mensual
+          const regs = await sbFetch('registros', {
+            'lote_id': 'eq.'+lote.id,
+            'select':  'fecha,semana_vida,n_aves,mortalidad,kg_alimento,n_huevos,chico,mediano,grande,xl,super_xl,jumbo,sucios,rotos,trizados,sangre,pct_postura,pct_esperado,diferencia',
+            'order':   'fecha.desc',
+            'limit':   '365',
           });
-          const p=procesarLote(lote,regs);
-          if(p) lotesData.push(p);
+          const p = procesarLote(lote, regs);
+          if (p) lotesData.push(p);
         }
-        state.datos[granja.id]={fechaConsulta:new Date().toISOString().slice(0,10),lotes:lotesData};
-        state.estados[granja.id]='ok';
-      }catch(e){ state.estados[granja.id]='error'; }
+        state.datos[granja.id] = { fechaConsulta: new Date().toISOString().slice(0,10), lotes: lotesData };
+        state.estados[granja.id] = 'ok';
+      } catch(e) { state.estados[granja.id]='error'; }
       render();
     }
-  }catch(e){
-    console.error('Error:',e);
-    document.getElementById('contenido').innerHTML=
-      `<div class="estado-msg"><div style="font-size:28px">⚠</div><div class="estado-msg-titulo" style="color:var(--mal)">Error al conectar con Supabase</div><div class="estado-msg-sub">${e.message}</div></div>`;
+  } catch(e) {
+    console.error('Error:', e);
+    document.getElementById('contenido').innerHTML =
+      `<div class="estado-msg"><div style="font-size:28px">⚠</div><div class="estado-msg-titulo" style="color:var(--mal)">Error al conectar</div><div class="estado-msg-sub">${e.message}</div></div>`;
   }
 }
 </script>
