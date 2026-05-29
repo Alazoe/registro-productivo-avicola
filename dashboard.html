@@ -253,6 +253,15 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 .resumen-pendiente { background: repeating-linear-gradient(45deg, var(--fondo), var(--fondo) 4px, var(--papel) 4px, var(--papel) 8px); }
 .resumen-pie { font-size: 12px; color: var(--tenue); line-height: 1.6; padding: 14px; background: var(--papel); border: 1px solid var(--linea); }
 
+.nav-semana-btn {
+  font-family: var(--fuente-m); font-size: 14px; font-weight: 700;
+  width: 32px; height: 32px; border-radius: 4px;
+  border: 1px solid var(--linea-f); background: var(--papel); color: var(--prim);
+  display: flex; align-items: center; justify-content: center; transition: all .15s;
+}
+.nav-semana-btn:hover:not(:disabled) { background: var(--prim); color: #fff; border-color: var(--prim); }
+.nav-semana-btn:disabled { color: var(--linea-f); cursor: default; }
+
 /* FOOTER */
 #footer {
   background: var(--papel); border-top: 1px solid var(--linea);
@@ -319,6 +328,7 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 <script>
 // ── CONFIG ─────────────────────────────────────────────────────────────
 let modoResumen = false;
+let semanaOffset = 0; // 0 = semana automática, -1 = anterior, etc.
 const SUPABASE_URL  = "https://xewujmpycclqjhlmiica.supabase.co";
 const SUPABASE_ANON = "sb_publishable_v5_FU1w-7P7oeNrW6FYRBQ_cuX-pa9_";
 const PALETTE = ["#1b4332","#1565c0","#6a1e9e","#b71c1c","#e65100","#00695c","#4527a0","#2e7d32"];
@@ -823,6 +833,7 @@ function procesarLote(lote, registros) {
 
 function toggleResumen() {
   modoResumen = !modoResumen;
+  semanaOffset = 0;
   document.getElementById('btn-resumen').classList.toggle('activo', modoResumen);
   document.getElementById('sidebar').style.display = modoResumen ? 'none' : '';
   document.getElementById('body').style.gridTemplateColumns = modoResumen ? '1fr' : '220px 1fr';
@@ -830,23 +841,27 @@ function toggleResumen() {
   else render();
 }
 
+function navegarSemana(delta) {
+  semanaOffset += delta;
+  renderResumen();
+}
+
 function getPeriodoSemana() {
-  // Última semana completa (lun-dom) donde el período de gracia de 3 días ya pasó
   const hoy = new Date();
-  const diaSem = hoy.getDay(); // 0=dom
-  // Último domingo pasado
+  const diaSem = hoy.getDay();
   const diasHastaDom = diaSem === 0 ? 7 : diaSem;
   const ultimoDom = new Date(hoy);
   ultimoDom.setDate(hoy.getDate() - diasHastaDom);
-  // Período de gracia: dom + 3 días
   const graciaPasa = new Date(ultimoDom);
   graciaPasa.setDate(ultimoDom.getDate() + 3);
-  // Si la gracia ya pasó usamos esa semana, si no, la anterior
-  let domSemana = hoy >= graciaPasa ? ultimoDom : new Date(ultimoDom.getTime() - 7*86400000);
+  // Semana base (con gracia) + offset de navegación
+  let domBase = hoy >= graciaPasa ? ultimoDom : new Date(ultimoDom.getTime() - 7*86400000);
+  const domSemana = new Date(domBase.getTime() + semanaOffset * 7*86400000);
   const lunSemana = new Date(domSemana);
   lunSemana.setDate(domSemana.getDate() - 6);
   const fmt = d => d.toISOString().slice(0,10);
-  return { inicio: fmt(lunSemana), fin: fmt(domSemana) };
+  const esActual = semanaOffset === 0;
+  return { inicio: fmt(lunSemana), fin: fmt(domSemana), esActual };
 }
 
 function getPeriodoMesAnterior() {
@@ -884,11 +899,34 @@ function renderResumen() {
   const wrap = document.createElement('div'); wrap.className = 'resumen-wrap';
 
   const hdr = document.createElement('div'); hdr.className = 'resumen-header';
+  const hdrTop = document.createElement('div');
+  hdrTop.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px';
+
+  const hdrLeft = document.createElement('div');
   const periodo = document.createElement('div'); periodo.className = 'resumen-periodo';
   periodo.textContent = 'Resumen semanal';
   const titulo = document.createElement('div'); titulo.className = 'resumen-titulo';
   titulo.textContent = fmtFecha(semana.inicio) + ' — ' + fmtFecha(semana.fin);
-  hdr.append(periodo, titulo);
+  hdrLeft.append(periodo, titulo);
+
+  // Navegador de semanas
+  const nav = document.createElement('div');
+  nav.style.cssText = 'display:flex;align-items:center;gap:6px;padding-top:4px';
+  const btnPrev = document.createElement('button');
+  btnPrev.className = 'nav-semana-btn'; btnPrev.textContent = '←';
+  btnPrev.title = 'Semana anterior'; btnPrev.onclick = () => navegarSemana(-1);
+  const btnNext = document.createElement('button');
+  btnNext.className = 'nav-semana-btn'; btnNext.textContent = '→';
+  btnNext.title = 'Semana siguiente';
+  btnNext.disabled = semana.esActual;
+  btnNext.onclick = () => navegarSemana(1);
+  const labelSem = document.createElement('span');
+  labelSem.style.cssText = 'font-family:var(--fuente-m);font-size:10px;color:var(--tenue);letter-spacing:.06em;padding:0 4px;min-width:70px;text-align:center';
+  labelSem.textContent = semana.esActual ? 'Actual' : (semanaOffset < 0 ? Math.abs(semanaOffset)+(Math.abs(semanaOffset)===1?' sem ':' sem ')+' atrás' : semanaOffset+' sem adelante');
+  nav.append(btnPrev, labelSem, btnNext);
+
+  hdrTop.append(hdrLeft, nav);
+  hdr.appendChild(hdrTop);
 
   // Verificar si hay lotes con datos incompletos en la semana
   const pendientes = [];
