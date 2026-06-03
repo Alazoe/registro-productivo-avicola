@@ -6,6 +6,7 @@ drop table if exists pesajes cascade;
 drop table if exists registros cascade;
 drop table if exists lotes cascade;
 drop table if exists ubicaciones cascade;
+drop table if exists user_config cascade;
 
 create table ubicaciones (
   id         uuid        default gen_random_uuid() primary key,
@@ -75,13 +76,21 @@ create table registros (
   unique(lote_id, fecha)
 );
 
+create table user_config (
+  user_id    uuid primary key references auth.users on delete cascade,
+  config     jsonb not null default '{}'::jsonb,
+  updated_at timestamptz default now()
+);
+
 -- Row Level Security
-alter table ubicaciones enable row level security;
+alter table user_config  enable row level security;
+alter table ubicaciones  enable row level security;
 alter table lotes       enable row level security;
 alter table pesajes     enable row level security;
 alter table registros   enable row level security;
 
-create policy "ubicaciones_user" on ubicaciones for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "user_config_user"  on user_config  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "ubicaciones_user"  on ubicaciones  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "lotes_user"       on lotes       for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "pesajes_user"     on pesajes     for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "registros_user"   on registros   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

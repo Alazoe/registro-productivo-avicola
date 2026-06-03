@@ -487,6 +487,28 @@ label:first-child{margin-top:0}
   </div>
 
   <div class="card">
+    <div class="card-header">⚙️ Personalización — No vendibles</div>
+    <div class="card-body">
+      <p style="font-size:.8rem;color:#78909c;margin-bottom:12px">Renombra las 4 categorías de huevos no vendibles según tu criterio. Ejemplos: "Rotos+Trizados", "Deformes", etc.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <label>Categoría 1
+          <input type="text" id="cfg-sucios" placeholder="Sucios">
+        </label>
+        <label>Categoría 2
+          <input type="text" id="cfg-rotos" placeholder="Rotos">
+        </label>
+        <label>Categoría 3
+          <input type="text" id="cfg-trizados" placeholder="Trizados">
+        </label>
+        <label>Categoría 4
+          <input type="text" id="cfg-sangre" placeholder="Con sangre">
+        </label>
+      </div>
+      <button class="btn btn-verde" onclick="guardarConfig()" id="btn-guardar-cfg" style="margin-top:12px">💾 Guardar configuración</button>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="card-header">📁 Importar historial CSV</div>
     <div class="card-body">
       <p style="font-size:.8rem;color:#78909c;margin-bottom:10px">
@@ -557,6 +579,9 @@ let lotes = [], loteActual = null, registrosLote = [];
 let ubicaciones = [];
 let modoEdicion = false, registroEdicion = null;
 let currentUser = null, clasOculta = false;
+
+const NV_DEFAULT = { sucios:'Sucios', rotos:'Rotos', trizados:'Trizados', sangre:'Con sangre' };
+let userConfig = { noVendibles: { ...NV_DEFAULT } };
 let csvPendiente = null;
 let chartsInst = {};
 
@@ -597,7 +622,7 @@ async function mostrarApp() {
   document.getElementById('app').style.display = 'block';
   document.getElementById('nav-user').textContent = '👤 ' + currentUser.email + ' · salir';
   document.getElementById('fecha-input').value = hoy();
-  await cargarLotes();
+  await Promise.all([cargarLotes(), cargarConfig()]);
 }
 
 // ══ TABS ════════════════════════════════════════════════════════
@@ -606,7 +631,7 @@ function irTab(tab) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
   if (tab === 'graficos') renderGraficosTab();
-  if (tab === 'lotes')    { renderListaLotes(); renderListaUbicaciones(); }
+  if (tab === 'lotes')    { renderListaLotes(); renderListaUbicaciones(); renderConfigCard(); }
   if (tab === 'datos')    renderHistorial();
 }
 
@@ -828,6 +853,51 @@ async function eliminarUbicacion(id, nombre) {
     toast('Ubicación eliminada','warn');
     await cargarLotes(); renderListaLotes(); renderListaUbicaciones();
   } else toast('Error: '+error.message,'err');
+}
+
+// ══ CONFIG USUARIO ═════════════════════════════════════════════
+async function cargarConfig() {
+  const { data } = await sb.from('user_config').select('config').eq('user_id', currentUser.id).maybeSingle();
+  if (data?.config?.noVendibles) userConfig.noVendibles = { ...NV_DEFAULT, ...data.config.noVendibles };
+  aplicarLabelsNV();
+}
+
+function aplicarLabelsNV() {
+  const nv = userConfig.noVendibles;
+  const map = { 'f-sucios':'sucios', 'f-rotos':'rotos', 'f-trizados':'trizados', 'f-sangre':'sangre' };
+  Object.entries(map).forEach(([inputId, key]) => {
+    const el = document.getElementById(inputId)?.closest('.calidad-item')?.querySelector('.calidad-label');
+    if (el) el.textContent = nv[key] || NV_DEFAULT[key];
+  });
+}
+
+function renderConfigCard() {
+  const nv = userConfig.noVendibles;
+  document.getElementById('cfg-sucios').value   = nv.sucios   || NV_DEFAULT.sucios;
+  document.getElementById('cfg-rotos').value    = nv.rotos    || NV_DEFAULT.rotos;
+  document.getElementById('cfg-trizados').value = nv.trizados || NV_DEFAULT.trizados;
+  document.getElementById('cfg-sangre').value   = nv.sangre   || NV_DEFAULT.sangre;
+}
+
+async function guardarConfig() {
+  const nv = {
+    sucios:   document.getElementById('cfg-sucios').value.trim()   || NV_DEFAULT.sucios,
+    rotos:    document.getElementById('cfg-rotos').value.trim()    || NV_DEFAULT.rotos,
+    trizados: document.getElementById('cfg-trizados').value.trim() || NV_DEFAULT.trizados,
+    sangre:   document.getElementById('cfg-sangre').value.trim()   || NV_DEFAULT.sangre
+  };
+  const btn = document.getElementById('btn-guardar-cfg');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Guardando…';
+  const { error } = await sb.from('user_config').upsert(
+    { user_id: currentUser.id, config: { ...userConfig, noVendibles: nv }, updated_at: new Date().toISOString() },
+    { onConflict: 'user_id' }
+  );
+  if (!error) {
+    userConfig.noVendibles = nv;
+    aplicarLabelsNV();
+    toast('✅ Configuración guardada','ok');
+  } else toast('Error: '+error.message,'err');
+  btn.disabled = false; btn.textContent = '💾 Guardar configuración';
 }
 
 async function cambiarUbicacion(loteId, ubicacionId) {
