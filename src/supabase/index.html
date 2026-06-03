@@ -371,9 +371,15 @@ label:first-child{margin-top:0}
 <!-- ══ TAB GRÁFICOS ══════════════════════════════════════ -->
 <div class="page" id="page-graficos">
   <div class="card">
+    <div class="card-header">📋 Lote</div>
+    <div class="card-body">
+      <div class="lotes-btns" id="g-lotes-btns"><span style="color:#aaa;font-size:.85rem">Cargando…</span></div>
+    </div>
+  </div>
+  <div class="card">
     <div class="card-header">📊 Gráficos</div>
     <div class="card-body">
-      <div id="g-sin-lote" class="alerta alerta-info">Selecciona un lote en la pestaña Registro para ver los gráficos</div>
+      <div id="g-sin-lote" class="alerta alerta-info">Selecciona un lote arriba para ver los gráficos</div>
       <div id="g-contenido" style="display:none">
         <div class="resumen-cards">
           <div class="r-card azul"><div class="r-card-titulo">📦 Acumulado</div><div class="r-card-valor" id="g-acumulado">—</div><div class="r-card-sub">huevos</div></div>
@@ -618,20 +624,28 @@ async function cargarLotes() {
 }
 
 function renderSelectorLotes() {
-  const cont = document.getElementById('lotes-btns');
-  if (!lotes.filter(l=>l.activo).length) { cont.innerHTML='<span style="color:#aaa;font-size:.85rem">Sin lotes activos. Crea uno en la pestaña Lotes.</span>'; return; }
-  cont.innerHTML = lotes.filter(l=>l.activo).map((l,i) => {
-    const sem = calcEdad(l.fecha_nac);
+  const activos = lotes.filter(l => l.activo);
+  const vacio = '<span style="color:#aaa;font-size:.85rem">Sin lotes activos. Crea uno en la pestaña Lotes.</span>';
+  const mkBtn = (prefix, fn) => activos.map(l => {
+    const sem  = calcEdad(l.fecha_nac);
     const ubic = ubicaciones.find(u => u.id === l.ubicacion_id);
     const info = ubic ? `${ubic.nombre} · ${sem} sem` : `${sem} sem`;
-    return `<button class="lote-btn" id="lbtn-${l.id}" onclick="seleccionarLote('${l.id}')">${l.nombre}<span class="lote-info">${info}</span></button>`;
+    const sel  = loteActual?.id === l.id ? ' activo' : '';
+    return `<button class="lote-btn${sel}" id="${prefix}${l.id}" onclick="${fn}('${l.id}')">${l.nombre}<span class="lote-info">${info}</span></button>`;
   }).join('');
+
+  const reg = document.getElementById('lotes-btns');
+  reg.innerHTML = activos.length ? mkBtn('lbtn-', 'seleccionarLote') : vacio;
+
+  const graf = document.getElementById('g-lotes-btns');
+  if (graf) graf.innerHTML = activos.length ? mkBtn('g-lbtn-', 'seleccionarLoteGraficos') : vacio;
 }
 
 async function seleccionarLote(id) {
   loteActual = lotes.find(l => l.id === id);
   document.querySelectorAll('.lote-btn').forEach(b => b.classList.remove('activo'));
   document.getElementById('lbtn-'+id)?.classList.add('activo');
+  document.getElementById('g-lbtn-'+id)?.classList.add('activo');
   document.getElementById('card-info').style.display = 'block';
   document.getElementById('btn-guardar').disabled = false;
   mostrarLoading(true, 'Cargando registros…');
@@ -641,6 +655,11 @@ async function seleccionarLote(id) {
   actualizarInfoLote();
   onFechaChange();
   mostrarHuecos();
+}
+
+async function seleccionarLoteGraficos(id) {
+  await seleccionarLote(id);
+  renderGraficosTab();
 }
 
 function actualizarInfoLote() {
