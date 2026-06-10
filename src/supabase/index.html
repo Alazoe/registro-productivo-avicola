@@ -515,6 +515,38 @@ label:first-child{margin-top:0}
   </div>
 
   <div class="card">
+    <div class="card-header">🔔 Alertas por email</div>
+    <div class="card-body">
+      <p style="font-size:.8rem;color:#7a8470;margin-bottom:12px">Recibe un correo automático cuando un lote tenga mortalidad o caída de postura sobre el umbral que definas.</p>
+
+      <label style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-top:0">
+        <input type="checkbox" id="cfg-al-activas" style="width:auto;margin:0">
+        <span>Activar alertas por email</span>
+      </label>
+
+      <label>Correo para recibir alertas
+        <input type="email" id="cfg-al-email" placeholder="tu@correo.com">
+      </label>
+
+      <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
+        <input type="checkbox" id="cfg-al-copia" style="width:auto;margin:0">
+        <span>Enviar copia al asesor (AviVet)</span>
+      </label>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+        <label>Umbral mortalidad (% del lote/día)
+          <input type="number" id="cfg-al-mort" step="0.05" min="0" placeholder="0.30">
+        </label>
+        <label>Umbral caída postura (puntos %/día)
+          <input type="number" id="cfg-al-caida" step="0.5" min="0" placeholder="3">
+        </label>
+      </div>
+
+      <button class="btn btn-verde" onclick="guardarAlertas()" id="btn-guardar-al" style="margin-top:12px">💾 Guardar alertas</button>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="card-header">📁 Importar historial CSV</div>
     <div class="card-body">
       <p style="font-size:.8rem;color:#7a8470;margin-bottom:10px">
@@ -587,7 +619,8 @@ let modoEdicion = false, registroEdicion = null;
 let currentUser = null, clasOculta = false;
 
 const NV_DEFAULT = { sucios:'Sucios', rotos:'Rotos', trizados:'Trizados', sangre:'Con sangre' };
-let userConfig = { noVendibles: { ...NV_DEFAULT } };
+const ALERTAS_DEFAULT = { email:'', copiaAsesor:true, umbralMort:0.30, umbralCaida:3, activas:true };
+let userConfig = { noVendibles: { ...NV_DEFAULT }, alertas: { ...ALERTAS_DEFAULT } };
 let csvPendiente = null;
 let chartsInst = {};
 
@@ -637,7 +670,7 @@ function irTab(tab) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
   if (tab === 'graficos') renderGraficosTab();
-  if (tab === 'lotes')    { renderListaLotes(); renderListaUbicaciones(); renderConfigCard(); }
+  if (tab === 'lotes')    { renderListaLotes(); renderListaUbicaciones(); renderConfigCard(); renderAlertasCard(); }
   if (tab === 'datos')    renderHistorial();
 }
 
@@ -865,6 +898,7 @@ async function eliminarUbicacion(id, nombre) {
 async function cargarConfig() {
   const { data } = await sb.from('user_config').select('config').eq('user_id', currentUser.id).maybeSingle();
   if (data?.config?.noVendibles) userConfig.noVendibles = { ...NV_DEFAULT, ...data.config.noVendibles };
+  if (data?.config?.alertas)     userConfig.alertas     = { ...ALERTAS_DEFAULT, ...data.config.alertas };
   aplicarLabelsNV();
 }
 
@@ -904,6 +938,36 @@ async function guardarConfig() {
     toast('✅ Configuración guardada','ok');
   } else toast('Error: '+error.message,'err');
   btn.disabled = false; btn.textContent = '💾 Guardar configuración';
+}
+
+// ── Alertas ──
+function renderAlertasCard() {
+  const a = userConfig.alertas;
+  document.getElementById('cfg-al-activas').checked  = a.activas !== false;
+  document.getElementById('cfg-al-email').value      = a.email || '';
+  document.getElementById('cfg-al-email').placeholder= currentUser.email + ' (por defecto)';
+  document.getElementById('cfg-al-copia').checked    = a.copiaAsesor !== false;
+  document.getElementById('cfg-al-mort').value       = a.umbralMort ?? ALERTAS_DEFAULT.umbralMort;
+  document.getElementById('cfg-al-caida').value      = a.umbralCaida ?? ALERTAS_DEFAULT.umbralCaida;
+}
+
+async function guardarAlertas() {
+  const a = {
+    activas:     document.getElementById('cfg-al-activas').checked,
+    email:       document.getElementById('cfg-al-email').value.trim(),
+    copiaAsesor: document.getElementById('cfg-al-copia').checked,
+    umbralMort:  parseFloat(document.getElementById('cfg-al-mort').value)  || ALERTAS_DEFAULT.umbralMort,
+    umbralCaida: parseFloat(document.getElementById('cfg-al-caida').value) || ALERTAS_DEFAULT.umbralCaida
+  };
+  const btn = document.getElementById('btn-guardar-al');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Guardando…';
+  const { error } = await sb.from('user_config').upsert(
+    { user_id: currentUser.id, config: { ...userConfig, alertas: a }, updated_at: new Date().toISOString() },
+    { onConflict: 'user_id' }
+  );
+  if (!error) { userConfig.alertas = a; toast('✅ Alertas configuradas','ok'); }
+  else toast('Error: '+error.message,'err');
+  btn.disabled = false; btn.textContent = '💾 Guardar alertas';
 }
 
 async function cambiarUbicacion(loteId, ubicacionId) {
@@ -1581,16 +1645,21 @@ function actualizarCostos(precio) {
 }
 
 async function verificarAlertas(loteNombre, fecha, nAves, mort, pctPost, prevReg) {
+  const cfg = userConfig.alertas || ALERTAS_DEFAULT;
+  if (cfg.activas === false) return;
+
+  const umbralMort  = (cfg.umbralMort  ?? ALERTAS_DEFAULT.umbralMort);   // %
+  const umbralCaida = (cfg.umbralCaida ?? ALERTAS_DEFAULT.umbralCaida);  // puntos %
   const alertas = [];
 
-  if (nAves > 0 && mort / nAves > 0.003) {
+  if (nAves > 0 && (mort / nAves * 100) > umbralMort) {
     const pctMort = (mort / nAves * 100).toFixed(2);
-    alertas.push(`🐔 Mortalidad elevada: ${mort} aves (${pctMort}% — umbral 0,30%)`);
+    alertas.push(`🐔 Mortalidad elevada: ${mort} aves (${pctMort}% — umbral ${umbralMort.toString().replace('.',',')}%)`);
   }
 
   if (prevReg && prevReg.pct_postura != null && pctPost != null) {
     const caida = (prevReg.pct_postura - pctPost) * 100;
-    if (caida > 3) {
+    if (caida > umbralCaida) {
       const prev = (prevReg.pct_postura * 100).toFixed(1);
       const hoy  = (pctPost * 100).toFixed(1);
       alertas.push(`📉 Caída de postura: ${prev}% → ${hoy}% (−${caida.toFixed(1)}% en un día)`);
@@ -1601,7 +1670,11 @@ async function verificarAlertas(loteNombre, fecha, nAves, mort, pctPost, prevReg
 
   try {
     await sb.functions.invoke('alerta-produccion', {
-      body: { lote: loteNombre, fecha, alertas },
+      body: {
+        lote: loteNombre, fecha, alertas,
+        to: cfg.email || currentUser.email,
+        copiaAsesor: cfg.copiaAsesor !== false
+      },
     });
     toast('⚠️ Alerta enviada por email','warn',4000);
   } catch (e) {

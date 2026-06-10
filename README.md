@@ -69,8 +69,9 @@ Todas las tablas tienen Row Level Security activado: cada usuario ve y modifica 
 - **Gráficos** — curva de postura vs esperado, acumulado, distribución por tamaño, tabla semanal por semana de vida
 - **Importar CSV** — herramienta integrada para migrar historial desde Google Sheets (tab Lotes → Importar)
 - **KPIs calculados client-side** — semana de vida, kg/ave, % postura, % esperado por línea genética, diferencia vs curva
-- **Alertas por email** — notificación automática vía Resend cuando mortalidad > 0,30% o caída de postura > 3% en un día (activo desde 2026-04-29)
+- **Alertas por email** — notificación automática vía Resend cuando mortalidad o caída de postura superan el umbral. **Configurables por productor** (tab Lotes → 🔔 Alertas): destino del correo, umbrales propios, activar/desactivar y copia opcional al asesor
 - **Ubicaciones físicas** — catálogo de espacios por productor (carros, pabellones, galpones); asignación opcional por lote, cambiable en cualquier momento sin afectar registros
+- **Personalización de no vendibles** — cada productor renombra sus 4 categorías de huevos no vendibles (tab Lotes → ⚙️ Personalización)
 
 ### Cómo activar Supabase (una sola vez)
 
@@ -128,6 +129,9 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-06 | Alertas por email configurables por productor (destino, umbrales, copia al asesor) |
+| 2026-06 | Rediseño visual alineado a marca avivet.cl (Fraunces + DM Sans, paleta crema/verde/dorado) |
+| 2026-06 | Selector de lote en tab Gráficos + no vendibles configurables por productor |
 | 2026-05 | Ubicaciones físicas por lote (carro, pabellón, galpón) |
 | 2026-05 | Curva Dominat agregada + curvas extendidas a semana 150 |
 | 2026-05 | CLAUDE.md + URL GitHub Pages configurada |
