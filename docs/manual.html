@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual de Usuario — Registro Productivo Avícola · AviVet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f1e8; --white:#fefefe; --dark:#111510; --green:#2a5430;
+  --green-mid:#3d7a42; --green-light:#e4ede5; --gold:#b8860b;
+  --text:#1c2118; --muted:#6a7565; --border:#ddd8cc; --cream:#f0ebe0;
+  --serif:'Fraunces',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:820px;margin:0 auto;padding:32px 24px 80px}
+
+/* PRINT BAR */
+.printbar{position:sticky;top:0;z-index:10;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-radius:0 0 12px 12px;margin-bottom:28px;box-shadow:0 3px 12px rgba(42,84,48,.25)}
+.printbar span{font-size:.9rem}
+.printbar button{font-family:inherit;background:var(--gold);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:.88rem;font-weight:600;cursor:pointer}
+.printbar button:hover{filter:brightness(1.05)}
+
+/* COVER */
+.cover{background:var(--green);color:#fff;border-radius:16px;border-top:5px solid var(--gold);padding:44px 36px;margin-bottom:32px;background-image:radial-gradient(circle at 85% 15%,rgba(184,134,11,.18),transparent 45%),radial-gradient(circle at 10% 90%,rgba(92,158,97,.22),transparent 45%)}
+.cover .logo{font-size:2.6rem;margin-bottom:10px}
+.cover h1{font-family:var(--serif);font-weight:600;font-size:2.1rem;letter-spacing:-.02em;line-height:1.12;margin-bottom:10px}
+.cover .sub{font-size:1.02rem;opacity:.92;max-width:540px}
+.cover .brand{margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,.2);font-size:.86rem;opacity:.85}
+.cover .brand a{color:#fff}
+
+h2{font-family:var(--serif);font-weight:600;font-size:1.45rem;color:var(--green);letter-spacing:-.01em;margin:36px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--gold)}
+h2 .n{color:var(--gold)}
+h3{font-family:var(--serif);font-weight:600;font-size:1.08rem;color:var(--green-mid);margin:20px 0 8px}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 14px;padding-left:22px}
+li{margin:5px 0}
+a{color:var(--green-mid)}
+strong{color:var(--text);font-weight:600}
+
+.url{display:inline-block;background:var(--green-light);color:var(--green);border:1px solid #bcd4be;border-radius:8px;padding:8px 14px;font-weight:600;font-size:.92rem;word-break:break-all;margin:4px 0 8px}
+
+.note{background:var(--white);border:1px solid var(--border);border-left:4px solid var(--gold);border-radius:8px;padding:13px 16px;margin:14px 0;font-size:.94rem}
+.note strong{color:var(--gold)}
+
+table{width:100%;border-collapse:collapse;margin:14px 0;background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:.92rem}
+th{background:var(--green);color:#fff;text-align:left;padding:10px 14px;font-weight:600;font-size:.82rem;text-transform:uppercase;letter-spacing:.04em}
+td{padding:10px 14px;border-top:1px solid var(--border)}
+tr:nth-child(even) td{background:var(--cream)}
+
+.card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin:16px 0;box-shadow:0 1px 3px rgba(28,33,24,.05)}
+
+.footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--border);text-align:center;color:var(--muted);font-size:.85rem}
+
+@media print{
+  body{background:#fff}
+  .printbar{display:none}
+  .wrap{max-width:100%;padding:0}
+  .cover{background:var(--green)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  th{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  h2{page-break-after:avoid}
+  table,.card,.note{page-break-inside:avoid}
+  h2,h3{page-break-after:avoid}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="printbar">
+    <span>📖 Manual de usuario — listo para imprimir o guardar como PDF</span>
+    <button onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+  </div>
+
+  <div class="cover">
+    <div class="logo">🐔</div>
+    <h1>Manual de Usuario<br>Registro Productivo Avícola</h1>
+    <div class="sub">Lleva el registro diario de producción de tus gallinas ponedoras desde el celular o el computador. Esta guía te explica, paso a paso, cómo usar la aplicación.</div>
+    <div class="brand">AviVet · Medicina Veterinaria Avícola · <a href="https://avivet.cl">avivet.cl</a></div>
+  </div>
+
+  <p><strong>Dirección de la app:</strong></p>
+  <div class="url">http://avivet.cl/registro-productivo-avicola/src/supabase/</div>
+
+  <h2><span class="n">1.</span> Qué puedes hacer con la app</h2>
+  <ul>
+    <li>Anotar cada día: aves, mortalidad, alimento, huevos y su clasificación.</li>
+    <li>Ver gráficos de cómo va tu postura comparada con lo esperado para tu línea genética.</li>
+    <li>Llevar varios lotes (y galpones o pabellones) ordenados en un solo lugar.</li>
+    <li>Recibir un correo automático si la mortalidad o la postura se salen de lo normal.</li>
+    <li>Tener todo tu historial guardado y seguro, sin planillas sueltas.</li>
+  </ul>
+  <p>Tus datos son <strong>privados</strong>: solo tú los ves al entrar con tu correo y contraseña.</p>
+
+  <h2><span class="n">2.</span> Entrar a la app</h2>
+  <ol>
+    <li>Abre la dirección de la app en tu navegador (Chrome o Safari).</li>
+    <li>Escribe tu <strong>correo</strong> y tu <strong>contraseña</strong>.</li>
+    <li>Toca <strong>Entrar</strong>.</li>
+  </ol>
+  <p>La app recuerda tu sesión: la próxima vez entrarás directo.</p>
+  <div class="note"><strong>¿Sin cuenta o se te olvidó la contraseña?</strong> Escríbele a AviVet y te la creamos o reiniciamos.</div>
+
+  <h3>Recomendado: agregar la app a tu pantalla de inicio</h3>
+  <p>Así la abres como si fuera una aplicación normal del celular.</p>
+  <ul>
+    <li><strong>iPhone (Safari):</strong> botón compartir → <em>Agregar a pantalla de inicio</em>.</li>
+    <li><strong>Android (Chrome):</strong> menú (⋮) → <em>Agregar a pantalla de inicio</em>.</li>
+  </ul>
+
+  <h2><span class="n">3.</span> Las cuatro pestañas</h2>
+  <table>
+    <tr><th>Pestaña</th><th>Para qué sirve</th></tr>
+    <tr><td>📋 <strong>Registro</strong></td><td>Anotar la producción de cada día. Es la que más usarás.</td></tr>
+    <tr><td>📊 <strong>Gráficos</strong></td><td>Ver curvas, KPIs y resumen del lote.</td></tr>
+    <tr><td>📂 <strong>Datos</strong></td><td>Ver el historial día por día y corregir registros.</td></tr>
+    <tr><td>🐔 <strong>Lotes</strong></td><td>Crear lotes, ubicaciones, alertas y personalización.</td></tr>
+  </table>
+
+  <h2><span class="n">4.</span> Crear tu primer lote</h2>
+  <p>Antes de registrar producción necesitas tener al menos un lote (un grupo de aves).</p>
+  <ol>
+    <li>Ve a la pestaña <strong>🐔 Lotes</strong>.</li>
+    <li>En <strong>➕ Nuevo lote</strong>, completa:
+      <ul>
+        <li><strong>Nombre del lote</strong> — por ejemplo "Lote 1" o "Primavera 2026".</li>
+        <li><strong>Fecha de nacimiento (BB)</strong> — cuándo nacieron las aves. Con esto la app calcula la edad en semanas.</li>
+        <li><strong>N° de aves</strong> — cuántas aves entraron.</li>
+        <li><strong>Línea genética</strong> — la de tu plantel (Hy-line Brown, Lohmann Brown, Dekalb Brown, etc.).</li>
+        <li><strong>Ubicación física</strong> <em>(opcional)</em> — el galpón o pabellón donde está.</li>
+      </ul>
+    </li>
+    <li>Toca <strong>+ Crear lote</strong>.</li>
+  </ol>
+  <p>Puedes tener varios lotes a la vez. Cada uno lleva su propio registro.</p>
+
+  <h2><span class="n">5.</span> Registrar la producción del día</h2>
+  <ol>
+    <li>Ve a la pestaña <strong>📋 Registro</strong>.</li>
+    <li>Arriba, toca el <strong>lote</strong> que vas a registrar.</li>
+    <li>Revisa que la <strong>fecha</strong> sea la correcta. Usa las flechas ◀ ▶ para cambiar de día.</li>
+    <li>Completa: <strong>N° de aves</strong>, <strong>Mortalidad</strong>, <strong>Kg de alimento</strong> y <strong>N° de huevos</strong>.</li>
+    <li>Clasifica los huevos por <strong>tamaño</strong>:</li>
+  </ol>
+  <table>
+    <tr><th>Categoría</th><th>Peso</th></tr>
+    <tr><td>Chico</td><td>menos de 47 g</td></tr>
+    <tr><td>Mediano</td><td>47–54 g</td></tr>
+    <tr><td>Grande</td><td>54–61 g</td></tr>
+    <tr><td>XL</td><td>61–68 g</td></tr>
+    <tr><td>Super XL</td><td>más de 68 g</td></tr>
+    <tr><td>Jumbo</td><td>más de 76 g</td></tr>
+  </table>
+  <ol start="6">
+    <li>Anota los <strong>no vendibles</strong> (sucios, rotos, trizados, con sangre). <em>Estos nombres se pueden personalizar — ver punto 9.</em></li>
+    <li>Si quieres, escribe una <strong>observación</strong> del día.</li>
+    <li>Toca <strong>✅ Guardar registro</strong>.</li>
+  </ol>
+  <div class="note"><strong>Consejo:</strong> el total clasificado debería coincidir con el N° de huevos. La app te avisa si los números no cuadran.</div>
+
+  <h2><span class="n">6.</span> Información del lote</h2>
+  <p>Al elegir un lote, en la pestaña Registro la app te muestra al instante:</p>
+  <ul>
+    <li><strong>N° de aves actuales</strong></li>
+    <li><strong>Conversión</strong> (kg de alimento por huevo, últimos 7 días)</li>
+    <li><strong>Mortalidad de hoy</strong> y <strong>de los últimos 7 días</strong></li>
+    <li><strong>Edad actual</strong> en semanas</li>
+    <li><strong>% de postura esperado</strong> según tu línea genética</li>
+  </ul>
+  <p>Si la mortalidad sube de lo normal, el número se pone <strong>naranja o rojo</strong> para que lo notes.</p>
+
+  <h2><span class="n">7.</span> Corregir o editar un registro</h2>
+  <ul>
+    <li><strong>Corregir un día ya guardado:</strong> ve a <strong>📂 Datos</strong>, busca la fila del día y toca editar (✏️). También puedes elegir esa fecha en <strong>📋 Registro</strong>: la app detecta que ya existe y te deja sobreescribir (te pide confirmación antes).</li>
+    <li><strong>Días que faltan:</strong> si saltaste un día, la app te avisa en Registro con "Días sin registro".</li>
+  </ul>
+
+  <h2><span class="n">8.</span> Ubicaciones físicas (galpones, pabellones, carros)</h2>
+  <p>Sirve para saber <em>dónde</em> está cada lote, no solo cómo se llama.</p>
+  <div class="card">
+    <p><strong>Crear una ubicación:</strong></p>
+    <ol>
+      <li>Pestaña <strong>🐔 Lotes</strong> → card <strong>📍 Ubicaciones físicas</strong>.</li>
+      <li>Escribe el nombre (ej: "Carro 1", "Pabellón 2", "Galpón Norte") y toca <strong>+ Agregar</strong>.</li>
+    </ol>
+    <p><strong>Asignar a un lote:</strong> en la lista de lotes, cada lote tiene un selector. Elige la ubicación. Es <strong>opcional</strong> y se puede <strong>cambiar cuando quieras</strong> sin afectar los registros.</p>
+  </div>
+
+  <h2><span class="n">9.</span> Personalizar las categorías de "no vendibles"</h2>
+  <p>Cada productor puede ponerle a estas 4 categorías el nombre que use.</p>
+  <ol>
+    <li>Pestaña <strong>🐔 Lotes</strong> → card <strong>⚙️ Personalización — No vendibles</strong>.</li>
+    <li>Cambia los nombres (ej: "Rotos+Trizados", "Deformes", "Sucios", "Con sangre").</li>
+    <li>Toca <strong>💾 Guardar configuración</strong>.</li>
+  </ol>
+  <p>Los nuevos nombres aparecerán de inmediato en la pantalla de Registro.</p>
+
+  <h2><span class="n">10.</span> Alertas por correo</h2>
+  <p>La app te puede avisar por email cuando algo se sale de lo normal.</p>
+  <ol>
+    <li>Pestaña <strong>🐔 Lotes</strong> → card <strong>🔔 Alertas por email</strong>.</li>
+    <li>Configura:
+      <ul>
+        <li><strong>Activar alertas</strong> — enciéndelas o apágalas.</li>
+        <li><strong>Correo para recibir alertas</strong> — por defecto el de tu cuenta.</li>
+        <li><strong>Copia al asesor (AviVet)</strong> — para que tu veterinario también se entere.</li>
+        <li><strong>Umbral de mortalidad</strong> — % de aves por día que dispara la alerta (sugerido: 0,30).</li>
+        <li><strong>Umbral de caída de postura</strong> — cuántos puntos puede bajar en un día antes de avisar (sugerido: 3).</li>
+      </ul>
+    </li>
+    <li>Toca <strong>💾 Guardar alertas</strong>.</li>
+  </ol>
+  <p>Desde ahí, cada vez que guardes un registro que supere esos límites, llegará un correo automático.</p>
+
+  <h2><span class="n">11.</span> Ver gráficos y resumen</h2>
+  <p>En la pestaña <strong>📊 Gráficos</strong>:</p>
+  <ol>
+    <li>Arriba, elige el <strong>lote</strong> (puedes cambiarlo sin salir de la pestaña).</li>
+    <li>Usa las pestañitas:
+      <ul>
+        <li><strong>🎯 KPIs</strong> — resumen de la situación actual.</li>
+        <li><strong>📈 Postura</strong> — tu curva real comparada con la esperada.</li>
+        <li><strong>📊 Acum</strong> — huevos acumulados.</li>
+        <li><strong>📏 Tam</strong> — distribución por tamaño.</li>
+        <li><strong>📋 Tabla</strong> — resumen semana por semana.</li>
+        <li><strong>🍩 Semanal</strong> — distribución de tamaños por semana.</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h2><span class="n">12.</span> Importar historial desde una planilla</h2>
+  <p>Si vienes de una planilla de Google Sheets y quieres traer tu historial:</p>
+  <ol>
+    <li>En tu planilla: <strong>Archivo → Descargar → CSV</strong> (una pestaña por lote).</li>
+    <li>En la app: pestaña <strong>🐔 Lotes</strong> → card <strong>📁 Importar historial CSV</strong>.</li>
+    <li>Elige el lote destino, sube el archivo y confirma.</li>
+  </ol>
+  <div class="note"><strong>Tip:</strong> si tienes dudas con este paso, pídele ayuda a AviVet la primera vez.</div>
+
+  <h2><span class="n">13.</span> Preguntas frecuentes</h2>
+  <div class="card">
+    <p><strong>¿Otros productores pueden ver mis datos?</strong><br>No. Cada quien ve únicamente sus propios lotes y registros.</p>
+    <p><strong>¿Puedo usarla en el celular y en el computador?</strong><br>Sí, con la misma cuenta. Los datos se sincronizan solos.</p>
+    <p><strong>¿Necesito internet?</strong><br>Sí, para guardar y ver los datos.</p>
+    <p><strong>Se me cerró la sesión, ¿pierdo algo?</strong><br>No. Todo queda guardado. Solo vuelve a entrar con tu correo y contraseña.</p>
+    <p style="margin:0"><strong>¿Qué hago si un número quedó mal?</strong><br>Edítalo desde la pestaña 📂 Datos (ver punto 7).</p>
+  </div>
+
+  <h2><span class="n">14.</span> Soporte</h2>
+  <p>Cualquier duda o problema, contacta a <strong>AviVet</strong>:<br>
+  <strong>Andrés Lazo Escobar</strong> — Médico Veterinario · <a href="https://avivet.cl">avivet.cl</a></p>
+
+  <div class="footer">Manual de usuario · Registro Productivo Avícola · AviVet</div>
+
+</div>
+</body>
+</html>

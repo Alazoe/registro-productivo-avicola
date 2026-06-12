@@ -5,6 +5,15 @@ Sistema de registro diario de producción para gallinas ponedoras.
 
 ---
 
+## 📖 Manual de usuario (para productores)
+
+Guía paso a paso en lenguaje simple para quienes usan la app:
+
+- [`docs/MANUAL.md`](./docs/MANUAL.md) — versión de texto (se lee en GitHub)
+- [`docs/manual.html`](./docs/manual.html) — versión con la marca AviVet, lista para imprimir o guardar como PDF. Publicada en http://avivet.cl/registro-productivo-avicola/docs/manual.html
+
+---
+
 ## Documentación para Claude Code
 
 Este repositorio incluye un [`CLAUDE.md`](./CLAUDE.md) en la raíz con el stack, la arquitectura y comportamientos no obvios del proyecto. Claude Code lo carga automáticamente al trabajar en el repo, reduciendo el contexto necesario en cada sesión.
