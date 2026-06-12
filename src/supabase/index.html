@@ -33,6 +33,8 @@ body{font-family:'DM Sans',system-ui,-apple-system,sans-serif;background:var(--g
 .nav h1{font-family:var(--serif);font-size:1.2rem;font-weight:600;flex:1;letter-spacing:-.01em}
 .nav-user{font-size:.72rem;opacity:.85;cursor:pointer;background:rgba(255,255,255,.15);padding:4px 8px;border-radius:10px;white-space:nowrap}
 .nav-user:hover{background:rgba(255,255,255,.25)}
+.nav-link{font-size:.72rem;color:#fff;text-decoration:none;background:rgba(255,255,255,.15);padding:4px 9px;border-radius:10px;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.nav-link:hover{background:rgba(255,255,255,.25)}
 
 /* TABS */
 .tabs{display:flex;background:var(--white,#fefefe);border-bottom:1px solid var(--border);position:sticky;top:54px;z-index:99}
@@ -242,6 +244,7 @@ label:first-child{margin-top:0}
 
 <nav class="nav">
   <h1>🐔 Registro Productivo</h1>
+  <a class="nav-link" href="../../docs/manual.html" target="_blank" rel="noopener" title="Manual de usuario">📖 Manual</a>
   <span class="nav-user" id="nav-user" onclick="logout()">— sesión —</span>
 </nav>
 
