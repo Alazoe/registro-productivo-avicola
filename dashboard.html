@@ -335,6 +335,10 @@ const PALETTE = ["#1b4332","#1565c0","#6a1e9e","#b71c1c","#e65100","#00695c","#4
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 let currentToken = null;
+let currentUserId = null;
+let nombresProductores = {};   // user_id → nombre, puesto por cada productor (tabla productores)
+let nombresLegacy = {};        // user_id → nombre antiguo (columna lotes.productor, si existe)
+let overridesAsesor = {};      // user_id → nombre, corregido por el asesor (gana)
 let GRANJAS = [];
 let chartInst = null;
 let vistaActual = 'diario'; // 'diario' | 'semanal' | 'mensual'
@@ -359,7 +363,7 @@ const state = { granjaId:null, loteIdx:0, datos:{}, estados:{} };
 // ── AUTH ───────────────────────────────────────────────────────────────
 window.onload = async () => {
   const { data:{ session } } = await sb.auth.getSession();
-  if (session) { currentToken = session.access_token; mostrarApp(); }
+  if (session) { currentToken = session.access_token; currentUserId = session.user.id; mostrarApp(); }
 };
 
 async function login() {
@@ -376,6 +380,7 @@ async function login() {
     btn.disabled = false; btn.textContent = 'Entrar'; return;
   }
   currentToken = data.session.access_token;
+  currentUserId = data.session.user.id;
   mostrarApp();
 }
 
@@ -651,7 +656,15 @@ function renderMain() {
   const header = document.createElement('div'); header.className='lote-header';
   const hLeft = document.createElement('div');
   const meta = document.createElement('div'); meta.className='lote-header-meta';
-  meta.textContent = granja.nombre + ' · Semana ' + lote.semanaVida + ' de vida';
+  meta.textContent = granja.nombre + ' · Semana ' + lote.semanaVida + ' de vida ';
+  const btnRen = document.createElement('button');
+  btnRen.textContent = '✎ renombrar';
+  btnRen.title = 'Asignar o corregir el nombre de este productor';
+  btnRen.style.cssText = 'margin-left:8px;font-family:inherit;font-size:11px;background:none;border:1px solid var(--linea-f);border-radius:6px;color:var(--suave);padding:1px 8px;cursor:pointer;vertical-align:middle';
+  btnRen.onmouseover = () => btnRen.style.borderColor='var(--acento)';
+  btnRen.onmouseout  = () => btnRen.style.borderColor='var(--linea-f)';
+  btnRen.onclick = (e) => { e.stopPropagation(); renombrarProductor(granja.id); };
+  meta.appendChild(btnRen);
   const titulo = document.createElement('div'); titulo.className='lote-header-titulo';
   titulo.textContent = lote.nombre; titulo.style.color = granja.color;
   const sub = document.createElement('div'); sub.className='lote-header-sub';
@@ -793,6 +806,67 @@ async function sbFetch(tabla, params={}) {
   }});
   if (!r.ok) throw new Error('HTTP '+r.status);
   return r.json();
+}
+
+// Upsert (POST con resolución de conflicto) — usado para guardar overrides del asesor
+async function sbUpsert(tabla, fila, onConflict) {
+  const url = new URL(SUPABASE_URL+'/rest/v1/'+tabla);
+  if (onConflict) url.searchParams.set('on_conflict', onConflict);
+  const r = await fetch(url.toString(), {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_ANON,
+      'Authorization': 'Bearer '+currentToken,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal',
+    },
+    body: JSON.stringify(fila),
+  });
+  if (!r.ok) throw new Error('HTTP '+r.status);
+}
+
+// Nombre legible: corrección del asesor > nombre propio > nombre antiguo > fragmento del UUID
+function resolverNombreProductor(uid) {
+  return overridesAsesor[uid] || nombresProductores[uid] || nombresLegacy[uid] || uid.slice(0,8);
+}
+
+// Carga los nombres puestos por los productores y las correcciones del asesor
+async function cargarNombresProductores() {
+  nombresProductores = {}; overridesAsesor = {};
+  try {
+    const prods = await sbFetch('productores', { 'select':'user_id,nombre' });
+    prods.forEach(p => { if (p.nombre) nombresProductores[p.user_id] = p.nombre; });
+  } catch(e) { console.warn('No se pudieron cargar nombres de productores:', e); }
+  try {
+    const cfg = await sbFetch('user_config', { 'select':'config', 'user_id':'eq.'+currentUserId });
+    const ov = cfg?.[0]?.config?.nombresProductores;
+    if (ov && typeof ov === 'object') overridesAsesor = ov;
+  } catch(e) { console.warn('No se pudieron cargar correcciones del asesor:', e); }
+}
+
+// El asesor renombra a un productor (se guarda en su propia user_config)
+async function renombrarProductor(uid) {
+  const nuevo = prompt('Nombre para este productor:', overridesAsesor[uid] || nombresProductores[uid] || nombresLegacy[uid] || '');
+  if (nuevo === null) return;
+  const limpio = nuevo.trim();
+  try {
+    if (limpio) overridesAsesor[uid] = limpio;
+    else delete overridesAsesor[uid];  // vacío = quitar corrección y volver al nombre propio/UUID
+    // Releer config actual para no pisar otras preferencias del asesor
+    let config = {};
+    try {
+      const cfg = await sbFetch('user_config', { 'select':'config', 'user_id':'eq.'+currentUserId });
+      config = cfg?.[0]?.config || {};
+    } catch(_) {}
+    config.nombresProductores = overridesAsesor;
+    await sbUpsert('user_config', { user_id: currentUserId, config, updated_at: new Date().toISOString() }, 'user_id');
+    // Reflejar en la lista en memoria
+    GRANJAS.forEach(g => { if (g.id === uid) g.nombre = resolverNombreProductor(uid); });
+    GRANJAS.sort((a,b)=>a.nombre.localeCompare(b.nombre));
+    render();
+  } catch(e) {
+    alert('No se pudo guardar el nombre: '+e.message);
+  }
 }
 
 function procesarLote(lote, registros) {
@@ -1093,12 +1167,16 @@ function copiarResumenTexto(semana, mes) {
 
 async function cargarDatos() {
   try {
+    await cargarNombresProductores();
     const lotes = await sbFetch('lotes', {'activo':'eq.true','select':'*','order':'nombre.asc'});
     const porUsuario = {};
+    nombresLegacy = {};
     lotes.forEach(l => {
-      if (!porUsuario[l.user_id]) porUsuario[l.user_id] = {uid:l.user_id, nombre:l.productor||l.user_id.slice(0,8), lotes:[]};
+      if (l.productor) nombresLegacy[l.user_id] = l.productor;  // conserva nombres antiguos si la columna existe
+      if (!porUsuario[l.user_id]) porUsuario[l.user_id] = {uid:l.user_id, lotes:[]};
       porUsuario[l.user_id].lotes.push(l);
     });
+    Object.values(porUsuario).forEach(g => { g.nombre = resolverNombreProductor(g.uid); });
     GRANJAS = Object.values(porUsuario)
       .sort((a,b)=>a.nombre.localeCompare(b.nombre))
       .map((g,i)=>({ id:g.uid, nombre:g.nombre, color:PALETTE[i%PALETTE.length], _lotes:g.lotes }));

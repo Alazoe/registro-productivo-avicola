@@ -63,12 +63,14 @@ src/supabase/
 
 | Tabla | Descripción |
 |-------|-------------|
+| `productores` | Nombre legible del plantel por usuario; lectura pública (autenticados) para el dashboard |
 | `ubicaciones` | Catálogo de espacios físicos por usuario (Carro 1, Pabellón 2, etc.) |
 | `lotes` | Lotes por usuario (nombre, fecha nac, n° aves, línea genética, ubicación opcional) |
 | `pesajes` | Pesaje semanal en crianza (semanas 1–19) |
 | `registros` | Un registro por día por lote (producción + clasificación + KPIs) |
+| `user_config` | Preferencias por usuario en JSONB (no vendibles, alertas, correcciones de nombres del asesor) |
 
-Todas las tablas tienen Row Level Security activado: cada usuario ve y modifica solo sus propios datos.
+Todas las tablas tienen Row Level Security activado: cada usuario ve y modifica solo sus propios datos. **Excepción:** `productores` permite a cualquier usuario autenticado *leer* los nombres (solo el nombre, sin datos productivos), para que el dashboard del asesor identifique a cada productor.
 
 ### Funcionalidades de la nueva app
 
@@ -138,6 +140,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-06 | Nombres de productor en el dashboard (tabla `productores`): el productor se nombra en su app y el asesor corrige desde el monitor, sin más UUIDs |
 | 2026-06 | Alertas por email configurables por productor (destino, umbrales, copia al asesor) |
 | 2026-06 | Rediseño visual alineado a marca avivet.cl (Fraunces + DM Sans, paleta crema/verde/dorado) |
 | 2026-06 | Selector de lote en tab Gráficos + no vendibles configurables por productor |

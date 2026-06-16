@@ -451,6 +451,17 @@ label:first-child{margin-top:0}
 <div class="page" id="page-lotes">
 
   <div class="card">
+    <div class="card-header">🏷️ Nombre de tu plantel</div>
+    <div class="card-body">
+      <p style="font-size:.8rem;color:#7a8470;margin-bottom:10px">Escribe el nombre de tu granja o plantel. Así apareces identificado correctamente ante tu asesor (en vez de un código).</p>
+      <label>Nombre del productor / plantel
+        <input type="text" id="np-nombre" placeholder="Ej: Avícola Los Robles" onkeydown="if(event.key==='Enter')guardarNombreProductor()">
+      </label>
+      <button class="btn btn-verde btn-sm" onclick="guardarNombreProductor()" id="btn-np" style="margin-top:10px;width:auto;padding:10px 18px">💾 Guardar nombre</button>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="card-header">➕ Nuevo lote</div>
     <div class="card-body">
       <label>Nombre del lote
@@ -624,6 +635,7 @@ let currentUser = null, clasOculta = false;
 const NV_DEFAULT = { sucios:'Sucios', rotos:'Rotos', trizados:'Trizados', sangre:'Con sangre' };
 const ALERTAS_DEFAULT = { email:'', copiaAsesor:true, umbralMort:0.30, umbralCaida:3, activas:true };
 let userConfig = { noVendibles: { ...NV_DEFAULT }, alertas: { ...ALERTAS_DEFAULT } };
+let nombreProductor = '';
 let csvPendiente = null;
 let chartsInst = {};
 
@@ -664,7 +676,7 @@ async function mostrarApp() {
   document.getElementById('app').style.display = 'block';
   document.getElementById('nav-user').textContent = '👤 ' + currentUser.email + ' · salir';
   document.getElementById('fecha-input').value = hoy();
-  await Promise.all([cargarLotes(), cargarConfig()]);
+  await Promise.all([cargarLotes(), cargarConfig(), cargarNombreProductor()]);
 }
 
 // ══ TABS ════════════════════════════════════════════════════════
@@ -895,6 +907,28 @@ async function eliminarUbicacion(id, nombre) {
     toast('Ubicación eliminada','warn');
     await cargarLotes(); renderListaLotes(); renderListaUbicaciones();
   } else toast('Error: '+error.message,'err');
+}
+
+// ══ NOMBRE DEL PRODUCTOR ═══════════════════════════════════════
+async function cargarNombreProductor() {
+  const { data } = await sb.from('productores').select('nombre').eq('user_id', currentUser.id).maybeSingle();
+  nombreProductor = data?.nombre || '';
+  const inp = document.getElementById('np-nombre');
+  if (inp) inp.value = nombreProductor;
+}
+
+async function guardarNombreProductor() {
+  const nombre = document.getElementById('np-nombre').value.trim();
+  if (!nombre) { toast('Escribe el nombre de tu plantel','warn'); return; }
+  const btn = document.getElementById('btn-np');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Guardando…';
+  const { error } = await sb.from('productores').upsert(
+    { user_id: currentUser.id, nombre, updated_at: new Date().toISOString() },
+    { onConflict: 'user_id' }
+  );
+  if (!error) { nombreProductor = nombre; toast('✅ Nombre guardado','ok'); }
+  else toast('Error: '+error.message,'err');
+  btn.disabled = false; btn.textContent = '💾 Guardar nombre';
 }
 
 // ══ CONFIG USUARIO ═════════════════════════════════════════════

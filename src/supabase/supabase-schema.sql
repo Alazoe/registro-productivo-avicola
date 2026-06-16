@@ -7,6 +7,13 @@ drop table if exists registros cascade;
 drop table if exists lotes cascade;
 drop table if exists ubicaciones cascade;
 drop table if exists user_config cascade;
+drop table if exists productores cascade;
+
+create table productores (
+  user_id    uuid        primary key references auth.users on delete cascade,
+  nombre     text        not null,
+  updated_at timestamptz default now()
+);
 
 create table ubicaciones (
   id         uuid        default gen_random_uuid() primary key,
@@ -83,12 +90,16 @@ create table user_config (
 );
 
 -- Row Level Security
+alter table productores  enable row level security;
 alter table user_config  enable row level security;
 alter table ubicaciones  enable row level security;
 alter table lotes       enable row level security;
 alter table pesajes     enable row level security;
 alter table registros   enable row level security;
 
+-- Nombres de productor: lectura para todos los autenticados (dashboard), escritura solo del dueño
+create policy "productores_select_all" on productores for select to authenticated using (true);
+create policy "productores_own_write"  on productores for all    to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "user_config_user"  on user_config  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "ubicaciones_user"  on ubicaciones  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "lotes_user"       on lotes       for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
