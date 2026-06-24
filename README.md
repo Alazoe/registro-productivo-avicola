@@ -52,12 +52,20 @@ El sistema está en transición de Google Apps Script (GAS) + Google Sheets a un
 
 ```
 src/supabase/
-├── index.html            ← App única para todos los productores
+├── index.html            ← App de producción (todos los productores)
 └── supabase-schema.sql   ← Tablas y políticas RLS
+src/ventas/
+├── index.html            ← App de ventas (opcional por productor)
+└── ventas-schema.sql     ← Tabla ventas + RLS
 ```
 
-**URL:** http://avivet.cl/registro-productivo-avicola/src/supabase/  
+**URLs:**
+- Producción: http://avivet.cl/registro-productivo-avicola/src/supabase/
+- Ventas: http://avivet.cl/registro-productivo-avicola/src/ventas/
+
 **Supabase project:** `xewujmpycclqjhlmiica.supabase.co` (mismo proyecto que pesaje-pollitas)
+
+> La app de **ventas** usa el mismo proyecto Supabase y las mismas cuentas que producción. Por eso cuadra los huevos vendidos (tabla `ventas`) contra los producidos (tabla `registros`) en tiempo real, por periodo (mes/anterior/todo). Es opcional: solo la usan los productores que venden.
 
 ### Tablas
 
@@ -68,6 +76,7 @@ src/supabase/
 | `lotes` | Lotes por usuario (nombre, fecha nac, n° aves, línea genética, ubicación opcional) |
 | `pesajes` | Pesaje semanal en crianza (semanas 1–19) |
 | `registros` | Un registro por día por lote (producción + clasificación + KPIs) |
+| `ventas` | Ventas de huevos por usuario (bandejas, huevos, precio, total) — cuadra contra `registros` |
 | `user_config` | Preferencias por usuario en JSONB (no vendibles, alertas, correcciones de nombres del asesor) |
 
 Todas las tablas tienen Row Level Security activado: cada usuario ve y modifica solo sus propios datos. **Excepción:** `productores` permite a cualquier usuario autenticado *leer* los nombres (solo el nombre, sin datos productivos), para que el dashboard del asesor identifique a cada productor.
@@ -140,6 +149,8 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-06 | App de ventas (`src/ventas/`): registra ventas en bandejas y cuadra huevos vendidos vs producidos por periodo, mismo Supabase y cuenta |
+| 2026-06 | Recuperación de contraseña (¿Olvidaste tu contraseña?) en app y dashboard |
 | 2026-06 | Nombres de productor en el dashboard (tabla `productores`): el productor se nombra en su app y el asesor corrige desde el monitor, sin más UUIDs |
 | 2026-06 | Alertas por email configurables por productor (destino, umbrales, copia al asesor) |
 | 2026-06 | Rediseño visual alineado a marca avivet.cl (Fraunces + DM Sans, paleta crema/verde/dorado) |

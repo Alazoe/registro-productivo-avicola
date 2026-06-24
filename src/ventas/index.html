@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Ventas · AviVet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --verde:#3d7a42; --verde-c:#5c9e61; --verde-o:#2a5430;
+  --gold:#b8860b; --rojo:#b03a2e; --naranja:#c2691c; --azul:#1e5a7a;
+  --bg:#f5f1e8; --white:#fefefe; --cream:#f0ebe0; --texto:#1c2118;
+  --muted:#6a7565; --border:#ddd8cc; --radio:14px; --serif:'Fraunces',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--texto);padding-bottom:40px;-webkit-font-smoothing:antialiased}
+
+/* LOGIN / RECOVERY */
+.fs{position:fixed;inset:0;background:var(--verde-o);background-image:radial-gradient(circle at 30% 20%,rgba(92,158,97,.18),transparent 55%),radial-gradient(circle at 80% 80%,rgba(184,134,11,.12),transparent 50%);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
+.login-card{background:var(--white);border-radius:18px;padding:36px 26px;width:100%;max-width:380px;text-align:center;box-shadow:0 12px 40px rgba(10,16,10,.35);border-top:4px solid var(--gold)}
+.login-logo{font-size:3rem;margin-bottom:10px}
+.login-card h2{font-family:var(--serif);font-size:1.7rem;font-weight:600;color:var(--verde-o);margin-bottom:4px}
+.login-card>p{font-size:.82rem;color:var(--gold);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:20px}
+
+/* NAV */
+.nav{background:var(--verde-o);color:#fff;padding:16px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 12px rgba(42,84,48,.25);position:sticky;top:0;z-index:100}
+.nav h1{font-family:var(--serif);font-size:1.2rem;font-weight:600;flex:1}
+.nav-link{font-size:.72rem;color:#fff;text-decoration:none;background:rgba(255,255,255,.15);padding:4px 9px;border-radius:10px;white-space:nowrap}
+.nav-user{font-size:.72rem;opacity:.85;cursor:pointer;background:rgba(255,255,255,.15);padding:4px 8px;border-radius:10px;white-space:nowrap}
+
+.wrap{max-width:680px;margin:0 auto;padding:14px}
+
+/* CARD */
+.card{background:var(--white);border-radius:var(--radio);box-shadow:0 1px 3px rgba(28,33,24,.06);border:1px solid var(--border);margin-bottom:12px;overflow:hidden}
+.card-header{background:#e4ede5;padding:11px 14px;font-size:.72rem;font-weight:700;color:var(--verde-o);text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card-body{padding:14px}
+
+/* CUADRE */
+.cuadre-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cu{border-radius:10px;padding:13px 8px;text-align:center;border:1px solid var(--border)}
+.cu.prod{background:#e4ede5}.cu.vend{background:#f3ead6}.cu.disp{background:#dce8ec}
+.cu-t{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;opacity:.7;margin-bottom:5px}
+.cu-v{font-size:1.35rem;font-weight:800;line-height:1;font-family:var(--serif)}
+.cu.prod .cu-v{color:var(--verde)}.cu.vend .cu-v{color:var(--naranja)}.cu.disp .cu-v{color:var(--azul)}
+.cu-s{font-size:.6rem;opacity:.65;margin-top:3px}
+.banner{margin-top:10px;padding:10px 12px;border-radius:8px;font-size:.82rem;font-weight:600;display:none}
+.banner.ok{background:#e4ede5;color:var(--verde-o);display:block}
+.banner.bad{background:#fbe9e7;color:var(--rojo);display:block}
+.ingreso{margin-top:10px;padding:11px 14px;background:var(--verde-o);color:#fff;border-radius:10px;display:flex;justify-content:space-between;align-items:center}
+.ingreso .lbl{font-size:.8rem;opacity:.9}.ingreso .val{font-family:var(--serif);font-size:1.3rem;font-weight:700}
+
+/* FORM */
+label{font-size:.82rem;color:var(--muted);font-weight:600;display:block;margin-top:10px}
+label:first-child{margin-top:0}
+input,select,textarea{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;margin-top:5px;background:var(--white);-webkit-appearance:none;outline:none;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:var(--verde-c)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.total-box{margin-top:12px;padding:12px 14px;background:#f6efd9;border:1px solid #e3d3a8;border-radius:10px;display:flex;justify-content:space-between;align-items:center}
+.total-box .lbl{font-size:.85rem;font-weight:600;color:#6d4c41}
+.total-box .val{font-family:var(--serif);font-size:1.3rem;font-weight:700;color:var(--naranja)}
+
+/* BTN */
+.btn{width:100%;padding:14px;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;font-family:inherit}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-verde{background:var(--verde-o);color:#fff}
+.btn-sm{width:auto;padding:7px 12px;font-size:.78rem;margin-top:0}
+a.link{color:var(--verde);font-weight:600;font-size:.8rem;text-decoration:none}
+
+/* TABLA */
+.tabla-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:var(--verde-o);color:#fff;padding:8px 7px;text-align:left;font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+td{padding:8px 7px;border-bottom:1px solid var(--cream)}
+tr:nth-child(even) td{background:#faf8f2}
+.acc{display:flex;gap:5px}
+.mini{border:none;border-radius:6px;padding:5px 8px;font-size:.78rem;cursor:pointer;line-height:1}
+.mini.ed{background:var(--azul);color:#fff}
+.mini.del{background:#fbe9e7;color:var(--rojo);border:1px solid #f3c4bd}
+
+.alerta{padding:9px 12px;border-radius:8px;font-size:.82rem;margin-top:8px}
+.alerta-err{background:#fbe9e7;color:var(--rojo)}
+.alerta-ok{background:#e4ede5;color:var(--verde-o)}
+.vacio{color:#a39d8c;font-size:.85rem;text-align:center;padding:18px}
+.spinner{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#111510;color:#fff;padding:12px 22px;border-radius:20px;font-size:.88rem;z-index:999;opacity:0;transition:.3s;pointer-events:none;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.ok{background:var(--verde-o)}#toast.err{background:var(--rojo)}#toast.warn{background:var(--naranja)}
+.banner-ed{display:none;background:#a8481f;color:#fff;padding:11px 14px;border-radius:10px;margin-bottom:10px;font-size:.85rem;font-weight:600;align-items:center;gap:10px}
+.banner-ed.on{display:flex}
+.banner-ed button{margin-left:auto;background:transparent;border:1.5px solid rgba(255,255,255,.7);color:#fff;border-radius:8px;padding:5px 10px;font-size:.78rem;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="fs" id="pantalla-login">
+  <div class="login-card">
+    <div class="login-logo">💰</div>
+    <h2>Ventas</h2>
+    <p>AviVet</p>
+    <label>Correo electrónico
+      <input type="email" id="login-email" placeholder="correo@ejemplo.com">
+    </label>
+    <label>Contraseña
+      <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()">
+    </label>
+    <button class="btn btn-verde" onclick="login()" id="btn-login" style="margin-top:16px">Entrar</button>
+    <div id="login-error" class="alerta alerta-err" style="display:none"></div>
+    <div id="login-msg" class="alerta alerta-ok" style="display:none"></div>
+    <p style="margin-top:14px"><a href="#" class="link" onclick="recuperarPassword();return false">¿Olvidaste tu contraseña?</a></p>
+  </div>
+</div>
+
+<!-- RECOVERY -->
+<div class="fs" id="pantalla-recovery" style="display:none;z-index:201">
+  <div class="login-card">
+    <div class="login-logo">🔑</div>
+    <h2>Nueva contraseña</h2>
+    <p>Elige tu nueva clave</p>
+    <label>Nueva contraseña
+      <input type="password" id="rec-pass" placeholder="••••••••" minlength="6" onkeydown="if(event.key==='Enter')actualizarPassword()">
+    </label>
+    <button class="btn btn-verde" onclick="actualizarPassword()" id="btn-rec" style="margin-top:16px">Guardar contraseña</button>
+    <div id="rec-error" class="alerta alerta-err" style="display:none"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+<nav class="nav">
+  <h1>💰 Ventas</h1>
+  <a class="nav-link" href="../supabase/" title="Ir a Producción">🐔 Producción</a>
+  <span class="nav-user" id="nav-user" onclick="logout()">— salir —</span>
+</nav>
+
+<div class="wrap">
+
+  <!-- CUADRE -->
+  <div class="card">
+    <div class="card-header">
+      <span>📊 Cuadre de stock</span>
+      <select id="periodo" onchange="cargarTodo()" style="width:auto;margin:0;padding:5px 8px;font-size:.78rem;border-radius:7px">
+        <option value="mes">Este mes</option>
+        <option value="prev">Mes anterior</option>
+        <option value="todo">Todo</option>
+      </select>
+    </div>
+    <div class="card-body">
+      <div class="cuadre-grid">
+        <div class="cu prod"><div class="cu-t">🥚 Producidos</div><div class="cu-v" id="cu-prod">—</div><div class="cu-s">huevos</div></div>
+        <div class="cu vend"><div class="cu-t">📦 Vendidos</div><div class="cu-v" id="cu-vend">—</div><div class="cu-s">huevos</div></div>
+        <div class="cu disp"><div class="cu-t">📥 Disponible</div><div class="cu-v" id="cu-disp">—</div><div class="cu-s" id="cu-disp-s">huevos</div></div>
+      </div>
+      <div class="banner" id="banner-cuadre"></div>
+      <div class="ingreso"><span class="lbl">💵 Ingresos del periodo</span><span class="val" id="cu-ingreso">—</span></div>
+    </div>
+  </div>
+
+  <!-- REGISTRAR VENTA -->
+  <div class="card">
+    <div class="card-header">➕ Registrar venta</div>
+    <div class="card-body">
+      <div class="banner-ed" id="banner-ed">✏️ Editando venta <button onclick="cancelarEdicion()">✕ Cancelar</button></div>
+      <div class="row2">
+        <label>Fecha<input type="date" id="v-fecha"></label>
+        <label>Cliente <span style="font-weight:400;color:#aaa">(opcional)</span><input type="text" id="v-cliente" placeholder="Ej: Feria, Juan…"></label>
+      </div>
+      <div class="row2">
+        <label>Bandejas <span style="font-weight:400;color:#aaa">(30 c/u)</span><input type="number" id="v-bandejas" min="0" step="0.5" inputmode="decimal" value="0" oninput="calcTotal()"></label>
+        <label>Huevos sueltos<input type="number" id="v-sueltos" min="0" inputmode="numeric" value="0" oninput="calcTotal()"></label>
+      </div>
+      <label>Precio por bandeja (CLP)<input type="number" id="v-precio" min="0" inputmode="numeric" placeholder="Ej: 4500" oninput="calcTotal()"></label>
+      <label>Observaciones <span style="font-weight:400;color:#aaa">(opcional)</span><textarea id="v-obs" rows="2" placeholder="Notas de la venta"></textarea></label>
+      <div class="total-box"><span class="lbl"><span id="t-huevos">0</span> huevos</span><span class="val" id="t-total">$0</span></div>
+      <button class="btn btn-verde" onclick="guardarVenta()" id="btn-guardar">✅ Guardar venta</button>
+    </div>
+  </div>
+
+  <!-- HISTORIAL -->
+  <div class="card">
+    <div class="card-header">📂 Ventas del periodo</div>
+    <div class="card-body">
+      <div id="lista-ventas"><div class="vacio">Cargando…</div></div>
+    </div>
+  </div>
+
+</div></div>
+
+<div id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://xewujmpycclqjhlmiica.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_v5_FU1w-7P7oeNrW6FYRBQ_cuX-pa9_';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null, ventas = [], editId = null, modoRecovery = false;
+
+// ── AUTH ──
+window.onload = async () => {
+  const { data:{ session } } = await sb.auth.getSession();
+  if (session?.user) { currentUser = session.user; mostrarApp(); }
+  sb.auth.onAuthStateChange((ev, s) => {
+    if (ev === 'PASSWORD_RECOVERY') { modoRecovery = true; mostrarRecovery(); return; }
+    if (modoRecovery) return;
+    currentUser = s?.user || null;
+    if (currentUser) mostrarApp(); else mostrarLogin();
+  });
+};
+function mostrarLogin(){ pl().style.display='flex'; pr().style.display='none'; document.getElementById('app').style.display='none'; }
+function mostrarRecovery(){ pl().style.display='none'; pr().style.display='flex'; document.getElementById('app').style.display='none'; }
+function pl(){ return document.getElementById('pantalla-login'); }
+function pr(){ return document.getElementById('pantalla-recovery'); }
+
+async function login(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  const err=document.getElementById('login-error'); const btn=document.getElementById('btn-login');
+  if(!email||!pass){ err.textContent='Completa correo y contraseña'; err.style.display='block'; return; }
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Entrando…'; err.style.display='none';
+  const { error } = await sb.auth.signInWithPassword({ email, password:pass });
+  if(error){ err.textContent='Correo o contraseña incorrectos'; err.style.display='block'; btn.disabled=false; btn.textContent='Entrar'; }
+}
+async function logout(){ if(!confirm('¿Cerrar sesión?'))return; await sb.auth.signOut(); }
+async function recuperarPassword(){
+  const email=document.getElementById('login-email').value.trim();
+  const err=document.getElementById('login-error'); const ok=document.getElementById('login-msg');
+  err.style.display='none'; ok.style.display='none';
+  if(!email){ err.textContent='Escribe tu correo arriba y vuelve a tocar el enlace'; err.style.display='block'; return; }
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin+location.pathname });
+  if(error){ err.textContent='No se pudo enviar: '+error.message; err.style.display='block'; }
+  else { ok.textContent='📧 Te enviamos un correo para crear una nueva contraseña.'; ok.style.display='block'; }
+}
+async function actualizarPassword(){
+  const pass=document.getElementById('rec-pass').value; const err=document.getElementById('rec-error'); const btn=document.getElementById('btn-rec');
+  err.style.display='none';
+  if(!pass||pass.length<6){ err.textContent='Mínimo 6 caracteres'; err.style.display='block'; return; }
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
+  const { error } = await sb.auth.updateUser({ password:pass });
+  if(error){ err.textContent='Error: '+error.message; err.style.display='block'; btn.disabled=false; btn.textContent='Guardar contraseña'; return; }
+  modoRecovery=false; alert('✅ Contraseña actualizada.');
+  const { data:{ session } } = await sb.auth.getSession();
+  currentUser = session?.user||null;
+  if(currentUser) mostrarApp(); else mostrarLogin();
+}
+
+async function mostrarApp(){
+  pl().style.display='none'; pr().style.display='none'; document.getElementById('app').style.display='block';
+  document.getElementById('nav-user').textContent='👤 '+currentUser.email+' · salir';
+  document.getElementById('v-fecha').value = hoy();
+  cargarTodo();
+}
+
+// ── HELPERS ──
+function hoy(){ return new Date().toLocaleDateString('en-CA'); } // YYYY-MM-DD local
+function clp(n){ return '$'+Math.round(n||0).toLocaleString('es-CL'); }
+function num(n){ return Math.round(n||0).toLocaleString('es-CL'); }
+function fmtFecha(f){ return f.split('-').reverse().join('/'); }
+function toast(m,t='ok',ms=2500){ const e=document.getElementById('toast'); e.textContent=m; e.className='show '+t; setTimeout(()=>e.className='',ms); }
+
+// Rango [desde,hasta] según el selector. null = sin límite (todo)
+function rangoPeriodo(){
+  const p = document.getElementById('periodo').value;
+  if(p==='todo') return { desde:null, hasta:null };
+  const d = new Date();
+  let y=d.getFullYear(), m=d.getMonth(); // 0-11
+  if(p==='prev'){ m--; if(m<0){ m=11; y--; } }
+  const ini = new Date(y, m, 1), fin = new Date(y, m+1, 0);
+  const f = x => x.toLocaleDateString('en-CA');
+  return { desde:f(ini), hasta:f(fin) };
+}
+
+// ── DATOS ──
+async function cargarTodo(){
+  const { desde, hasta } = rangoPeriodo();
+
+  // Ventas del periodo
+  let qv = sb.from('ventas').select('*').eq('user_id', currentUser.id).order('fecha',{ascending:false});
+  if(desde){ qv = qv.gte('fecha',desde).lte('fecha',hasta); }
+  const { data:vData } = await qv;
+  ventas = vData || [];
+
+  // Producción del periodo (registros del productor)
+  let qp = sb.from('registros').select('fecha,n_huevos').eq('user_id', currentUser.id);
+  if(desde){ qp = qp.gte('fecha',desde).lte('fecha',hasta); }
+  const { data:rData } = await qp;
+
+  const producido = (rData||[]).reduce((s,r)=>s+(r.n_huevos||0),0);
+  const vendido   = ventas.reduce((s,v)=>s+(v.huevos_total||0),0);
+  const ingreso   = ventas.reduce((s,v)=>s+(Number(v.total_clp)||0),0);
+  const disp      = producido - vendido;
+
+  document.getElementById('cu-prod').textContent = num(producido);
+  document.getElementById('cu-vend').textContent = num(vendido);
+  document.getElementById('cu-disp').textContent = num(disp);
+  document.getElementById('cu-ingreso').textContent = clp(ingreso);
+
+  const dispEl = document.getElementById('cu-disp');
+  dispEl.parentElement.style.background = disp<0 ? '#fbe9e7' : '#dce8ec';
+  dispEl.style.color = disp<0 ? 'var(--rojo)' : 'var(--azul)';
+
+  const banner = document.getElementById('banner-cuadre');
+  if(disp < 0){
+    banner.className='banner bad';
+    banner.textContent = `⚠️ Descuadre: vendiste ${num(-disp)} huevos más de los producidos en el periodo. Revisa registros o ventas.`;
+  } else {
+    banner.className='banner ok';
+    const pct = producido>0 ? Math.round(vendido/producido*100) : 0;
+    banner.textContent = `✅ Cuadra. Vendido el ${pct}% de lo producido · quedan ${num(disp)} huevos (${Math.floor(disp/30)} bandejas) disponibles.`;
+  }
+  renderVentas();
+}
+
+function renderVentas(){
+  const cont = document.getElementById('lista-ventas');
+  if(!ventas.length){ cont.innerHTML='<div class="vacio">Sin ventas en este periodo.</div>'; return; }
+  let html = '<div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Bandejas</th><th>Huevos</th><th>Total</th><th></th></tr></thead><tbody>';
+  ventas.forEach(v=>{
+    const band = (Number(v.bandejas)||0) + (v.sueltos>0?` +${v.sueltos}u`:'');
+    html += `<tr>
+      <td>${fmtFecha(v.fecha)}</td>
+      <td>${v.cliente||'—'}</td>
+      <td>${band}</td>
+      <td>${num(v.huevos_total)}</td>
+      <td>${clp(v.total_clp)}</td>
+      <td><div class="acc">
+        <button class="mini ed" onclick="editarVenta('${v.id}')">✏️</button>
+        <button class="mini del" onclick="eliminarVenta('${v.id}')">🗑️</button>
+      </div></td></tr>`;
+  });
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+}
+
+// ── REGISTRO ──
+function calcTotal(){
+  const band = parseFloat(document.getElementById('v-bandejas').value)||0;
+  const sueltos = parseInt(document.getElementById('v-sueltos').value)||0;
+  const precio = parseFloat(document.getElementById('v-precio').value)||0;
+  const huevos = Math.round(band*30) + sueltos;
+  const total = Math.round((huevos/30)*precio);
+  document.getElementById('t-huevos').textContent = num(huevos);
+  document.getElementById('t-total').textContent = clp(total);
+  return { huevos, total, band, sueltos, precio };
+}
+
+async function guardarVenta(){
+  const fecha = document.getElementById('v-fecha').value;
+  if(!fecha){ toast('Indica la fecha','warn'); return; }
+  const { huevos, total, band, sueltos, precio } = calcTotal();
+  if(huevos<=0){ toast('Indica bandejas o huevos','warn'); return; }
+  const fila = {
+    fecha,
+    cliente: document.getElementById('v-cliente').value.trim() || null,
+    bandejas: band, sueltos, huevos_total: huevos,
+    precio_bandeja: precio, total_clp: total,
+    observaciones: document.getElementById('v-obs').value.trim() || null,
+    user_id: currentUser.id
+  };
+  const btn = document.getElementById('btn-guardar');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
+  let error;
+  if(editId){ ({ error } = await sb.from('ventas').update(fila).eq('id',editId)); }
+  else { ({ error } = await sb.from('ventas').insert(fila)); }
+  if(!error){
+    toast(editId?'✏️ Venta actualizada':'✅ Venta registrada','ok');
+    limpiarForm(); await cargarTodo();
+  } else toast('Error: '+error.message,'err');
+  btn.disabled=false; btn.textContent = editId?'✅ Guardar cambios':'✅ Guardar venta';
+}
+
+function editarVenta(id){
+  const v = ventas.find(x=>x.id===id); if(!v) return;
+  editId = id;
+  document.getElementById('v-fecha').value = v.fecha;
+  document.getElementById('v-cliente').value = v.cliente||'';
+  document.getElementById('v-bandejas').value = Number(v.bandejas)||0;
+  document.getElementById('v-sueltos').value = v.sueltos||0;
+  document.getElementById('v-precio').value = Number(v.precio_bandeja)||'';
+  document.getElementById('v-obs').value = v.observaciones||'';
+  calcTotal();
+  document.getElementById('banner-ed').classList.add('on');
+  document.getElementById('btn-guardar').textContent='✅ Guardar cambios';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function cancelarEdicion(){ limpiarForm(); }
+function limpiarForm(){
+  editId=null;
+  ['v-cliente','v-obs'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('v-bandejas').value=0;
+  document.getElementById('v-sueltos').value=0;
+  document.getElementById('v-precio').value='';
+  document.getElementById('v-fecha').value=hoy();
+  calcTotal();
+  document.getElementById('banner-ed').classList.remove('on');
+  document.getElementById('btn-guardar').textContent='✅ Guardar venta';
+}
+
+async function eliminarVenta(id){
+  const v = ventas.find(x=>x.id===id);
+  if(!confirm(`¿Eliminar la venta del ${fmtFecha(v.fecha)} (${clp(v.total_clp)})?`)) return;
+  const { error } = await sb.from('ventas').delete().eq('id',id);
+  if(!error){ toast('🗑️ Venta eliminada','warn'); await cargarTodo(); }
+  else toast('Error: '+error.message,'err');
+}
+</script>
+</body>
+</html>
