@@ -1550,6 +1550,11 @@ function renderKPIs() {
   const convSem = huevSem > 0 ? (kgSem / huevSem).toFixed(4) : '—';
   const convDia = (ult.n_huevos||0) > 0 ? ((ult.kg_alimento||0) / ult.n_huevos).toFixed(4) : '—';
 
+  // Consumo de alimento: gramos por ave por día (g/ave/día)
+  const gAveDia = (ult.n_aves||0) > 0 ? (ult.kg_alimento||0) / ult.n_aves * 1000 : 0;
+  const dias7C  = ult7.filter(r => (r.n_aves||0) > 0 && (r.kg_alimento||0) > 0);
+  const gAveSem = dias7C.length ? dias7C.reduce((s,r)=>s + r.kg_alimento / r.n_aves * 1000, 0) / dias7C.length : 0;
+
   // Colores
   const cM = v => v > 0.3 ? 'rojo' : v > 0.1 ? 'naranja' : '';
   const cP = v => v < 80  ? 'rojo' : v < 90  ? 'naranja' : '';
@@ -1642,6 +1647,18 @@ function renderKPIs() {
           <div class="kpi-label">No vendibles 7d</div>
           <div class="kpi-val ${cN(pctNVSem)}">${f1(pctNVSem)}%</div>
           <div class="kpi-sub">${nvSem} de ${fN(huevSem)}</div>
+        </div>
+      </div>
+      <div class="kpi-grid col2" style="border-top:1px solid #ebe5d8">
+        <div class="kpi-item">
+          <div class="kpi-label">Consumo hoy</div>
+          <div class="kpi-val naranja">${gAveDia > 0 ? f1(gAveDia) : '—'}${gAveDia > 0 ? ' g' : ''}</div>
+          <div class="kpi-sub">g / ave / día</div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-label">Consumo 7d</div>
+          <div class="kpi-val naranja">${gAveSem > 0 ? f1(gAveSem) : '—'}${gAveSem > 0 ? ' g' : ''}</div>
+          <div class="kpi-sub">prom g / ave / día</div>
         </div>
       </div>
       <div class="kpi-grid col2" style="border-top:1px solid #ebe5d8">
