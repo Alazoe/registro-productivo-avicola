@@ -236,6 +236,23 @@ label:first-child{margin-top:0}
     </label>
     <button class="btn btn-verde" onclick="login()" style="margin-top:16px" id="btn-login">Entrar</button>
     <div id="login-error" class="alerta alerta-err" style="display:none"></div>
+    <div id="login-msg" class="alerta alerta-ok" style="display:none"></div>
+    <p style="margin-top:14px"><a href="#" onclick="recuperarPassword();return false" style="font-size:.8rem;color:var(--verde);font-weight:600">¿Olvidaste tu contraseña?</a></p>
+  </div>
+</div>
+
+<!-- NUEVA CONTRASEÑA (tras hacer clic en el correo de recuperación) -->
+<div id="pantalla-recovery" style="display:none;position:fixed;inset:0;background:var(--verde-o);z-index:201;align-items:center;justify-content:center;padding:20px">
+  <div class="login-card">
+    <div class="login-logo">🔑</div>
+    <h2>Nueva contraseña</h2>
+    <p>Elige tu nueva clave</p>
+    <label>Nueva contraseña
+      <input type="password" id="rec-pass" placeholder="••••••••" minlength="6"
+        onkeydown="if(event.key==='Enter')actualizarPassword()">
+    </label>
+    <button class="btn btn-verde" onclick="actualizarPassword()" style="margin-top:16px" id="btn-rec">Guardar contraseña</button>
+    <div id="rec-error" class="alerta alerta-err" style="display:none"></div>
   </div>
 </div>
 
@@ -640,10 +657,14 @@ let csvPendiente = null;
 let chartsInst = {};
 
 // ══ AUTH ════════════════════════════════════════════════════════
+let modoRecovery = false;
+
 window.onload = async () => {
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) { currentUser = session.user; mostrarApp(); }
-  sb.auth.onAuthStateChange((_e, s) => {
+  sb.auth.onAuthStateChange((evento, s) => {
+    if (evento === 'PASSWORD_RECOVERY') { modoRecovery = true; mostrarRecovery(); return; }
+    if (modoRecovery) return;  // no saltar a la app mientras se cambia la clave
     currentUser = s?.user || null;
     if (currentUser) mostrarApp(); else mostrarLogin();
   });
@@ -651,7 +672,42 @@ window.onload = async () => {
 
 function mostrarLogin() {
   document.getElementById('pantalla-login').style.display = 'flex';
+  document.getElementById('pantalla-recovery').style.display = 'none';
   document.getElementById('app').style.display = 'none';
+}
+
+function mostrarRecovery() {
+  document.getElementById('pantalla-login').style.display = 'none';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('pantalla-recovery').style.display = 'flex';
+}
+
+async function recuperarPassword() {
+  const email = document.getElementById('login-email').value.trim();
+  const errEl = document.getElementById('login-error');
+  const okEl  = document.getElementById('login-msg');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+  if (!email) { errEl.textContent='Escribe tu correo arriba y vuelve a tocar el enlace'; errEl.style.display='block'; return; }
+  const redirectTo = location.origin + location.pathname;
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) { errEl.textContent='No se pudo enviar el correo: '+error.message; errEl.style.display='block'; }
+  else { okEl.textContent='📧 Te enviamos un correo para crear una nueva contraseña. Revisa tu bandeja (y spam).'; okEl.style.display='block'; }
+}
+
+async function actualizarPassword() {
+  const pass  = document.getElementById('rec-pass').value;
+  const errEl = document.getElementById('rec-error');
+  const btn   = document.getElementById('btn-rec');
+  errEl.style.display = 'none';
+  if (!pass || pass.length < 6) { errEl.textContent='La contraseña debe tener al menos 6 caracteres'; errEl.style.display='block'; return; }
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Guardando…';
+  const { error } = await sb.auth.updateUser({ password: pass });
+  if (error) { errEl.textContent='Error: '+error.message; errEl.style.display='block'; btn.disabled=false; btn.textContent='Guardar contraseña'; return; }
+  modoRecovery = false;
+  alert('✅ Contraseña actualizada. Ya puedes usar la app.');
+  const { data:{ session } } = await sb.auth.getSession();
+  currentUser = session?.user || null;
+  if (currentUser) mostrarApp(); else mostrarLogin();
 }
 
 async function login() {
