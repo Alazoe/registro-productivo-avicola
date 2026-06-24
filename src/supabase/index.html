@@ -877,7 +877,11 @@ function renderListaLotes() {
     <div class="lote-card ${l.activo?'':'archivado'}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:.95rem">${l.nombre}</div>
+          <div style="font-weight:700;font-size:.95rem;display:flex;align-items:center;gap:6px">
+            <span>${l.nombre}</span>
+            <button onclick="editarNombreLote('${l.id}')" title="Editar nombre"
+              style="background:none;border:none;cursor:pointer;font-size:.85rem;opacity:.6;padding:0">✏️</button>
+          </div>
           <div style="font-size:.78rem;color:#7a8470;margin-top:3px">${l.linea_genetica} · Nacido: ${l.fecha_nac} · ${Number(l.n_aves).toLocaleString('es-CL')} aves</div>
           <div style="font-size:.78rem;color:var(--verde);margin-top:2px">Semana ${calcEdad(l.fecha_nac)}</div>
           <select style="margin-top:7px;font-size:.75rem;padding:5px 8px;border:1px solid #ddd8cc;border-radius:7px;background:#fff;color:#5a6450;width:auto;max-width:200px"
@@ -893,6 +897,23 @@ function renderListaLotes() {
       </div>
     </div>`;
   }).join('');
+}
+
+async function editarNombreLote(id) {
+  const l = lotes.find(x=>x.id===id);
+  if (!l) return;
+  const nuevo = prompt('Nuevo nombre del lote:', l.nombre);
+  if (nuevo === null) return;
+  const nombre = nuevo.trim();
+  if (!nombre) { toast('El nombre no puede quedar vacío','warn'); return; }
+  if (nombre === l.nombre) return;
+  const { error } = await sb.from('lotes').update({ nombre }).eq('id', id);
+  if (!error) {
+    l.nombre = nombre;
+    toast('✅ Nombre actualizado','ok');
+    renderListaLotes(); renderSelectorLotes(); poblarSelectImport();
+    if (loteActual?.id === id) loteActual.nombre = nombre;
+  } else toast('Error: '+error.message,'err');
 }
 
 async function archivarLote(id) {
