@@ -149,6 +149,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-06 | Dashboard: resumen semanal con tarjetas generales, filtro por productor y KPIs por lote (postura vs estándar, mortalidad semanal y anterior, consumo g/ave, huevos) |
 | 2026-06 | KPI de consumo de alimento (g/ave/día, hoy y promedio 7 días) en la pestaña Gráficos |
 | 2026-06 | App de ventas (`src/ventas/`): registra ventas en bandejas y cuadra huevos vendidos vs producidos por periodo, mismo Supabase y cuenta |
 | 2026-06 | Recuperación de contraseña (¿Olvidaste tu contraseña?) en app y dashboard |

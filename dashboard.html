@@ -226,7 +226,7 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 .resumen-grid { display: grid; gap: 1px; background: var(--linea); border: 1px solid var(--linea); margin-bottom: 24px; }
 .resumen-fila {
   display: grid;
-  grid-template-columns: 180px 120px 80px 110px 110px 80px 90px;
+  grid-template-columns: 175px 75px 135px 90px 120px 90px 100px;
   background: var(--papel);
   align-items: center;
 }
@@ -343,6 +343,7 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 // ── CONFIG ─────────────────────────────────────────────────────────────
 let modoResumen = false;
 let semanaOffset = 0; // 0 = semana automática, -1 = anterior, etc.
+let filtroProductor = 'todos'; // 'todos' o un g.id
 const SUPABASE_URL  = "https://xewujmpycclqjhlmiica.supabase.co";
 const SUPABASE_ANON = "sb_publishable_v5_FU1w-7P7oeNrW6FYRBQ_cuX-pa9_";
 const PALETTE = ["#1b4332","#1565c0","#6a1e9e","#b71c1c","#e65100","#00695c","#4527a0","#2e7d32"];
@@ -943,11 +944,13 @@ function procesarLote(lote, registros) {
     },
     // Todos los registros ordenados del más antiguo al más reciente
     registros: [...registros].reverse().map(r=>({
-      fecha:      r.fecha,
-      postura:    pct(r.pct_postura),
-      esperado:   pct(r.pct_esperado),
-      n_huevos:   r.n_huevos || 0,
-      mortalidad: r.mortalidad || 0,
+      fecha:       r.fecha,
+      postura:     pct(r.pct_postura),
+      esperado:    pct(r.pct_esperado),
+      n_huevos:    r.n_huevos || 0,
+      mortalidad:  r.mortalidad || 0,
+      n_aves:      r.n_aves || 0,
+      kg_alimento: r.kg_alimento || 0,
     })),
   };
 }
@@ -985,6 +988,33 @@ function getPeriodoSemana() {
   const fmt = d => d.toISOString().slice(0,10);
   const esActual = semanaOffset === 0;
   return { inicio: fmt(lunSemana), fin: fmt(domSemana), esActual };
+}
+
+// Rango de la semana anterior a {inicio,fin} (7 días antes)
+function getPeriodoSemanaPrevia(semana) {
+  const menos7 = s => new Date(new Date(s+'T12:00:00').getTime() - 7*86400000).toISOString().slice(0,10);
+  return { inicio: menos7(semana.inicio), fin: menos7(semana.fin) };
+}
+
+// KPIs de un lote en un rango [inicio,fin]
+function kpisLoteSemana(l, inicio, fin) {
+  const regs = l.registros.filter(r => r.fecha >= inicio && r.fecha <= fin);
+  if (!regs.length) return { dias:0 };
+  const post = regs.map(r=>r.postura).filter(v=>v!=null);
+  const esp  = regs.map(r=>r.esperado).filter(v=>v!=null);
+  const prom = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : null;
+  const consumos = regs.filter(r=>r.n_aves>0 && r.kg_alimento>0).map(r=>r.kg_alimento/r.n_aves*1000);
+  const avesIni = regs[0].n_aves || l.aves || 0;
+  const mort = regs.reduce((s,r)=>s+(r.mortalidad||0),0);
+  return {
+    dias: regs.length,
+    postura:  prom(post)!=null ? parseFloat(prom(post).toFixed(1)) : null,
+    estandar: prom(esp)!=null  ? parseFloat(prom(esp).toFixed(1))  : null,
+    huevos:   regs.reduce((s,r)=>s+(r.n_huevos||0),0),
+    mort, avesIni,
+    mortPct:  avesIni>0 ? parseFloat((mort/avesIni*100).toFixed(2)) : null,
+    consumo:  consumos.length ? parseFloat((consumos.reduce((x,y)=>x+y,0)/consumos.length).toFixed(1)) : null,
+  };
 }
 
 function getPeriodoMesAnterior() {
@@ -1067,7 +1097,7 @@ function renderResumen() {
   }
   wrap.appendChild(hdr);
 
-  // ── Acciones ──
+  // ── Acciones + filtro por productor ──
   const acciones = document.createElement('div'); acciones.className = 'resumen-acciones';
   const btnPrint = document.createElement('button');
   btnPrint.className = 'btn-accion prim';
@@ -1077,90 +1107,130 @@ function renderResumen() {
   btnCopiar.className = 'btn-accion sec';
   btnCopiar.innerHTML = '📋 Copiar texto';
   btnCopiar.onclick = () => copiarResumenTexto(semana, mes);
-  acciones.append(btnPrint, btnCopiar);
+
+  const sel = document.createElement('select');
+  sel.style.cssText = 'font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--linea);border-radius:4px;background:var(--papel);color:var(--tinta);cursor:pointer';
+  sel.innerHTML = '<option value="todos">Todos los productores</option>' +
+    GRANJAS.map(g=>`<option value="${g.id}"${filtroProductor===g.id?' selected':''}>${g.nombre}</option>`).join('');
+  sel.onchange = () => { filtroProductor = sel.value; renderResumen(); };
+  acciones.append(btnPrint, btnCopiar, sel);
   wrap.appendChild(acciones);
+
+  // Granjas a mostrar según filtro
+  const granjasMostrar = GRANJAS.filter(g => filtroProductor==='todos' || g.id===filtroProductor);
+
+  // ── Resumen general (totales de la semana, respeta el filtro) ──
+  const semPrev = getPeriodoSemanaPrevia(semana);
+  let tLotes=0, tAves=0, tHuevos=0, tMort=0, tMortPrev=0, postAcum=[];
+  granjasMostrar.forEach(g => {
+    const d = state.datos[g.id]; if (!d) return;
+    d.lotes.forEach(l => {
+      const k = kpisLoteSemana(l, semana.inicio, semana.fin);
+      if (!k.dias) return;
+      tLotes++; tAves += k.avesIni || 0; tHuevos += k.huevos || 0; tMort += k.mort || 0;
+      if (k.postura!=null) postAcum.push(k.postura);
+      const kp = kpisLoteSemana(l, semPrev.inicio, semPrev.fin);
+      tMortPrev += kp.mort || 0;
+    });
+  });
+  const postProm = postAcum.length ? (postAcum.reduce((a,b)=>a+b,0)/postAcum.length).toFixed(1) : '—';
+  const mortPctTot = tAves>0 ? (tMort/tAves*100).toFixed(2) : '—';
+
+  const cards = document.createElement('div');
+  cards.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;background:var(--linea);border:1px solid var(--linea);margin-bottom:24px';
+  const mkCard = (label, val, sub, col) => {
+    const c = document.createElement('div');
+    c.style.cssText = 'background:var(--papel);padding:14px 12px;text-align:center';
+    c.innerHTML = `<div style="font-family:var(--fuente-m);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--tenue);margin-bottom:5px">${label}</div>`
+      + `<div style="font-family:var(--fuente-t);font-size:24px;font-weight:700;line-height:1;color:${col||'var(--prim)'}">${val}</div>`
+      + (sub?`<div style="font-family:var(--fuente-m);font-size:9px;color:var(--tenue);margin-top:3px">${sub}</div>`:'');
+    return c;
+  };
+  cards.append(
+    mkCard('Lotes', tLotes, 'con datos esta semana'),
+    mkCard('Aves', tAves.toLocaleString('es-CL'), 'en producción'),
+    mkCard('Huevos sem.', tHuevos.toLocaleString('es-CL'), 'total del periodo'),
+    mkCard('Postura prom.', postProm+'%', 'promedio de lotes'),
+    mkCard('Mortalidad sem.', tMort.toLocaleString('es-CL'), mortPctTot+'% · ant: '+tMortPrev, tMort>tMortPrev?'var(--mal)':'var(--ok)'),
+  );
+  wrap.appendChild(cards);
 
   // ── Tabla ──
   const grid = document.createElement('div'); grid.className = 'resumen-grid';
 
   // Cabecera
   const cab = document.createElement('div'); cab.className = 'resumen-fila cabecera';
-  ['Productor / Lote','Estado','Sem. vida','Postura sem.','Mes ant. ('+mes.etiqueta.split(' ')[0]+')','Δ vs mes','Huevos sem.']
+  ['Productor / Lote','Sem. vida','Postura / Estándar','Δ estándar','Mortalidad sem.','Consumo','Huevos sem.']
     .forEach(t => { const c=document.createElement('div'); c.className='resumen-cel'; c.textContent=t; cab.appendChild(c); });
   grid.appendChild(cab);
 
   // Filas por lote
   let hayDatos = false;
-  GRANJAS.forEach((g, gi) => {
+  granjasMostrar.forEach(g => {
     const d = state.datos[g.id]; if (!d) return;
     d.lotes.forEach(l => {
       hayDatos = true;
-      const semRegistros = l.registros.filter(r => r.fecha >= semana.inicio && r.fecha <= semana.fin);
-      const mesRegistros = l.registros.filter(r => r.fecha >= mes.inicio && r.fecha <= mes.fin);
-
-      const pSem = calcularPromedioRegistros(l.registros, semana.inicio, semana.fin);
-      const pMes = calcularPromedioRegistros(l.registros, mes.inicio, mes.fin);
-      const delta = (pSem != null && pMes != null) ? parseFloat((pSem - pMes).toFixed(1)) : null;
-      const huevosSem = semRegistros.reduce((s,r) => {
-        // recuperar del registro raw no disponible aquí, usamos postura×aves como estimado
-        return s;
-      }, 0);
-
-      // Estado semáforo
-      const diasConDatos = semRegistros.length;
+      const k  = kpisLoteSemana(l, semana.inicio, semana.fin);
+      const kp = kpisLoteSemana(l, semPrev.inicio, semPrev.fin);
+      const diasConDatos = k.dias;
       const incompleto = diasConDatos < 5;
+      const deltaStd = (k.postura!=null && k.estandar!=null) ? parseFloat((k.postura - k.estandar).toFixed(1)) : null;
+
+      // Semáforo según postura vs estándar
       let color, etiq;
-      if (incompleto)        { color='#e65100'; etiq='Incompleto'; }
-      else if (pSem==null)   { color='#888';    etiq='Sin datos';  }
-      else if (delta>= 0)    { color='#1b5e20'; etiq='Sobre curva';}
-      else if (delta >= -2)  { color='#f9a825'; etiq='Leve baja';  }
-      else                   { color='#b71c1c'; etiq='Bajo curva'; }
+      if (incompleto)           { color='#e65100'; etiq='Incompleto'; }
+      else if (k.postura==null) { color='#888';    etiq='Sin datos';  }
+      else if (deltaStd>=0)     { color='#1b5e20'; etiq='Sobre estándar'; }
+      else if (deltaStd>=-3)    { color='#f9a825'; etiq='Leve baja';  }
+      else                      { color='#b71c1c'; etiq='Bajo estándar'; }
 
       const fila = document.createElement('div');
       fila.className = 'resumen-fila' + (incompleto ? ' resumen-pendiente' : '');
 
-      // Productor / Lote
+      // Productor / Lote (+ semáforo)
       const cProd = document.createElement('div'); cProd.className='resumen-cel';
-      cProd.innerHTML=`<div class="resumen-productor" style="color:${g.color}">${g.nombre}</div><div class="resumen-lote">${l.nombre}</div>`;
-
-      // Estado
-      const cEstado = document.createElement('div'); cEstado.className='resumen-cel';
-      cEstado.innerHTML=`<div class="semaforo"><div class="semaforo-dot" style="background:${color}"></div><span style="color:${color}">${etiq}</span></div>`;
+      cProd.innerHTML = `<div class="resumen-productor" style="color:${g.color}">${g.nombre}</div>`
+        + `<div class="resumen-lote">${l.nombre}</div>`
+        + `<div class="semaforo" style="margin-top:3px"><div class="semaforo-dot" style="background:${color}"></div><span style="color:${color};font-size:10px">${etiq}</span></div>`;
 
       // Sem vida
       const cSem = document.createElement('div'); cSem.className='resumen-cel';
       cSem.innerHTML=`<div class="resumen-num" style="color:var(--prim)">${l.semanaVida||'—'}</div><div class="resumen-sub">semanas</div>`;
 
-      // Postura semana
-      const cPSem = document.createElement('div'); cPSem.className='resumen-cel';
-      cPSem.innerHTML=pSem!=null
-        ?`<div class="resumen-num" style="color:${color}">${pSem}%</div><div class="resumen-sub">${diasConDatos} día${diasConDatos!==1?'s':''} registrados</div>`
-        :`<div style="color:var(--tenue);font-size:13px">Sin datos</div>`;
+      // Postura / Estándar
+      const cP = document.createElement('div'); cP.className='resumen-cel';
+      cP.innerHTML = k.postura!=null
+        ? `<div class="resumen-num" style="color:${color}">${k.postura}%</div><div class="resumen-sub">estándar ${k.estandar!=null?k.estandar+'%':'—'} · ${diasConDatos}d</div>`
+        : `<div style="color:var(--tenue);font-size:13px">Sin datos</div>`;
 
-      // Postura mes anterior
-      const cPMes = document.createElement('div'); cPMes.className='resumen-cel';
-      cPMes.innerHTML=pMes!=null
-        ?`<div class="resumen-num" style="color:var(--suave)">${pMes}%</div><div class="resumen-sub">${mesRegistros.length} días</div>`
-        :`<div style="color:var(--tenue);font-size:13px">Sin datos</div>`;
+      // Δ vs estándar
+      const cD = document.createElement('div'); cD.className='resumen-cel';
+      if (deltaStd!=null) {
+        const bg = deltaStd>=0?'rgba(27,94,32,.1)':'rgba(183,28,28,.1)';
+        const col= deltaStd>=0?'var(--ok)':'var(--mal)';
+        cD.innerHTML=`<span class="delta-chip" style="background:${bg};color:${col}">${deltaStd>0?'+':''}${deltaStd}%</span>`;
+      } else cD.innerHTML=`<span style="color:var(--tenue)">—</span>`;
 
-      // Delta
-      const cDelta = document.createElement('div'); cDelta.className='resumen-cel';
-      if (delta != null) {
-        const bg = delta>=0?'rgba(27,94,32,.1)':'rgba(183,28,28,.1)';
-        const col= delta>=0?'var(--ok)':'var(--mal)';
-        cDelta.innerHTML=`<span class="delta-chip" style="background:${bg};color:${col}">${delta>0?'+':''}${delta}%</span>`;
-      } else {
-        cDelta.innerHTML=`<span style="color:var(--tenue)">—</span>`;
-      }
+      // Mortalidad semana (con la anterior)
+      const cM = document.createElement('div'); cM.className='resumen-cel';
+      const mc = (k.mortPct!=null && k.mortPct>2.1)?'var(--mal)':(k.mortPct>0.7?'#e65100':'var(--prim)');
+      cM.innerHTML = k.dias
+        ? `<div class="resumen-num" style="color:${mc};font-size:18px">${k.mort}</div><div class="resumen-sub">${k.mortPct!=null?k.mortPct+'%':''} · ant: ${kp.mort||0}</div>`
+        : `<span style="color:var(--tenue)">—</span>`;
+
+      // Consumo g/ave/día
+      const cC = document.createElement('div'); cC.className='resumen-cel';
+      cC.innerHTML = k.consumo!=null
+        ? `<div class="resumen-num" style="color:var(--prim);font-size:18px">${k.consumo}</div><div class="resumen-sub">g/ave/día</div>`
+        : `<span style="color:var(--tenue)">—</span>`;
 
       // Huevos semana
-      const cHuevos = document.createElement('div'); cHuevos.className='resumen-cel';
-      const totalHuevosSem = semRegistros.reduce((s,r) => s + (r.n_huevos||0), 0);
-      cHuevos.innerHTML=totalHuevosSem>0
-        ?`<div class="resumen-num" style="color:var(--prim);font-size:18px">${totalHuevosSem.toLocaleString('es-CL')}</div><div class="resumen-sub">${diasConDatos} días</div>`
-        :`<div style="font-size:12px;color:var(--tenue)">${diasConDatos} días<br>con datos</div>`;
+      const cH = document.createElement('div'); cH.className='resumen-cel';
+      cH.innerHTML = k.huevos>0
+        ? `<div class="resumen-num" style="color:var(--prim);font-size:18px">${k.huevos.toLocaleString('es-CL')}</div><div class="resumen-sub">${diasConDatos}d</div>`
+        : `<div style="font-size:12px;color:var(--tenue)">${diasConDatos}d</div>`;
 
-      fila.append(cProd, cEstado, cSem, cPSem, cPMes, cDelta, cHuevos);
+      fila.append(cProd, cSem, cP, cD, cM, cC, cH);
       grid.appendChild(fila);
     });
   });
@@ -1176,7 +1246,7 @@ function renderResumen() {
 
   // Pie explicativo
   const pie = document.createElement('div'); pie.className='resumen-pie';
-  pie.innerHTML=`<strong>Período:</strong> ${fmtFecha(semana.inicio)} al ${fmtFecha(semana.fin)} &nbsp;·&nbsp; <strong>Comparación:</strong> promedio ${mes.etiqueta} &nbsp;·&nbsp; <strong>Gracia:</strong> 3 días posterior al domingo de la semana &nbsp;·&nbsp; Los datos de postura son el promedio de los días registrados en el período.`;
+  pie.innerHTML=`<strong>Período:</strong> ${fmtFecha(semana.inicio)} al ${fmtFecha(semana.fin)} &nbsp;·&nbsp; <strong>Postura/Estándar:</strong> promedio de los días registrados vs curva de la línea genética &nbsp;·&nbsp; <strong>Δ estándar:</strong> diferencia real − esperado &nbsp;·&nbsp; <strong>Mortalidad:</strong> suma de la semana (% sobre aves iniciales) y "ant." = semana previa &nbsp;·&nbsp; <strong>Consumo:</strong> g de alimento / ave / día &nbsp;·&nbsp; <strong>Gracia:</strong> 3 días tras el domingo.`;
   wrap.appendChild(pie);
 
   main.appendChild(wrap);
