@@ -55,8 +55,9 @@ src/supabase/
 ├── index.html            ← App de producción (todos los productores)
 └── supabase-schema.sql   ← Tablas y políticas RLS
 src/ventas/
-├── index.html            ← App de ventas (opcional por productor)
-└── ventas-schema.sql     ← Tabla ventas + RLS
+├── index.html                  ← App de ventas, pedidos y bodega (opcional por productor)
+├── ventas-schema.sql           ← Tabla ventas + RLS
+└── pedidos-bodega-schema.sql   ← Tablas pedidos y ajustes_stock + RLS
 ```
 
 **URLs:**
@@ -65,7 +66,10 @@ src/ventas/
 
 **Supabase project:** `xewujmpycclqjhlmiica.supabase.co` (mismo proyecto que pesaje-pollitas)
 
-> La app de **ventas** usa el mismo proyecto Supabase y las mismas cuentas que producción. Por eso cuadra los huevos vendidos (tabla `ventas`) contra los producidos (tabla `registros`) en tiempo real, por periodo (mes/anterior/todo). Es opcional: solo la usan los productores que venden.
+> La app de **ventas** usa el mismo proyecto Supabase y las mismas cuentas que producción. Es opcional: solo la usan los productores que venden. Tiene 3 pestañas:
+> - **💰 Ventas** — registra ventas por bandejas y cuadra por periodo (mes/anterior/todo) los **huevos vendibles** (`n_huevos − sucios − rotos − trizados − sangre`, tabla `registros`) contra lo vendido (tabla `ventas`).
+> - **📋 Pedidos** — reservas de clientes con estado `pendiente`. Al marcar **entregado** se genera la venta automáticamente (el huevo se cuenta una sola vez); mientras está pendiente compromete stock libre.
+> - **📦 Bodega** — inventario acumulado total: `stock físico = vendibles producidos − vendidos ± ajustes` y `stock libre = físico − pedidos pendientes`. Permite registrar mermas, autoconsumo, regalos, entradas y correcciones (tabla `ajustes_stock`).
 
 ### Tablas
 
@@ -77,6 +81,8 @@ src/ventas/
 | `pesajes` | Pesaje semanal en crianza (semanas 1–19) |
 | `registros` | Un registro por día por lote (producción + clasificación + KPIs) |
 | `ventas` | Ventas de huevos por usuario (bandejas, huevos, precio, total) — cuadra contra `registros` |
+| `pedidos` | Pedidos/reservas de clientes por usuario, con estado (pendiente/entregado/anulado); al entregar enlaza la `ventas.id` generada |
+| `ajustes_stock` | Movimientos de bodega por usuario (merma, autoconsumo, regalo, entrada, ajuste); `huevos` es un delta con signo |
 | `user_config` | Preferencias por usuario en JSONB (no vendibles, alertas, correcciones de nombres del asesor) |
 
 Todas las tablas tienen Row Level Security activado: cada usuario ve y modifica solo sus propios datos. **Excepción:** `productores` permite a cualquier usuario autenticado *leer* los nombres (solo el nombre, sin datos productivos), para que el dashboard del asesor identifique a cada productor.
@@ -149,6 +155,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-07 | App de ventas: pestañas **Pedidos** (reservas de clientes que al entregarse generan la venta) y **Bodega** (inventario acumulado con mermas/autoconsumo/ajustes y stock libre). El cuadre pasa a usar huevos **vendibles** en vez del total clasificado. Tablas `pedidos` y `ajustes_stock` |
 | 2026-06 | Dashboard: agrupación del resumen por 1/4 semanas o mes cerrado, y gráficos de postura bajo demanda (curva por lote y curva combinada de los lotes de un productor) |
 | 2026-06 | Dashboard: resumen semanal con tarjetas generales, filtro por productor y KPIs por lote (postura vs estándar, mortalidad semanal y anterior, consumo g/ave, huevos) |
 | 2026-06 | KPI de consumo de alimento (g/ave/día, hoy y promedio 7 días) en la pestaña Gráficos |
