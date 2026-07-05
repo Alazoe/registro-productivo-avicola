@@ -11,6 +11,7 @@ Guía paso a paso en lenguaje simple para quienes usan la app:
 
 - [`docs/MANUAL.md`](./docs/MANUAL.md) — versión de texto (se lee en GitHub)
 - [`docs/manual.html`](./docs/manual.html) — versión con la marca AviVet, lista para imprimir o guardar como PDF. Publicada en http://avivet.cl/registro-productivo-avicola/docs/manual.html
+- [`docs/guia-bodega-pedidos.html`](./docs/guia-bodega-pedidos.html) — guía rápida de los módulos Bodega, Pedidos y Ventas. Publicada en http://avivet.cl/registro-productivo-avicola/docs/guia-bodega-pedidos.html
 
 ---
 
@@ -66,10 +67,10 @@ src/ventas/
 
 **Supabase project:** `xewujmpycclqjhlmiica.supabase.co` (mismo proyecto que pesaje-pollitas)
 
-> La app de **ventas** usa el mismo proyecto Supabase y las mismas cuentas que producción. Es opcional: solo la usan los productores que venden. Tiene 3 pestañas:
-> - **💰 Ventas** — registra ventas por bandejas y cuadra por periodo (mes/anterior/todo) los **huevos vendibles** (`n_huevos − sucios − rotos − trizados − sangre`, tabla `registros`) contra lo vendido (tabla `ventas`).
+> **Producción es la base**; bodega/pedidos/ventas son módulos que nacen de ella. La app de producción enlaza a este módulo (nav → 📦 Bodega) y el módulo enlaza de vuelta a producción, con las mismas cuentas y proyecto Supabase. Es opcional: solo la usan los productores que venden. Tiene 3 pestañas, en orden de importancia (abre en Bodega):
+> - **📦 Bodega** (principal) — inventario acumulado total: `stock físico = vendibles producidos − vendidos ± ajustes` y `stock libre = físico − pedidos pendientes`. Permite registrar mermas, autoconsumo, regalos, entradas y correcciones (tabla `ajustes_stock`).
 > - **📋 Pedidos** — reservas de clientes con estado `pendiente`. Al marcar **entregado** se genera la venta automáticamente (el huevo se cuenta una sola vez); mientras está pendiente compromete stock libre.
-> - **📦 Bodega** — inventario acumulado total: `stock físico = vendibles producidos − vendidos ± ajustes` y `stock libre = físico − pedidos pendientes`. Permite registrar mermas, autoconsumo, regalos, entradas y correcciones (tabla `ajustes_stock`).
+> - **💰 Ventas** (secundario) — registra ventas por bandejas y cuadra por periodo (mes/anterior/todo) los **huevos vendibles** (`n_huevos − sucios − rotos − trizados − sangre`, tabla `registros`) contra lo vendido (tabla `ventas`).
 
 ### Tablas
 
