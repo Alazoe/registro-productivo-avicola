@@ -26,7 +26,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .login-card>p{font-size:.82rem;color:var(--gold);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:20px}
 
 /* NAV */
-.nav{background:var(--verde-o);color:#fff;padding:16px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 12px rgba(42,84,48,.25);position:sticky;top:0;z-index:100}
+.nav{background:var(--verde-o);color:#fff;padding:16px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;box-shadow:0 2px 12px rgba(42,84,48,.25);position:sticky;top:0;z-index:100}
 .nav h1{font-family:var(--serif);font-size:1.2rem;font-weight:600;flex:1}
 .nav-link{font-size:.72rem;color:#fff;text-decoration:none;background:rgba(255,255,255,.15);padding:4px 9px;border-radius:10px;white-space:nowrap}
 .nav-user{font-size:.72rem;opacity:.85;cursor:pointer;background:rgba(255,255,255,.15);padding:4px 8px;border-radius:10px;white-space:nowrap}
@@ -319,11 +319,16 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null, ventas = [], editId = null, modoRecovery = false;
 let pedidos = [], editPedId = null, ajustes = [], editAjId = null;
 
-// Cambio de pestaña
+// Cambio de pestaña (refleja el módulo en la URL: #bodega/#pedidos/#ventas)
+const PANES = ['bodega','pedidos','ventas'];
 function tab(name){
+  if(!PANES.includes(name)) name = 'bodega';
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.pane===name));
   document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('on', p.id==='pane-'+name));
+  try{ if(location.hash.slice(1)!==name) history.replaceState(null,'','#'+name); }catch(e){}
 }
+// Abre la pestaña indicada por el enlace de entrada (#pedidos, #ventas…)
+window.addEventListener('hashchange', ()=>tab(location.hash.slice(1)));
 
 // ── AUTH ──
 window.onload = async () => {
@@ -379,6 +384,7 @@ async function mostrarApp(){
   document.getElementById('v-fecha').value = hoy();
   document.getElementById('p-fecha').value = hoy();
   document.getElementById('a-fecha').value = hoy();
+  if(location.hash) tab(location.hash.slice(1)); // abre en el módulo del enlace
   cargarTodo();
 }
 
