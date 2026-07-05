@@ -156,6 +156,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-07 | Navegación entre módulos: la app de Producción enlaza directo a Bodega/Pedidos/Ventas (`../ventas/#tab`) y el módulo abre en la pestaña del enlace (recuerda el módulo en la URL) |
 | 2026-07 | App de ventas: pestañas **Pedidos** (reservas de clientes que al entregarse generan la venta) y **Bodega** (inventario acumulado con mermas/autoconsumo/ajustes y stock libre). El cuadre pasa a usar huevos **vendibles** en vez del total clasificado. Tablas `pedidos` y `ajustes_stock` |
 | 2026-06 | Dashboard: agrupación del resumen por 1/4 semanas o mes cerrado, y gráficos de postura bajo demanda (curva por lote y curva combinada de los lotes de un productor) |
 | 2026-06 | Dashboard: resumen semanal con tarjetas generales, filtro por productor y KPIs por lote (postura vs estándar, mortalidad semanal y anterior, consumo g/ave, huevos) |
