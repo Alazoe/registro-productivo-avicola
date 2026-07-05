@@ -73,9 +73,17 @@ label:first-child{margin-top:0}
 input,select,textarea{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;margin-top:5px;background:var(--white);-webkit-appearance:none;outline:none;font-family:inherit}
 input:focus,select:focus,textarea:focus{border-color:var(--verde-c)}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.total-box{margin-top:12px;padding:12px 14px;background:#f6efd9;border:1px solid #e3d3a8;border-radius:10px;display:flex;justify-content:space-between;align-items:center}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.total-box{margin-top:12px;padding:12px 14px;background:#f6efd9;border:1px solid #e3d3a8;border-radius:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px}
 .total-box .lbl{font-size:.85rem;font-weight:600;color:#6d4c41}
 .total-box .val{font-family:var(--serif);font-size:1.3rem;font-weight:700;color:var(--naranja)}
+.total-box .equiv{flex-basis:100%;font-size:.74rem;color:#8a7b52;font-weight:600}
+/* Tabla por tamaño en Bodega */
+.tsize td.lib-neg{color:var(--rojo);font-weight:700}
+.tsize tr.trow-tot td{font-weight:800;background:#eef4ef;border-top:2px solid var(--border)}
+.tsize tr.trow-sin td{color:var(--muted);font-style:italic}
+.tsize td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tsize th.num{text-align:right}
 
 /* BTN */
 .btn{width:100%;padding:14px;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;font-family:inherit}
@@ -194,13 +202,15 @@ tr:nth-child(even) td{background:#faf8f2}
         <label>Fecha<input type="date" id="v-fecha"></label>
         <label>Cliente <span style="font-weight:400;color:#aaa">(opcional)</span><input type="text" id="v-cliente" placeholder="Ej: Feria, Juan…"></label>
       </div>
-      <div class="row2">
-        <label>Bandejas <span style="font-weight:400;color:#aaa">(30 c/u)</span><input type="number" id="v-bandejas" min="0" step="0.5" inputmode="decimal" value="0" oninput="calcTotal()"></label>
-        <label>Huevos sueltos<input type="number" id="v-sueltos" min="0" inputmode="numeric" value="0" oninput="calcTotal()"></label>
+      <label>Tamaño<select id="v-tamano"></select></label>
+      <div class="row3">
+        <label>Cajas <span style="font-weight:400;color:#aaa">(180)</span><input type="number" id="v-cajas" min="0" step="0.5" inputmode="decimal" value="0" oninput="calcTotal()"></label>
+        <label>Bandejas <span style="font-weight:400;color:#aaa">(30)</span><input type="number" id="v-bandejas" min="0" step="0.5" inputmode="decimal" value="0" oninput="calcTotal()"></label>
+        <label>Sueltos<input type="number" id="v-sueltos" min="0" inputmode="numeric" value="0" oninput="calcTotal()"></label>
       </div>
-      <label>Precio por bandeja (CLP)<input type="number" id="v-precio" min="0" inputmode="numeric" placeholder="Ej: 4500" oninput="calcTotal()"></label>
+      <label>Precio por bandeja (CLP) <span style="font-weight:400;color:#aaa">(1 caja = 6 bandejas)</span><input type="number" id="v-precio" min="0" inputmode="numeric" placeholder="Ej: 4500" oninput="calcTotal()"></label>
       <label>Observaciones <span style="font-weight:400;color:#aaa">(opcional)</span><textarea id="v-obs" rows="2" placeholder="Notas de la venta"></textarea></label>
-      <div class="total-box"><span class="lbl"><span id="t-huevos">0</span> huevos</span><span class="val" id="t-total">$0</span></div>
+      <div class="total-box"><span class="lbl"><span id="t-huevos">0</span> huevos</span><span class="val" id="t-total">$0</span><span class="equiv" id="t-equiv"></span></div>
       <button class="btn btn-verde" onclick="guardarVenta()" id="btn-guardar">✅ Guardar venta</button>
     </div>
   </div>
@@ -237,13 +247,15 @@ tr:nth-child(even) td{background:#faf8f2}
         <label>Entrega comprometida <span style="font-weight:400;color:#aaa">(opcional)</span><input type="date" id="p-entrega"></label>
       </div>
       <label>Cliente<input type="text" id="p-cliente" placeholder="Ej: Almacén La Esquina"></label>
-      <div class="row2">
-        <label>Bandejas <span style="font-weight:400;color:#aaa">(30 c/u)</span><input type="number" id="p-bandejas" min="0" step="0.5" inputmode="decimal" value="0" oninput="calcPedido()"></label>
-        <label>Huevos sueltos<input type="number" id="p-sueltos" min="0" inputmode="numeric" value="0" oninput="calcPedido()"></label>
+      <label>Tamaño<select id="p-tamano"></select></label>
+      <div class="row3">
+        <label>Cajas <span style="font-weight:400;color:#aaa">(180)</span><input type="number" id="p-cajas" min="0" step="0.5" inputmode="decimal" value="0" oninput="calcPedido()"></label>
+        <label>Bandejas <span style="font-weight:400;color:#aaa">(30)</span><input type="number" id="p-bandejas" min="0" step="0.5" inputmode="decimal" value="0" oninput="calcPedido()"></label>
+        <label>Sueltos<input type="number" id="p-sueltos" min="0" inputmode="numeric" value="0" oninput="calcPedido()"></label>
       </div>
-      <label>Precio por bandeja (CLP)<input type="number" id="p-precio" min="0" inputmode="numeric" placeholder="Ej: 4500" oninput="calcPedido()"></label>
+      <label>Precio por bandeja (CLP) <span style="font-weight:400;color:#aaa">(1 caja = 6 bandejas)</span><input type="number" id="p-precio" min="0" inputmode="numeric" placeholder="Ej: 4500" oninput="calcPedido()"></label>
       <label>Observaciones <span style="font-weight:400;color:#aaa">(opcional)</span><textarea id="p-obs" rows="2" placeholder="Notas del pedido"></textarea></label>
-      <div class="total-box"><span class="lbl"><span id="tp-huevos">0</span> huevos</span><span class="val" id="tp-total">$0</span></div>
+      <div class="total-box"><span class="lbl"><span id="tp-huevos">0</span> huevos</span><span class="val" id="tp-total">$0</span><span class="equiv" id="tp-equiv"></span></div>
       <button class="btn btn-verde" onclick="guardarPedido()" id="btn-ped">✅ Guardar pedido</button>
     </div>
   </div>
@@ -271,6 +283,7 @@ tr:nth-child(even) td{background:#faf8f2}
         <div class="cu libre"><div class="cu-t">✅ Libre</div><div class="cu-v" id="bo-libre">—</div><div class="cu-s" id="bo-libre-s">disponible</div></div>
       </div>
       <div class="banner" id="banner-bodega"></div>
+      <div id="bo-tabla" style="margin-top:12px"></div>
       <div class="desglose" id="bo-desglose"></div>
     </div>
   </div>
@@ -290,6 +303,7 @@ tr:nth-child(even) td{background:#faf8f2}
           <option value="ajuste">Ajuste manual (−)</option>
         </select></label>
       </div>
+      <label>Tamaño<select id="a-tamano"></select></label>
       <label>Cantidad de huevos<input type="number" id="a-huevos" min="0" inputmode="numeric" value="0" placeholder="Ej: 24"></label>
       <label>Motivo <span style="font-weight:400;color:#aaa">(opcional)</span><input type="text" id="a-motivo" placeholder="Ej: quiebre al trasladar, conteo físico…"></label>
       <div class="alerta alerta-ok" id="a-hint" style="display:block">Este movimiento <b>restará</b> huevos del stock.</div>
@@ -381,6 +395,7 @@ async function actualizarPassword(){
 async function mostrarApp(){
   pl().style.display='none'; pr().style.display='none'; document.getElementById('app').style.display='block';
   document.getElementById('nav-user').textContent='👤 '+currentUser.email+' · salir';
+  poblarSelectsTamano();
   document.getElementById('v-fecha').value = hoy();
   document.getElementById('p-fecha').value = hoy();
   document.getElementById('a-fecha').value = hoy();
@@ -397,6 +412,25 @@ function fmtFecha(f){ return f.split('-').reverse().join('/'); }
 function vendibles(r){ return Math.max(0, (r.n_huevos||0) - (r.sucios||0) - (r.rotos||0) - (r.trizados||0) - (r.sangre||0)); }
 function bandTxt(b,s){ return (Number(b)||0) + (s>0?` +${s}u`:''); }
 function toast(m,t='ok',ms=2500){ const e=document.getElementById('toast'); e.textContent=m; e.className='show '+t; setTimeout(()=>e.className='',ms); }
+
+// ── TAMAÑOS Y CAJAS ──
+// Los 6 tamaños calzan con las columnas de la tabla registros.
+const SIZES = [['chico','Chico'],['mediano','Mediano'],['grande','Grande'],['xl','XL'],['super_xl','Super XL'],['jumbo','Jumbo']];
+const SIZE_KEYS = SIZES.map(s=>s[0]);
+const SIZE_LABEL = Object.fromEntries(SIZES); SIZE_LABEL.mixto = 'Sin especificar';
+function labelTam(k){ return SIZE_LABEL[k] || 'Sin especificar'; }
+// Opciones para los <select> de tamaño (primero "sin especificar")
+function poblarSelectsTamano(){
+  const opts = '<option value="mixto">Sin especificar / mixto</option>' + SIZES.map(s=>`<option value="${s[0]}">${s[1]}</option>`).join('');
+  ['v-tamano','p-tamano','a-tamano'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=opts; });
+}
+// Convierte huevos → texto "X cajas · Y band · Zu" (caja=180, bandeja=30)
+function cajasTxt(h){
+  h = Math.round(h||0); const neg = h<0; h = Math.abs(h);
+  const c = Math.floor(h/180); let r = h-c*180; const b = Math.floor(r/30); const u = r-b*30;
+  const parts=[]; if(c) parts.push(c+' caj'); if(b) parts.push(b+' band'); if(u||!parts.length) parts.push(u+'u');
+  return (neg?'−':'')+parts.join(' · ');
+}
 
 // Rango [desde,hasta] según el selector. null = sin límite (todo)
 function rangoPeriodo(){
@@ -456,14 +490,13 @@ async function cargarTodo(){
 function renderVentas(){
   const cont = document.getElementById('lista-ventas');
   if(!ventas.length){ cont.innerHTML='<div class="vacio">Sin ventas en este periodo.</div>'; return; }
-  let html = '<div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Bandejas</th><th>Huevos</th><th>Total</th><th></th></tr></thead><tbody>';
+  let html = '<div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Tamaño</th><th>Huevos</th><th>Total</th><th></th></tr></thead><tbody>';
   ventas.forEach(v=>{
-    const band = (Number(v.bandejas)||0) + (v.sueltos>0?` +${v.sueltos}u`:'');
     html += `<tr>
       <td>${fmtFecha(v.fecha)}</td>
       <td>${v.cliente||'—'}</td>
-      <td>${band}</td>
-      <td>${num(v.huevos_total)}</td>
+      <td>${labelTam(v.tamano)}</td>
+      <td>${num(v.huevos_total)}<br><span style="font-size:.68rem;color:var(--muted)">${cajasTxt(v.huevos_total)}</span></td>
       <td>${clp(v.total_clp)}</td>
       <td><div class="acc">
         <button class="mini ed" onclick="editarVenta('${v.id}')">✏️</button>
@@ -476,25 +509,28 @@ function renderVentas(){
 
 // ── REGISTRO ──
 function calcTotal(){
+  const cajas = parseFloat(document.getElementById('v-cajas').value)||0;
   const band = parseFloat(document.getElementById('v-bandejas').value)||0;
   const sueltos = parseInt(document.getElementById('v-sueltos').value)||0;
   const precio = parseFloat(document.getElementById('v-precio').value)||0;
-  const huevos = Math.round(band*30) + sueltos;
+  const huevos = Math.round(cajas*180 + band*30) + sueltos;
   const total = Math.round((huevos/30)*precio);
   document.getElementById('t-huevos').textContent = num(huevos);
   document.getElementById('t-total').textContent = clp(total);
-  return { huevos, total, band, sueltos, precio };
+  document.getElementById('t-equiv').textContent = huevos>0 ? '= '+cajasTxt(huevos) : '';
+  return { huevos, total, cajas, band, sueltos, precio };
 }
 
 async function guardarVenta(){
   const fecha = document.getElementById('v-fecha').value;
   if(!fecha){ toast('Indica la fecha','warn'); return; }
-  const { huevos, total, band, sueltos, precio } = calcTotal();
-  if(huevos<=0){ toast('Indica bandejas o huevos','warn'); return; }
+  const { huevos, total, cajas, band, sueltos, precio } = calcTotal();
+  if(huevos<=0){ toast('Indica cajas, bandejas o huevos','warn'); return; }
   const fila = {
     fecha,
     cliente: document.getElementById('v-cliente').value.trim() || null,
-    bandejas: band, sueltos, huevos_total: huevos,
+    tamano: document.getElementById('v-tamano').value,
+    cajas, bandejas: band, sueltos, huevos_total: huevos,
     precio_bandeja: precio, total_clp: total,
     observaciones: document.getElementById('v-obs').value.trim() || null,
     user_id: currentUser.id
@@ -516,6 +552,8 @@ function editarVenta(id){
   editId = id;
   document.getElementById('v-fecha').value = v.fecha;
   document.getElementById('v-cliente').value = v.cliente||'';
+  document.getElementById('v-tamano').value = v.tamano||'mixto';
+  document.getElementById('v-cajas').value = Number(v.cajas)||0;
   document.getElementById('v-bandejas').value = Number(v.bandejas)||0;
   document.getElementById('v-sueltos').value = v.sueltos||0;
   document.getElementById('v-precio').value = Number(v.precio_bandeja)||'';
@@ -529,6 +567,8 @@ function cancelarEdicion(){ limpiarForm(); }
 function limpiarForm(){
   editId=null;
   ['v-cliente','v-obs'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('v-tamano').value='mixto';
+  document.getElementById('v-cajas').value=0;
   document.getElementById('v-bandejas').value=0;
   document.getElementById('v-sueltos').value=0;
   document.getElementById('v-precio').value='';
@@ -555,14 +595,14 @@ async function cargarPedidos(){
   const comprometido = pend.reduce((s,p)=>s+(p.huevos_total||0),0);
   document.getElementById('pd-comprometido').textContent = num(comprometido)+' huevos';
   document.getElementById('pd-resumen').innerHTML =
-    `<b>${pend.length}</b> pedido(s) pendiente(s) · equivalen a <b>${Math.floor(comprometido/30)}</b> bandejas comprometidas a clientes.`;
+    `<b>${pend.length}</b> pedido(s) pendiente(s) · equivalen a <b>${cajasTxt(comprometido)}</b> comprometidas a clientes.`;
   renderPedidos();
 }
 
 function renderPedidos(){
   const cont = document.getElementById('lista-pedidos');
   if(!pedidos.length){ cont.innerHTML='<div class="vacio">Sin pedidos aún.</div>'; return; }
-  let html = '<div class="tabla-wrap"><table><thead><tr><th>Entrega</th><th>Cliente</th><th>Huevos</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody>';
+  let html = '<div class="tabla-wrap"><table><thead><tr><th>Entrega</th><th>Cliente</th><th>Tamaño</th><th>Huevos</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody>';
   pedidos.forEach(p=>{
     const chip = p.estado==='pendiente' ? '<span class="chip pend">Pendiente</span>'
                : p.estado==='entregado' ? '<span class="chip entr">Entregado</span>'
@@ -581,7 +621,8 @@ function renderPedidos(){
     html += `<tr>
       <td>${p.fecha_entrega?fmtFecha(p.fecha_entrega):'—'}</td>
       <td>${p.cliente||'—'}</td>
-      <td>${num(p.huevos_total)}</td>
+      <td>${labelTam(p.tamano)}</td>
+      <td>${num(p.huevos_total)}<br><span style="font-size:.68rem;color:var(--muted)">${cajasTxt(p.huevos_total)}</span></td>
       <td>${clp(p.total_clp)}</td>
       <td>${chip}</td>
       <td><div class="acc">${acc}</div></td></tr>`;
@@ -591,26 +632,29 @@ function renderPedidos(){
 }
 
 function calcPedido(){
+  const cajas = parseFloat(document.getElementById('p-cajas').value)||0;
   const band = parseFloat(document.getElementById('p-bandejas').value)||0;
   const sueltos = parseInt(document.getElementById('p-sueltos').value)||0;
   const precio = parseFloat(document.getElementById('p-precio').value)||0;
-  const huevos = Math.round(band*30) + sueltos;
+  const huevos = Math.round(cajas*180 + band*30) + sueltos;
   const total = Math.round((huevos/30)*precio);
   document.getElementById('tp-huevos').textContent = num(huevos);
   document.getElementById('tp-total').textContent = clp(total);
-  return { huevos, total, band, sueltos, precio };
+  document.getElementById('tp-equiv').textContent = huevos>0 ? '= '+cajasTxt(huevos) : '';
+  return { huevos, total, cajas, band, sueltos, precio };
 }
 
 async function guardarPedido(){
   const fecha = document.getElementById('p-fecha').value;
   if(!fecha){ toast('Indica la fecha del pedido','warn'); return; }
-  const { huevos, total, band, sueltos, precio } = calcPedido();
-  if(huevos<=0){ toast('Indica bandejas o huevos','warn'); return; }
+  const { huevos, total, cajas, band, sueltos, precio } = calcPedido();
+  if(huevos<=0){ toast('Indica cajas, bandejas o huevos','warn'); return; }
   const fila = {
     fecha_pedido: fecha,
     fecha_entrega: document.getElementById('p-entrega').value || null,
     cliente: document.getElementById('p-cliente').value.trim() || null,
-    bandejas: band, sueltos, huevos_total: huevos,
+    tamano: document.getElementById('p-tamano').value,
+    cajas, bandejas: band, sueltos, huevos_total: huevos,
     precio_bandeja: precio, total_clp: total,
     observaciones: document.getElementById('p-obs').value.trim() || null,
     user_id: currentUser.id
@@ -632,6 +676,8 @@ function editarPedido(id){
   document.getElementById('p-fecha').value = p.fecha_pedido;
   document.getElementById('p-entrega').value = p.fecha_entrega||'';
   document.getElementById('p-cliente').value = p.cliente||'';
+  document.getElementById('p-tamano').value = p.tamano||'mixto';
+  document.getElementById('p-cajas').value = Number(p.cajas)||0;
   document.getElementById('p-bandejas').value = Number(p.bandejas)||0;
   document.getElementById('p-sueltos').value = p.sueltos||0;
   document.getElementById('p-precio').value = Number(p.precio_bandeja)||'';
@@ -645,6 +691,8 @@ function cancelarPedido(){ limpiarPedido(); }
 function limpiarPedido(){
   editPedId=null;
   ['p-cliente','p-obs','p-entrega'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('p-tamano').value='mixto';
+  document.getElementById('p-cajas').value=0;
   document.getElementById('p-bandejas').value=0;
   document.getElementById('p-sueltos').value=0;
   document.getElementById('p-precio').value='';
@@ -661,7 +709,8 @@ async function entregarPedido(id){
   const venta = {
     fecha: hoy(),
     cliente: p.cliente,
-    bandejas: p.bandejas, sueltos: p.sueltos, huevos_total: p.huevos_total,
+    tamano: p.tamano || 'mixto',
+    cajas: p.cajas || 0, bandejas: p.bandejas, sueltos: p.sueltos, huevos_total: p.huevos_total,
     precio_bandeja: p.precio_bandeja, total_clp: p.total_clp,
     observaciones: 'Pedido entregado'+(p.observaciones?` · ${p.observaciones}`:''),
     user_id: currentUser.id
@@ -701,41 +750,72 @@ async function eliminarPedido(id){
 async function cargarBodega(){
   // Stock físico = acumulado TOTAL (independiente del periodo seleccionado)
   const { data:rData } = await sb.from('registros')
-    .select('n_huevos,sucios,rotos,trizados,sangre').eq('user_id', currentUser.id);
-  const { data:vData } = await sb.from('ventas').select('huevos_total').eq('user_id', currentUser.id);
+    .select('n_huevos,sucios,rotos,trizados,sangre,chico,mediano,grande,xl,super_xl,jumbo').eq('user_id', currentUser.id);
+  const { data:vData } = await sb.from('ventas').select('huevos_total,tamano').eq('user_id', currentUser.id);
   const { data:aData } = await sb.from('ajustes_stock').select('*').eq('user_id', currentUser.id).order('fecha',{ascending:false});
   ajustes = aData || [];
 
-  const vendibleTot = (rData||[]).reduce((s,r)=>s+vendibles(r),0);
-  const vendidoTot  = (vData||[]).reduce((s,v)=>s+(v.huevos_total||0),0);
-  const ajusteTot   = ajustes.reduce((s,a)=>s+(a.huevos||0),0); // ya vienen con signo
-  const fisico = vendibleTot - vendidoTot + ajusteTot;
+  // Acumuladores por tamaño (+ 'mixto' = sin especificar)
+  const KEYS = SIZE_KEYS.concat('mixto');
+  const prod={}, vend={}, aj={}, comp={};
+  KEYS.forEach(k=>{ prod[k]=0; vend[k]=0; aj[k]=0; comp[k]=0; });
+  const norm = t => SIZE_KEYS.includes(t) ? t : 'mixto';
 
-  const comprometido = pedidos.filter(p=>p.estado==='pendiente').reduce((s,p)=>s+(p.huevos_total||0),0);
-  const libre = fisico - comprometido;
+  let vendibleTot=0;
+  (rData||[]).forEach(r=>{
+    const vend_r = vendibles(r); vendibleTot += vend_r;
+    let clasif=0;
+    SIZE_KEYS.forEach(k=>{ const q=r[k]||0; prod[k]+=q; clasif+=q; });
+    prod.mixto += Math.max(0, vend_r - clasif); // lo no clasificado del día
+  });
+  let vendidoTot=0;
+  (vData||[]).forEach(v=>{ vend[norm(v.tamano)] += (v.huevos_total||0); vendidoTot += (v.huevos_total||0); });
+  let ajusteTot=0;
+  ajustes.forEach(a=>{ aj[norm(a.tamano)] += (a.huevos||0); ajusteTot += (a.huevos||0); });
+  let compTot=0;
+  pedidos.filter(p=>p.estado==='pendiente').forEach(p=>{ comp[norm(p.tamano)] += (p.huevos_total||0); compTot += (p.huevos_total||0); });
 
-  document.getElementById('bo-fisico').textContent = num(fisico);
-  document.getElementById('bo-comp').textContent   = num(comprometido);
-  document.getElementById('bo-libre').textContent  = num(libre);
+  const fisicoTot = vendibleTot - vendidoTot + ajusteTot;
+  const libreTot  = fisicoTot - compTot;
 
+  // Tarjetas (totales)
+  document.getElementById('bo-fisico').textContent = num(fisicoTot);
+  document.getElementById('bo-comp').textContent   = num(compTot);
+  document.getElementById('bo-libre').textContent  = num(libreTot);
   const libreEl = document.getElementById('bo-libre');
-  libreEl.parentElement.style.background = libre<0 ? '#fbe9e7' : '#dce8ec';
-  libreEl.style.color = libre<0 ? 'var(--rojo)' : 'var(--azul)';
+  libreEl.parentElement.style.background = libreTot<0 ? '#fbe9e7' : '#dce8ec';
+  libreEl.style.color = libreTot<0 ? 'var(--rojo)' : 'var(--azul)';
 
   const banner = document.getElementById('banner-bodega');
-  if(libre < 0){
+  if(libreTot < 0){
     banner.className='banner bad';
-    banner.textContent = `⚠️ Comprometiste ${num(-libre)} huevos más de los que tienes en bodega. Revisa producción, ventas o pedidos.`;
+    banner.textContent = `⚠️ Comprometiste ${num(-libreTot)} huevos más de los que tienes en bodega. Revisa producción, ventas o pedidos.`;
   } else {
     banner.className='banner ok';
-    banner.textContent = `✅ Puedes comprometer hasta ${num(libre)} huevos más (${Math.floor(libre/30)} bandejas) sin quedar corto.`;
+    banner.textContent = `✅ Puedes comprometer hasta ${num(libreTot)} huevos más (${cajasTxt(libreTot)}) sin quedar corto.`;
   }
+
+  // Tabla por tamaño
+  const activos = KEYS.filter(k=> prod[k]||vend[k]||aj[k]||comp[k]);
+  let filas = activos.map(k=>{
+    const f = prod[k]-vend[k]+aj[k];
+    const lib = f - comp[k];
+    return `<tr class="${k==='mixto'?'trow-sin':''}">
+      <td>${labelTam(k)}</td>
+      <td class="num">${num(f)}</td>
+      <td class="num">${num(comp[k])}</td>
+      <td class="num ${lib<0?'lib-neg':''}">${num(lib)}</td></tr>`;
+  }).join('');
+  filas += `<tr class="trow-tot"><td>Total</td><td class="num">${num(fisicoTot)}</td><td class="num">${num(compTot)}</td><td class="num ${libreTot<0?'lib-neg':''}">${num(libreTot)}</td></tr>`;
+  document.getElementById('bo-tabla').innerHTML =
+    `<div class="tabla-wrap"><table class="tsize"><thead><tr><th>Tamaño</th><th class="num">Físico</th><th class="num">Reserv.</th><th class="num">Libre</th></tr></thead><tbody>${filas}</tbody></table></div>`;
+
+  // Desglose (con equivalente en cajas)
   const signo = n => (n<0?'−':'+')+num(Math.abs(n));
   document.getElementById('bo-desglose').innerHTML =
     `🥚 Vendibles producidos: <b>${num(vendibleTot)}</b><br>`+
-    `📦 Vendidos: <b>−${num(vendidoTot)}</b><br>`+
-    `🔧 Ajustes de bodega: <b>${signo(ajusteTot)}</b><br>`+
-    `= 📦 Stock físico: <b>${num(fisico)}</b> · 🔒 comprometido en pedidos: <b>−${num(comprometido)}</b>`;
+    `📦 Vendidos: <b>−${num(vendidoTot)}</b> · 🔧 ajustes: <b>${signo(ajusteTot)}</b><br>`+
+    `= 📦 Físico <b>${num(fisicoTot)}</b> (${cajasTxt(fisicoTot)}) · ✅ libre <b>${num(libreTot)}</b> (${cajasTxt(libreTot)})`;
   renderAjustes();
 }
 
@@ -749,12 +829,13 @@ function hintAjuste(){
 function renderAjustes(){
   const cont = document.getElementById('lista-ajustes');
   if(!ajustes.length){ cont.innerHTML='<div class="vacio">Sin movimientos registrados.</div>'; return; }
-  let html = '<div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Huevos</th><th>Motivo</th><th></th></tr></thead><tbody>';
+  let html = '<div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Tamaño</th><th>Huevos</th><th>Motivo</th><th></th></tr></thead><tbody>';
   ajustes.forEach(a=>{
     const pos = (a.huevos||0)>=0;
     html += `<tr>
       <td>${fmtFecha(a.fecha)}</td>
       <td>${AJ_LABEL[a.tipo]||a.tipo}</td>
+      <td>${labelTam(a.tamano)}</td>
       <td style="color:${pos?'var(--verde)':'var(--rojo)'};font-weight:700">${pos?'+':'−'}${num(Math.abs(a.huevos))}</td>
       <td>${a.motivo||'—'}</td>
       <td><div class="acc">
@@ -775,6 +856,7 @@ async function guardarAjuste(){
   const huevos = tipo==='entrada' ? Math.abs(cant) : -Math.abs(cant); // signo según tipo
   const fila = {
     fecha, tipo, huevos,
+    tamano: document.getElementById('a-tamano').value,
     motivo: document.getElementById('a-motivo').value.trim() || null,
     user_id: currentUser.id
   };
@@ -793,6 +875,7 @@ function editarAjuste(id){
   editAjId = id;
   document.getElementById('a-fecha').value = a.fecha;
   document.getElementById('a-tipo').value = a.tipo;
+  document.getElementById('a-tamano').value = a.tamano||'mixto';
   document.getElementById('a-huevos').value = Math.abs(a.huevos||0);
   document.getElementById('a-motivo').value = a.motivo||'';
   hintAjuste();
@@ -804,6 +887,7 @@ function cancelarAjuste(){ limpiarAjuste(); }
 function limpiarAjuste(){
   editAjId=null;
   document.getElementById('a-tipo').value='merma';
+  document.getElementById('a-tamano').value='mixto';
   document.getElementById('a-huevos').value=0;
   document.getElementById('a-motivo').value='';
   document.getElementById('a-fecha').value=hoy();
