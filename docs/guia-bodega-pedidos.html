@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía — Bodega, Pedidos y Ventas · AviVet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f1e8; --white:#fefefe; --dark:#111510; --green:#2a5430;
+  --green-mid:#3d7a42; --green-light:#e4ede5; --gold:#b8860b;
+  --text:#1c2118; --muted:#6a7565; --border:#ddd8cc; --cream:#f0ebe0;
+  --azul:#1e5a7a; --naranja:#c2691c; --rojo:#b03a2e;
+  --serif:'Fraunces',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:820px;margin:0 auto;padding:32px 24px 80px}
+
+/* PRINT BAR */
+.printbar{position:sticky;top:0;z-index:10;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-radius:0 0 12px 12px;margin-bottom:28px;box-shadow:0 3px 12px rgba(42,84,48,.25)}
+.printbar span{font-size:.9rem}
+.printbar a{color:#fff;text-decoration:none;opacity:.85;font-size:.86rem}
+.printbar button{font-family:inherit;background:var(--gold);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:.88rem;font-weight:600;cursor:pointer}
+.printbar button:hover{filter:brightness(1.05)}
+
+/* COVER */
+.cover{background:var(--green);color:#fff;border-radius:16px;border-top:5px solid var(--gold);padding:44px 36px;margin-bottom:32px;background-image:radial-gradient(circle at 85% 15%,rgba(184,134,11,.18),transparent 45%),radial-gradient(circle at 10% 90%,rgba(92,158,97,.22),transparent 45%)}
+.cover .logo{font-size:2.6rem;margin-bottom:10px}
+.cover h1{font-family:var(--serif);font-weight:600;font-size:2.1rem;letter-spacing:-.02em;line-height:1.12;margin-bottom:10px}
+.cover .sub{font-size:1.02rem;opacity:.92;max-width:560px}
+.cover .brand{margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,.2);font-size:.86rem;opacity:.85}
+
+h2{font-family:var(--serif);font-weight:600;font-size:1.45rem;color:var(--green);letter-spacing:-.01em;margin:36px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--gold)}
+h2 .n{color:var(--gold)}
+h3{font-family:var(--serif);font-weight:600;font-size:1.08rem;color:var(--green-mid);margin:20px 0 8px}
+p{margin:0 0 12px}
+strong{color:var(--text)}
+
+/* FLOW */
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:14px 0}
+.flow .step{flex:1 1 130px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 12px;box-shadow:0 1px 3px rgba(28,33,24,.06)}
+.flow .step .ico{font-size:1.5rem;line-height:1}
+.flow .step .nm{font-weight:700;font-size:.94rem;margin-top:7px}
+.flow .step .desc{font-size:.78rem;color:var(--muted);margin-top:2px}
+.flow .step.base{border-color:var(--green-mid);border-width:1.5px}
+.flow .step .tag{display:inline-block;font-size:.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--green);background:var(--green-light);padding:2px 6px;border-radius:6px;margin-top:8px}
+.flow .arrow{align-self:center;color:var(--muted);font-size:1.1rem}
+
+/* MODULE CARD */
+.mod{background:var(--white);border:1px solid var(--border);border-radius:16px;box-shadow:0 1px 3px rgba(28,33,24,.06);overflow:hidden;margin:22px 0}
+.mod-head{padding:15px 20px;display:flex;align-items:center;gap:12px;color:#fff}
+.mod-head .n{font-family:var(--serif);font-weight:700;width:30px;height:30px;display:grid;place-items:center;border-radius:8px;background:rgba(255,255,255,.18)}
+.mod-head h2{border:none;color:#fff;margin:0;padding:0;font-size:1.35rem;flex:1}
+.mod-head .pill{font-size:.66rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.2);padding:4px 9px;border-radius:20px}
+.mod.bodega .mod-head{background:var(--azul)}
+.mod.pedidos .mod-head{background:var(--naranja)}
+.mod.ventas .mod-head{background:var(--green-mid)}
+.mod-body{padding:18px 20px 22px}
+.mod-body h3:first-child{margin-top:0}
+
+/* FORMULA */
+.formula{background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:6px 0}
+.formula .eq{font-family:var(--serif);font-size:1.02rem;line-height:1.9}
+.formula .eq b{color:var(--azul)}
+.formula .eq .op{color:var(--muted);padding:0 3px}
+.formula .note{font-size:.82rem;color:var(--muted);margin-top:10px}
+
+/* NUMS */
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0}
+.nc{border:1px solid var(--border);border-radius:11px;padding:12px 10px;background:var(--white)}
+.nc .t{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.nc .d{font-size:.86rem;margin-top:5px}
+.nc.fis{border-top:3px solid var(--azul)}
+.nc.com{border-top:3px solid var(--naranja)}
+.nc.lib{border-top:3px solid var(--green-mid)}
+
+/* MOVES */
+.moves{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.mv{display:flex;gap:11px;align-items:baseline;font-size:.94rem;padding:9px 12px;background:var(--cream);border-radius:9px}
+.mv .sg{font-family:var(--serif);font-weight:700;font-size:1rem;flex:0 0 24px;text-align:center}
+.mv .sg.minus{color:var(--rojo)}
+.mv .sg.plus{color:var(--green-mid)}
+
+/* STEPS */
+ol.steps{list-style:none;counter-reset:s;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+ol.steps li{counter-increment:s;position:relative;padding-left:38px;font-size:.97rem}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:-1px;width:25px;height:25px;display:grid;place-items:center;border-radius:50%;font-size:.8rem;font-weight:700;color:var(--text);background:var(--cream);border:1px solid var(--border)}
+
+/* CHIP */
+.chip{display:inline-block;font-size:.74rem;font-weight:700;padding:1px 8px;border-radius:20px}
+.chip.pend{background:#f6efd9;color:#8a6d0b}
+.chip.entr{background:var(--green-light);color:var(--green)}
+
+/* CALLOUT */
+.callout{border-radius:12px;padding:15px 17px;margin:20px 0;font-size:.95rem;border:1px solid}
+.callout .lbl{display:block;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.callout.key{background:var(--green-light);border-color:#bcd4bf}
+.callout.key .lbl{color:var(--green)}
+.callout.warn{background:#fbe9e7;border-color:#f3c4bd}
+.callout.warn .lbl{color:var(--rojo)}
+
+footer{margin-top:44px;padding-top:22px;border-top:1px solid var(--border);font-size:.82rem;color:var(--muted)}
+
+@media print{ .printbar{display:none} body{background:#fff} .mod,.flow .step,.nc{box-shadow:none} }
+@media (max-width:520px){ .cover h1{font-size:1.7rem} .nums{grid-template-columns:1fr} .flow .arrow{transform:rotate(90deg)} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="printbar">
+    <span>📦 Guía rápida del productor</span>
+    <span>
+      <a href="./manual.html">← Manual completo</a>
+      &nbsp;·&nbsp;
+      <button onclick="window.print()">🖨️ Imprimir / PDF</button>
+    </span>
+  </div>
+
+  <div class="cover">
+    <div class="logo">📦</div>
+    <h1>Bodega, Pedidos y Ventas</h1>
+    <p class="sub">Todo parte de tu registro diario de producción: de ahí nace lo que tienes en bodega, lo que te encargan y lo que vendes. Un mismo huevo se cuenta una sola vez.</p>
+    <div class="brand">AviVet · Registro Productivo Avícola · avivet.cl</div>
+  </div>
+
+  <h2><span class="n">→</span> Cómo se conecta todo</h2>
+  <div class="flow">
+    <div class="step base">
+      <div class="ico">🐔</div><div class="nm">Producción</div>
+      <div class="desc">Registras los huevos de cada día</div>
+      <span class="tag">La base</span>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="ico">📦</div><div class="nm">Bodega</div><div class="desc">Lo que tienes guardado</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="ico">📋</div><div class="nm">Pedidos</div><div class="desc">Lo que te encargaron</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="ico">💰</div><div class="nm">Ventas</div><div class="desc">Lo que ya vendiste</div></div>
+  </div>
+  <p>Entras desde la app de Producción y tocas <strong>📦 Bodega</strong> arriba. Ahí están las tres pestañas, en orden de importancia: <strong>Bodega</strong>, <strong>Pedidos</strong> y <strong>Ventas</strong>. La app abre directo en Bodega.</p>
+
+  <section class="mod bodega">
+    <div class="mod-head"><span class="n">1</span><h2>📦 Bodega</h2><span class="pill">Tu stock</span></div>
+    <div class="mod-body">
+      <h3>Qué es</h3>
+      <p>Te dice cuántos huevos <strong>vendibles</strong> tienes realmente disponibles. Se calcula solo a partir de tu producción y tus ventas — no tienes que llevar la cuenta a mano.</p>
+      <h3>Cómo se calcula</h3>
+      <div class="formula">
+        <div class="eq">
+          🥚 Vendibles producidos <span class="op">−</span> vendidos <span class="op">±</span> ajustes <span class="op">=</span> <b>Stock físico</b><br>
+          <b>Stock físico</b> <span class="op">−</span> pedidos pendientes <span class="op">=</span> <b>Stock libre</b>
+        </div>
+        <div class="note">«Vendibles» son los huevos buenos: el total clasificado menos los sucios, rotos, trizados y con sangre.</div>
+      </div>
+      <div class="nums">
+        <div class="nc fis"><div class="t">📦 Físico</div><div class="d">Lo que hay hoy en la bodega.</div></div>
+        <div class="nc com"><div class="t">🔒 Comprometido</div><div class="d">Reservado en pedidos pendientes.</div></div>
+        <div class="nc lib"><div class="t">✅ Libre</div><div class="d">Lo que puedes vender o prometer sin quedar corto.</div></div>
+      </div>
+      <h3>Registrar un movimiento</h3>
+      <p>Cuando salen o entran huevos por algo que no es una venta, lo anotas aquí:</p>
+      <div class="moves">
+        <div class="mv"><span class="sg minus">−</span><div><strong>Merma / pérdida:</strong> huevos que se quebraron o se perdieron en bodega.</div></div>
+        <div class="mv"><span class="sg minus">−</span><div><strong>Autoconsumo:</strong> los que ocupaste en tu casa.</div></div>
+        <div class="mv"><span class="sg minus">−</span><div><strong>Regalo / donación:</strong> los que regalaste.</div></div>
+        <div class="mv"><span class="sg plus">+</span><div><strong>Entrada / corrección:</strong> para subir el stock cuando el conteo real es mayor que el del sistema.</div></div>
+      </div>
+      <div class="callout warn">
+        <span class="lbl">⚠️ La primera vez</span>
+        El stock físico mostrará <em>todo</em> lo producido menos lo vendido desde que usas la app. Si en la práctica ya no tienes esos huevos, ajústalo con una <strong>Merma</strong> (motivo: «ajuste inicial de bodega») hasta dejar el número real.
+      </div>
+    </div>
+  </section>
+
+  <section class="mod pedidos">
+    <div class="mod-head"><span class="n">2</span><h2>📋 Pedidos</h2><span class="pill">Encargos</span></div>
+    <div class="mod-body">
+      <h3>Qué es</h3>
+      <p>Los encargos que te hacen los clientes <strong>antes</strong> de entregarlos. Mientras están <span class="chip pend">Pendiente</span>, reservan huevos: bajan tu «stock libre», pero todavía no cuentan como venta.</p>
+      <h3>Cómo se usa</h3>
+      <ol class="steps">
+        <li><strong>Nuevo pedido:</strong> anotas cliente, bandejas y precio. Queda <span class="chip pend">Pendiente</span>.</li>
+        <li><strong>Cuando lo entregas:</strong> tocas el botón ✅ y el pedido pasa a <span class="chip entr">Entregado</span>. La venta se registra sola.</li>
+        <li><strong>Si te equivocaste:</strong> el botón ↩️ revierte la entrega, borra esa venta y el pedido vuelve a pendiente.</li>
+      </ol>
+      <div class="callout key">
+        <span class="lbl">✓ El huevo se cuenta una sola vez</span>
+        Un pedido pendiente <strong>no</strong> es una venta. Solo cuando lo marcas entregado se convierte en venta. Así nunca cuentas el mismo huevo dos veces.
+      </div>
+    </div>
+  </section>
+
+  <section class="mod ventas">
+    <div class="mod-head"><span class="n">3</span><h2>💰 Ventas</h2><span class="pill">Ya vendido</span></div>
+    <div class="mod-body">
+      <h3>Qué es</h3>
+      <p>El registro de lo que <strong>ya vendiste y entregaste</strong>. Aquí llegan solas las ventas que nacen de un pedido entregado, y también puedes anotar una venta directa (cuando alguien compra en el momento, sin pedido previo).</p>
+      <h3>El cuadre del periodo</h3>
+      <p>Arriba eliges <strong>Este mes</strong>, <strong>Mes anterior</strong> o <strong>Todo</strong>. La app compara los huevos vendibles que produjiste contra los que vendiste, y te avisa si algo no calza.</p>
+      <p style="color:var(--muted);font-size:.9rem">Es el módulo menos importante del día a día: se llena casi solo desde los pedidos. Míralo cuando quieras revisar cuánto vendiste e ingresaste.</p>
+    </div>
+  </section>
+
+  <div class="callout key">
+    <span class="lbl">En una frase</span>
+    Registra la producción cada día, revisa tu <strong>Bodega</strong> para saber cuánto te queda, anota los <strong>Pedidos</strong> y márcalos entregados cuando salgan — las <strong>Ventas</strong> se ordenan solas.
+  </div>
+
+  <footer>AviVet · avivet.cl · Guía del productor — Bodega, Pedidos y Ventas</footer>
+
+</div>
+</body>
+</html>

@@ -11,6 +11,7 @@ Guía paso a paso en lenguaje simple para quienes usan la app:
 
 - [`docs/MANUAL.md`](./docs/MANUAL.md) — versión de texto (se lee en GitHub)
 - [`docs/manual.html`](./docs/manual.html) — versión con la marca AviVet, lista para imprimir o guardar como PDF. Publicada en http://avivet.cl/registro-productivo-avicola/docs/manual.html
+- [`docs/guia-bodega-pedidos.html`](./docs/guia-bodega-pedidos.html) — guía rápida de los módulos Bodega, Pedidos y Ventas. Publicada en http://avivet.cl/registro-productivo-avicola/docs/guia-bodega-pedidos.html
 
 ---
 
