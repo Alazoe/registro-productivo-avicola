@@ -31,6 +31,13 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .nav-link{font-size:.72rem;color:#fff;text-decoration:none;background:rgba(255,255,255,.15);padding:4px 9px;border-radius:10px;white-space:nowrap}
 .nav-user{font-size:.72rem;opacity:.85;cursor:pointer;background:rgba(255,255,255,.15);padding:4px 8px;border-radius:10px;white-space:nowrap}
 
+/* TABS */
+.tabs{max-width:680px;margin:14px auto 0;padding:0 14px;display:flex;gap:6px}
+.tab{flex:1;background:var(--white);border:1px solid var(--border);border-bottom:none;border-radius:10px 10px 0 0;padding:11px 6px;font-size:.82rem;font-weight:700;color:var(--muted);cursor:pointer;font-family:inherit;transition:.15s}
+.tab.on{background:var(--verde-o);color:#fff;border-color:var(--verde-o)}
+.tabpane{display:none}
+.tabpane.on{display:block}
+
 .wrap{max-width:680px;margin:0 auto;padding:14px}
 
 /* CARD */
@@ -42,9 +49,17 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .cuadre-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .cu{border-radius:10px;padding:13px 8px;text-align:center;border:1px solid var(--border)}
 .cu.prod{background:#e4ede5}.cu.vend{background:#f3ead6}.cu.disp{background:#dce8ec}
+.cu.comp{background:#f3ead6}.cu.libre{background:#dce8ec}
 .cu-t{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;opacity:.7;margin-bottom:5px}
 .cu-v{font-size:1.35rem;font-weight:800;line-height:1;font-family:var(--serif)}
 .cu.prod .cu-v{color:var(--verde)}.cu.vend .cu-v{color:var(--naranja)}.cu.disp .cu-v{color:var(--azul)}
+.cu.comp .cu-v{color:var(--naranja)}.cu.libre .cu-v{color:var(--azul)}
+.desglose{margin-top:10px;font-size:.78rem;color:var(--muted);line-height:1.7}
+.desglose b{color:var(--texto);font-weight:700}
+.chip{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.chip.pend{background:#f6efd9;color:#8a6d0b}
+.chip.entr{background:#e4ede5;color:var(--verde-o)}
+.chip.anul{background:#eee;color:#999}
 .cu-s{font-size:.6rem;opacity:.65;margin-top:3px}
 .banner{margin-top:10px;padding:10px 12px;border-radius:8px;font-size:.82rem;font-weight:600;display:none}
 .banner.ok{background:#e4ede5;color:var(--verde-o);display:block}
@@ -132,17 +147,26 @@ tr:nth-child(even) td{background:#faf8f2}
 <!-- APP -->
 <div id="app" style="display:none">
 <nav class="nav">
-  <h1>💰 Ventas</h1>
+  <h1>💰 Ventas y pedidos</h1>
   <a class="nav-link" href="../supabase/" title="Ir a Producción">🐔 Producción</a>
   <span class="nav-user" id="nav-user" onclick="logout()">— salir —</span>
 </nav>
 
+<div class="tabs">
+  <button class="tab on" data-pane="ventas"  onclick="tab('ventas')">💰 Ventas</button>
+  <button class="tab"     data-pane="pedidos" onclick="tab('pedidos')">📋 Pedidos</button>
+  <button class="tab"     data-pane="bodega"  onclick="tab('bodega')">📦 Bodega</button>
+</div>
+
 <div class="wrap">
+
+<!-- ═══════════ PESTAÑA VENTAS ═══════════ -->
+<div class="tabpane on" id="pane-ventas">
 
   <!-- CUADRE -->
   <div class="card">
     <div class="card-header">
-      <span>📊 Cuadre de stock</span>
+      <span>📊 Cuadre del periodo</span>
       <select id="periodo" onchange="cargarTodo()" style="width:auto;margin:0;padding:5px 8px;font-size:.78rem;border-radius:7px">
         <option value="mes">Este mes</option>
         <option value="prev">Mes anterior</option>
@@ -151,7 +175,7 @@ tr:nth-child(even) td{background:#faf8f2}
     </div>
     <div class="card-body">
       <div class="cuadre-grid">
-        <div class="cu prod"><div class="cu-t">🥚 Producidos</div><div class="cu-v" id="cu-prod">—</div><div class="cu-s">huevos</div></div>
+        <div class="cu prod"><div class="cu-t">🥚 Vendibles</div><div class="cu-v" id="cu-prod">—</div><div class="cu-s">huevos</div></div>
         <div class="cu vend"><div class="cu-t">📦 Vendidos</div><div class="cu-v" id="cu-vend">—</div><div class="cu-s">huevos</div></div>
         <div class="cu disp"><div class="cu-t">📥 Disponible</div><div class="cu-v" id="cu-disp">—</div><div class="cu-s" id="cu-disp-s">huevos</div></div>
       </div>
@@ -188,6 +212,100 @@ tr:nth-child(even) td{background:#faf8f2}
     </div>
   </div>
 
+</div>
+
+<!-- ═══════════ PESTAÑA PEDIDOS ═══════════ -->
+<div class="tabpane" id="pane-pedidos">
+
+  <!-- RESUMEN PEDIDOS -->
+  <div class="card">
+    <div class="card-header"><span>📋 Pedidos pendientes</span></div>
+    <div class="card-body">
+      <div class="ingreso"><span class="lbl">🥚 Comprometido a clientes</span><span class="val" id="pd-comprometido">—</span></div>
+      <div class="desglose" id="pd-resumen"></div>
+    </div>
+  </div>
+
+  <!-- REGISTRAR PEDIDO -->
+  <div class="card">
+    <div class="card-header">➕ Nuevo pedido</div>
+    <div class="card-body">
+      <div class="banner-ed" id="banner-ped-ed">✏️ Editando pedido <button onclick="cancelarPedido()">✕ Cancelar</button></div>
+      <div class="row2">
+        <label>Fecha del pedido<input type="date" id="p-fecha"></label>
+        <label>Entrega comprometida <span style="font-weight:400;color:#aaa">(opcional)</span><input type="date" id="p-entrega"></label>
+      </div>
+      <label>Cliente<input type="text" id="p-cliente" placeholder="Ej: Almacén La Esquina"></label>
+      <div class="row2">
+        <label>Bandejas <span style="font-weight:400;color:#aaa">(30 c/u)</span><input type="number" id="p-bandejas" min="0" step="0.5" inputmode="decimal" value="0" oninput="calcPedido()"></label>
+        <label>Huevos sueltos<input type="number" id="p-sueltos" min="0" inputmode="numeric" value="0" oninput="calcPedido()"></label>
+      </div>
+      <label>Precio por bandeja (CLP)<input type="number" id="p-precio" min="0" inputmode="numeric" placeholder="Ej: 4500" oninput="calcPedido()"></label>
+      <label>Observaciones <span style="font-weight:400;color:#aaa">(opcional)</span><textarea id="p-obs" rows="2" placeholder="Notas del pedido"></textarea></label>
+      <div class="total-box"><span class="lbl"><span id="tp-huevos">0</span> huevos</span><span class="val" id="tp-total">$0</span></div>
+      <button class="btn btn-verde" onclick="guardarPedido()" id="btn-ped">✅ Guardar pedido</button>
+    </div>
+  </div>
+
+  <!-- LISTA PEDIDOS -->
+  <div class="card">
+    <div class="card-header">📂 Todos los pedidos</div>
+    <div class="card-body">
+      <div id="lista-pedidos"><div class="vacio">Cargando…</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════ PESTAÑA BODEGA ═══════════ -->
+<div class="tabpane" id="pane-bodega">
+
+  <!-- STOCK -->
+  <div class="card">
+    <div class="card-header"><span>📦 Stock en bodega</span><span style="font-weight:400;font-size:.62rem;text-transform:none;opacity:.7">acumulado total</span></div>
+    <div class="card-body">
+      <div class="cuadre-grid">
+        <div class="cu prod"><div class="cu-t">📦 Físico</div><div class="cu-v" id="bo-fisico">—</div><div class="cu-s">en bodega</div></div>
+        <div class="cu comp"><div class="cu-t">🔒 Comprometido</div><div class="cu-v" id="bo-comp">—</div><div class="cu-s">pedidos</div></div>
+        <div class="cu libre"><div class="cu-t">✅ Libre</div><div class="cu-v" id="bo-libre">—</div><div class="cu-s" id="bo-libre-s">disponible</div></div>
+      </div>
+      <div class="banner" id="banner-bodega"></div>
+      <div class="desglose" id="bo-desglose"></div>
+    </div>
+  </div>
+
+  <!-- REGISTRAR AJUSTE -->
+  <div class="card">
+    <div class="card-header">➕ Registrar movimiento</div>
+    <div class="card-body">
+      <div class="banner-ed" id="banner-aj-ed">✏️ Editando movimiento <button onclick="cancelarAjuste()">✕ Cancelar</button></div>
+      <div class="row2">
+        <label>Fecha<input type="date" id="a-fecha"></label>
+        <label>Tipo<select id="a-tipo" onchange="hintAjuste()">
+          <option value="merma">Merma / pérdida (−)</option>
+          <option value="autoconsumo">Autoconsumo (−)</option>
+          <option value="regalo">Regalo / donación (−)</option>
+          <option value="entrada">Entrada / corrección (+)</option>
+          <option value="ajuste">Ajuste manual (−)</option>
+        </select></label>
+      </div>
+      <label>Cantidad de huevos<input type="number" id="a-huevos" min="0" inputmode="numeric" value="0" placeholder="Ej: 24"></label>
+      <label>Motivo <span style="font-weight:400;color:#aaa">(opcional)</span><input type="text" id="a-motivo" placeholder="Ej: quiebre al trasladar, conteo físico…"></label>
+      <div class="alerta alerta-ok" id="a-hint" style="display:block">Este movimiento <b>restará</b> huevos del stock.</div>
+      <button class="btn btn-verde" onclick="guardarAjuste()" id="btn-aj">✅ Guardar movimiento</button>
+    </div>
+  </div>
+
+  <!-- LISTA AJUSTES -->
+  <div class="card">
+    <div class="card-header">📂 Movimientos de bodega</div>
+    <div class="card-body">
+      <div id="lista-ajustes"><div class="vacio">Cargando…</div></div>
+    </div>
+  </div>
+
+</div>
+
 </div></div>
 
 <div id="toast"></div>
@@ -198,6 +316,13 @@ const SUPABASE_KEY = 'sb_publishable_v5_FU1w-7P7oeNrW6FYRBQ_cuX-pa9_';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null, ventas = [], editId = null, modoRecovery = false;
+let pedidos = [], editPedId = null, ajustes = [], editAjId = null;
+
+// Cambio de pestaña
+function tab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.pane===name));
+  document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('on', p.id==='pane-'+name));
+}
 
 // ── AUTH ──
 window.onload = async () => {
@@ -251,6 +376,8 @@ async function mostrarApp(){
   pl().style.display='none'; pr().style.display='none'; document.getElementById('app').style.display='block';
   document.getElementById('nav-user').textContent='👤 '+currentUser.email+' · salir';
   document.getElementById('v-fecha').value = hoy();
+  document.getElementById('p-fecha').value = hoy();
+  document.getElementById('a-fecha').value = hoy();
   cargarTodo();
 }
 
@@ -259,6 +386,9 @@ function hoy(){ return new Date().toLocaleDateString('en-CA'); } // YYYY-MM-DD l
 function clp(n){ return '$'+Math.round(n||0).toLocaleString('es-CL'); }
 function num(n){ return Math.round(n||0).toLocaleString('es-CL'); }
 function fmtFecha(f){ return f.split('-').reverse().join('/'); }
+// Huevos vendibles de un registro = total clasificado − no vendibles
+function vendibles(r){ return Math.max(0, (r.n_huevos||0) - (r.sucios||0) - (r.rotos||0) - (r.trizados||0) - (r.sangre||0)); }
+function bandTxt(b,s){ return (Number(b)||0) + (s>0?` +${s}u`:''); }
 function toast(m,t='ok',ms=2500){ const e=document.getElementById('toast'); e.textContent=m; e.className='show '+t; setTimeout(()=>e.className='',ms); }
 
 // Rango [desde,hasta] según el selector. null = sin límite (todo)
@@ -283,12 +413,12 @@ async function cargarTodo(){
   const { data:vData } = await qv;
   ventas = vData || [];
 
-  // Producción del periodo (registros del productor)
-  let qp = sb.from('registros').select('fecha,n_huevos').eq('user_id', currentUser.id);
+  // Producción del periodo (registros del productor) — solo huevos VENDIBLES
+  let qp = sb.from('registros').select('fecha,n_huevos,sucios,rotos,trizados,sangre').eq('user_id', currentUser.id);
   if(desde){ qp = qp.gte('fecha',desde).lte('fecha',hasta); }
   const { data:rData } = await qp;
 
-  const producido = (rData||[]).reduce((s,r)=>s+(r.n_huevos||0),0);
+  const producido = (rData||[]).reduce((s,r)=>s+vendibles(r),0);
   const vendido   = ventas.reduce((s,v)=>s+(v.huevos_total||0),0);
   const ingreso   = ventas.reduce((s,v)=>s+(Number(v.total_clp)||0),0);
   const disp      = producido - vendido;
@@ -309,9 +439,11 @@ async function cargarTodo(){
   } else {
     banner.className='banner ok';
     const pct = producido>0 ? Math.round(vendido/producido*100) : 0;
-    banner.textContent = `✅ Cuadra. Vendido el ${pct}% de lo producido · quedan ${num(disp)} huevos (${Math.floor(disp/30)} bandejas) disponibles.`;
+    banner.textContent = `✅ Cuadra. Vendido el ${pct}% de lo vendible · quedan ${num(disp)} huevos (${Math.floor(disp/30)} bandejas) en el periodo.`;
   }
   renderVentas();
+  cargarPedidos();
+  cargarBodega();
 }
 
 function renderVentas(){
@@ -404,6 +536,280 @@ async function eliminarVenta(id){
   if(!confirm(`¿Eliminar la venta del ${fmtFecha(v.fecha)} (${clp(v.total_clp)})?`)) return;
   const { error } = await sb.from('ventas').delete().eq('id',id);
   if(!error){ toast('🗑️ Venta eliminada','warn'); await cargarTodo(); }
+  else toast('Error: '+error.message,'err');
+}
+
+// ══════════════════ PEDIDOS ══════════════════
+async function cargarPedidos(){
+  const { data } = await sb.from('pedidos').select('*').eq('user_id', currentUser.id)
+    .order('estado',{ascending:true}).order('fecha_entrega',{ascending:true,nullsFirst:false}).order('fecha_pedido',{ascending:false});
+  pedidos = data || [];
+  const pend = pedidos.filter(p=>p.estado==='pendiente');
+  const comprometido = pend.reduce((s,p)=>s+(p.huevos_total||0),0);
+  document.getElementById('pd-comprometido').textContent = num(comprometido)+' huevos';
+  document.getElementById('pd-resumen').innerHTML =
+    `<b>${pend.length}</b> pedido(s) pendiente(s) · equivalen a <b>${Math.floor(comprometido/30)}</b> bandejas comprometidas a clientes.`;
+  renderPedidos();
+}
+
+function renderPedidos(){
+  const cont = document.getElementById('lista-pedidos');
+  if(!pedidos.length){ cont.innerHTML='<div class="vacio">Sin pedidos aún.</div>'; return; }
+  let html = '<div class="tabla-wrap"><table><thead><tr><th>Entrega</th><th>Cliente</th><th>Huevos</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody>';
+  pedidos.forEach(p=>{
+    const chip = p.estado==='pendiente' ? '<span class="chip pend">Pendiente</span>'
+               : p.estado==='entregado' ? '<span class="chip entr">Entregado</span>'
+               : '<span class="chip anul">Anulado</span>';
+    let acc = '';
+    if(p.estado==='pendiente'){
+      acc = `<button class="mini" style="background:var(--verde-o);color:#fff" title="Marcar entregado (genera venta)" onclick="entregarPedido('${p.id}')">✅</button>
+             <button class="mini ed" onclick="editarPedido('${p.id}')">✏️</button>
+             <button class="mini del" onclick="eliminarPedido('${p.id}')">🗑️</button>`;
+    } else if(p.estado==='entregado'){
+      acc = `<button class="mini" style="background:var(--naranja);color:#fff" title="Revertir entrega (borra la venta)" onclick="revertirPedido('${p.id}')">↩️</button>
+             <button class="mini del" onclick="eliminarPedido('${p.id}')">🗑️</button>`;
+    } else {
+      acc = `<button class="mini del" onclick="eliminarPedido('${p.id}')">🗑️</button>`;
+    }
+    html += `<tr>
+      <td>${p.fecha_entrega?fmtFecha(p.fecha_entrega):'—'}</td>
+      <td>${p.cliente||'—'}</td>
+      <td>${num(p.huevos_total)}</td>
+      <td>${clp(p.total_clp)}</td>
+      <td>${chip}</td>
+      <td><div class="acc">${acc}</div></td></tr>`;
+  });
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+}
+
+function calcPedido(){
+  const band = parseFloat(document.getElementById('p-bandejas').value)||0;
+  const sueltos = parseInt(document.getElementById('p-sueltos').value)||0;
+  const precio = parseFloat(document.getElementById('p-precio').value)||0;
+  const huevos = Math.round(band*30) + sueltos;
+  const total = Math.round((huevos/30)*precio);
+  document.getElementById('tp-huevos').textContent = num(huevos);
+  document.getElementById('tp-total').textContent = clp(total);
+  return { huevos, total, band, sueltos, precio };
+}
+
+async function guardarPedido(){
+  const fecha = document.getElementById('p-fecha').value;
+  if(!fecha){ toast('Indica la fecha del pedido','warn'); return; }
+  const { huevos, total, band, sueltos, precio } = calcPedido();
+  if(huevos<=0){ toast('Indica bandejas o huevos','warn'); return; }
+  const fila = {
+    fecha_pedido: fecha,
+    fecha_entrega: document.getElementById('p-entrega').value || null,
+    cliente: document.getElementById('p-cliente').value.trim() || null,
+    bandejas: band, sueltos, huevos_total: huevos,
+    precio_bandeja: precio, total_clp: total,
+    observaciones: document.getElementById('p-obs').value.trim() || null,
+    user_id: currentUser.id
+  };
+  const btn = document.getElementById('btn-ped');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
+  let error;
+  if(editPedId){ ({ error } = await sb.from('pedidos').update(fila).eq('id',editPedId)); }
+  else { ({ error } = await sb.from('pedidos').insert(fila)); }
+  if(!error){ toast(editPedId?'✏️ Pedido actualizado':'✅ Pedido registrado','ok'); limpiarPedido(); await cargarTodo(); }
+  else toast('Error: '+error.message,'err');
+  btn.disabled=false; btn.textContent = editPedId?'✅ Guardar cambios':'✅ Guardar pedido';
+}
+
+function editarPedido(id){
+  const p = pedidos.find(x=>x.id===id); if(!p) return;
+  if(p.estado!=='pendiente'){ toast('Solo se editan pedidos pendientes','warn'); return; }
+  editPedId = id;
+  document.getElementById('p-fecha').value = p.fecha_pedido;
+  document.getElementById('p-entrega').value = p.fecha_entrega||'';
+  document.getElementById('p-cliente').value = p.cliente||'';
+  document.getElementById('p-bandejas').value = Number(p.bandejas)||0;
+  document.getElementById('p-sueltos').value = p.sueltos||0;
+  document.getElementById('p-precio').value = Number(p.precio_bandeja)||'';
+  document.getElementById('p-obs').value = p.observaciones||'';
+  calcPedido();
+  document.getElementById('banner-ped-ed').classList.add('on');
+  document.getElementById('btn-ped').textContent='✅ Guardar cambios';
+  tab('pedidos'); window.scrollTo({top:0,behavior:'smooth'});
+}
+function cancelarPedido(){ limpiarPedido(); }
+function limpiarPedido(){
+  editPedId=null;
+  ['p-cliente','p-obs','p-entrega'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('p-bandejas').value=0;
+  document.getElementById('p-sueltos').value=0;
+  document.getElementById('p-precio').value='';
+  document.getElementById('p-fecha').value=hoy();
+  calcPedido();
+  document.getElementById('banner-ped-ed').classList.remove('on');
+  document.getElementById('btn-ped').textContent='✅ Guardar pedido';
+}
+
+// Marcar entregado: crea la venta y enlaza el pedido (huevo se cuenta 1 sola vez)
+async function entregarPedido(id){
+  const p = pedidos.find(x=>x.id===id); if(!p) return;
+  if(!confirm(`¿Marcar como ENTREGADO el pedido de ${p.cliente||'cliente'} (${num(p.huevos_total)} huevos)?\nSe registrará como venta automáticamente.`)) return;
+  const venta = {
+    fecha: hoy(),
+    cliente: p.cliente,
+    bandejas: p.bandejas, sueltos: p.sueltos, huevos_total: p.huevos_total,
+    precio_bandeja: p.precio_bandeja, total_clp: p.total_clp,
+    observaciones: 'Pedido entregado'+(p.observaciones?` · ${p.observaciones}`:''),
+    user_id: currentUser.id
+  };
+  const { data:vNueva, error:eV } = await sb.from('ventas').insert(venta).select().single();
+  if(eV){ toast('Error al crear venta: '+eV.message,'err'); return; }
+  const { error:eP } = await sb.from('pedidos').update({ estado:'entregado', venta_id:vNueva.id, fecha_entrega:hoy() }).eq('id',id);
+  if(eP){ // revertir la venta para no dejarla huérfana
+    await sb.from('ventas').delete().eq('id',vNueva.id);
+    toast('Error al actualizar pedido: '+eP.message,'err'); return;
+  }
+  toast('✅ Pedido entregado y venta registrada','ok'); await cargarTodo();
+}
+
+// Revertir entrega: borra la venta enlazada y vuelve el pedido a pendiente
+async function revertirPedido(id){
+  const p = pedidos.find(x=>x.id===id); if(!p) return;
+  if(!confirm(`¿Revertir la entrega de ${p.cliente||'cliente'}?\nSe borrará la venta generada y el pedido volverá a pendiente.`)) return;
+  if(p.venta_id){ await sb.from('ventas').delete().eq('id',p.venta_id); }
+  const { error } = await sb.from('pedidos').update({ estado:'pendiente', venta_id:null }).eq('id',id);
+  if(!error){ toast('↩️ Entrega revertida','warn'); await cargarTodo(); }
+  else toast('Error: '+error.message,'err');
+}
+
+async function eliminarPedido(id){
+  const p = pedidos.find(x=>x.id===id); if(!p) return;
+  let msg = `¿Eliminar el pedido de ${p.cliente||'cliente'} (${num(p.huevos_total)} huevos)?`;
+  if(p.estado==='entregado' && p.venta_id) msg += '\nTambién se borrará la venta generada.';
+  if(!confirm(msg)) return;
+  if(p.estado==='entregado' && p.venta_id){ await sb.from('ventas').delete().eq('id',p.venta_id); }
+  const { error } = await sb.from('pedidos').delete().eq('id',id);
+  if(!error){ toast('🗑️ Pedido eliminado','warn'); await cargarTodo(); }
+  else toast('Error: '+error.message,'err');
+}
+
+// ══════════════════ BODEGA ══════════════════
+async function cargarBodega(){
+  // Stock físico = acumulado TOTAL (independiente del periodo seleccionado)
+  const { data:rData } = await sb.from('registros')
+    .select('n_huevos,sucios,rotos,trizados,sangre').eq('user_id', currentUser.id);
+  const { data:vData } = await sb.from('ventas').select('huevos_total').eq('user_id', currentUser.id);
+  const { data:aData } = await sb.from('ajustes_stock').select('*').eq('user_id', currentUser.id).order('fecha',{ascending:false});
+  ajustes = aData || [];
+
+  const vendibleTot = (rData||[]).reduce((s,r)=>s+vendibles(r),0);
+  const vendidoTot  = (vData||[]).reduce((s,v)=>s+(v.huevos_total||0),0);
+  const ajusteTot   = ajustes.reduce((s,a)=>s+(a.huevos||0),0); // ya vienen con signo
+  const fisico = vendibleTot - vendidoTot + ajusteTot;
+
+  const comprometido = pedidos.filter(p=>p.estado==='pendiente').reduce((s,p)=>s+(p.huevos_total||0),0);
+  const libre = fisico - comprometido;
+
+  document.getElementById('bo-fisico').textContent = num(fisico);
+  document.getElementById('bo-comp').textContent   = num(comprometido);
+  document.getElementById('bo-libre').textContent  = num(libre);
+
+  const libreEl = document.getElementById('bo-libre');
+  libreEl.parentElement.style.background = libre<0 ? '#fbe9e7' : '#dce8ec';
+  libreEl.style.color = libre<0 ? 'var(--rojo)' : 'var(--azul)';
+
+  const banner = document.getElementById('banner-bodega');
+  if(libre < 0){
+    banner.className='banner bad';
+    banner.textContent = `⚠️ Comprometiste ${num(-libre)} huevos más de los que tienes en bodega. Revisa producción, ventas o pedidos.`;
+  } else {
+    banner.className='banner ok';
+    banner.textContent = `✅ Puedes comprometer hasta ${num(libre)} huevos más (${Math.floor(libre/30)} bandejas) sin quedar corto.`;
+  }
+  const signo = n => (n<0?'−':'+')+num(Math.abs(n));
+  document.getElementById('bo-desglose').innerHTML =
+    `🥚 Vendibles producidos: <b>${num(vendibleTot)}</b><br>`+
+    `📦 Vendidos: <b>−${num(vendidoTot)}</b><br>`+
+    `🔧 Ajustes de bodega: <b>${signo(ajusteTot)}</b><br>`+
+    `= 📦 Stock físico: <b>${num(fisico)}</b> · 🔒 comprometido en pedidos: <b>−${num(comprometido)}</b>`;
+  renderAjustes();
+}
+
+const AJ_LABEL = { merma:'Merma / pérdida', autoconsumo:'Autoconsumo', regalo:'Regalo / donación', entrada:'Entrada / corrección', ajuste:'Ajuste manual' };
+function hintAjuste(){
+  const tipo = document.getElementById('a-tipo').value;
+  const suma = tipo==='entrada';
+  document.getElementById('a-hint').innerHTML = `Este movimiento <b>${suma?'sumará':'restará'}</b> huevos ${suma?'al':'del'} stock.`;
+}
+
+function renderAjustes(){
+  const cont = document.getElementById('lista-ajustes');
+  if(!ajustes.length){ cont.innerHTML='<div class="vacio">Sin movimientos registrados.</div>'; return; }
+  let html = '<div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Huevos</th><th>Motivo</th><th></th></tr></thead><tbody>';
+  ajustes.forEach(a=>{
+    const pos = (a.huevos||0)>=0;
+    html += `<tr>
+      <td>${fmtFecha(a.fecha)}</td>
+      <td>${AJ_LABEL[a.tipo]||a.tipo}</td>
+      <td style="color:${pos?'var(--verde)':'var(--rojo)'};font-weight:700">${pos?'+':'−'}${num(Math.abs(a.huevos))}</td>
+      <td>${a.motivo||'—'}</td>
+      <td><div class="acc">
+        <button class="mini ed" onclick="editarAjuste('${a.id}')">✏️</button>
+        <button class="mini del" onclick="eliminarAjuste('${a.id}')">🗑️</button>
+      </div></td></tr>`;
+  });
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+}
+
+async function guardarAjuste(){
+  const fecha = document.getElementById('a-fecha').value;
+  if(!fecha){ toast('Indica la fecha','warn'); return; }
+  const tipo = document.getElementById('a-tipo').value;
+  const cant = parseInt(document.getElementById('a-huevos').value)||0;
+  if(cant<=0){ toast('Indica la cantidad de huevos','warn'); return; }
+  const huevos = tipo==='entrada' ? Math.abs(cant) : -Math.abs(cant); // signo según tipo
+  const fila = {
+    fecha, tipo, huevos,
+    motivo: document.getElementById('a-motivo').value.trim() || null,
+    user_id: currentUser.id
+  };
+  const btn = document.getElementById('btn-aj');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
+  let error;
+  if(editAjId){ ({ error } = await sb.from('ajustes_stock').update(fila).eq('id',editAjId)); }
+  else { ({ error } = await sb.from('ajustes_stock').insert(fila)); }
+  if(!error){ toast(editAjId?'✏️ Movimiento actualizado':'✅ Movimiento registrado','ok'); limpiarAjuste(); await cargarTodo(); }
+  else toast('Error: '+error.message,'err');
+  btn.disabled=false; btn.textContent = editAjId?'✅ Guardar cambios':'✅ Guardar movimiento';
+}
+
+function editarAjuste(id){
+  const a = ajustes.find(x=>x.id===id); if(!a) return;
+  editAjId = id;
+  document.getElementById('a-fecha').value = a.fecha;
+  document.getElementById('a-tipo').value = a.tipo;
+  document.getElementById('a-huevos').value = Math.abs(a.huevos||0);
+  document.getElementById('a-motivo').value = a.motivo||'';
+  hintAjuste();
+  document.getElementById('banner-aj-ed').classList.add('on');
+  document.getElementById('btn-aj').textContent='✅ Guardar cambios';
+  tab('bodega'); window.scrollTo({top:0,behavior:'smooth'});
+}
+function cancelarAjuste(){ limpiarAjuste(); }
+function limpiarAjuste(){
+  editAjId=null;
+  document.getElementById('a-tipo').value='merma';
+  document.getElementById('a-huevos').value=0;
+  document.getElementById('a-motivo').value='';
+  document.getElementById('a-fecha').value=hoy();
+  hintAjuste();
+  document.getElementById('banner-aj-ed').classList.remove('on');
+  document.getElementById('btn-aj').textContent='✅ Guardar movimiento';
+}
+
+async function eliminarAjuste(id){
+  const a = ajustes.find(x=>x.id===id); if(!a) return;
+  if(!confirm(`¿Eliminar el movimiento del ${fmtFecha(a.fecha)} (${AJ_LABEL[a.tipo]||a.tipo})?`)) return;
+  const { error } = await sb.from('ajustes_stock').delete().eq('id',id);
+  if(!error){ toast('🗑️ Movimiento eliminado','warn'); await cargarTodo(); }
   else toast('Error: '+error.message,'err');
 }
 </script>
