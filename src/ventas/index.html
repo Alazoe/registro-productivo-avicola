@@ -147,21 +147,21 @@ tr:nth-child(even) td{background:#faf8f2}
 <!-- APP -->
 <div id="app" style="display:none">
 <nav class="nav">
-  <h1>💰 Ventas y pedidos</h1>
-  <a class="nav-link" href="../supabase/" title="Ir a Producción">🐔 Producción</a>
+  <h1>📦 Bodega y ventas</h1>
+  <a class="nav-link" href="../supabase/" title="Ir a Producción (base)">🐔 Producción</a>
   <span class="nav-user" id="nav-user" onclick="logout()">— salir —</span>
 </nav>
 
 <div class="tabs">
-  <button class="tab on" data-pane="ventas"  onclick="tab('ventas')">💰 Ventas</button>
+  <button class="tab on" data-pane="bodega"  onclick="tab('bodega')">📦 Bodega</button>
   <button class="tab"     data-pane="pedidos" onclick="tab('pedidos')">📋 Pedidos</button>
-  <button class="tab"     data-pane="bodega"  onclick="tab('bodega')">📦 Bodega</button>
+  <button class="tab"     data-pane="ventas"  onclick="tab('ventas')">💰 Ventas</button>
 </div>
 
 <div class="wrap">
 
 <!-- ═══════════ PESTAÑA VENTAS ═══════════ -->
-<div class="tabpane on" id="pane-ventas">
+<div class="tabpane" id="pane-ventas">
 
   <!-- CUADRE -->
   <div class="card">
@@ -258,7 +258,7 @@ tr:nth-child(even) td{background:#faf8f2}
 </div>
 
 <!-- ═══════════ PESTAÑA BODEGA ═══════════ -->
-<div class="tabpane" id="pane-bodega">
+<div class="tabpane on" id="pane-bodega">
 
   <!-- STOCK -->
   <div class="card">
