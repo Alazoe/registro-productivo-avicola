@@ -112,6 +112,7 @@ tr:nth-child(even) td{background:#faf8f2}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#111510;color:#fff;padding:12px 22px;border-radius:20px;font-size:.88rem;z-index:999;opacity:0;transition:.3s;pointer-events:none;max-width:90vw;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast.ok{background:var(--verde-o)}#toast.err{background:var(--rojo)}#toast.warn{background:var(--naranja)}
+.banner-cuenta{background:#1e5a7a;color:#fff;padding:9px 14px;border-radius:10px;margin-bottom:10px;font-size:.82rem;font-weight:600}
 .banner-ed{display:none;background:#a8481f;color:#fff;padding:11px 14px;border-radius:10px;margin-bottom:10px;font-size:.85rem;font-weight:600;align-items:center;gap:10px}
 .banner-ed.on{display:flex}
 .banner-ed button{margin-left:auto;background:transparent;border:1.5px solid rgba(255,255,255,.7);color:#fff;border-radius:8px;padding:5px 10px;font-size:.78rem;font-weight:700;cursor:pointer}
@@ -169,6 +170,8 @@ tr:nth-child(even) td{background:#faf8f2}
 </div>
 
 <div class="wrap">
+
+<div id="banner-cuenta" class="banner-cuenta" style="display:none"></div>
 
 <!-- ═══════════ PESTAÑA VENTAS ═══════════ -->
 <div class="tabpane" id="pane-ventas">
@@ -412,7 +415,27 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null, ventas = [], editId = null, modoRecovery = false;
 let pedidos = [], editPedId = null, ajustes = [], editAjId = null;
 let recepciones = [], alAjustes = [], proveedores = [], editRecepId = null, editAlAjId = null;
+let ownerId = null; // dueño de la cuenta sobre la que trabajo (yo, o quien me invitó)
 const SACO_KG = 25; // peso del saco de alimento
+
+// Determina la cuenta a usar: la mía, salvo que esté invitado a otra (activa)
+async function resolverOwner(){
+  ownerId = currentUser.id;
+  try {
+    const { data } = await sb.from('equipo').select('dueno_id').eq('activo', true).ilike('email_invitado', currentUser.email);
+    const ajena = (data||[]).find(r => r.dueno_id !== currentUser.id);
+    if(ajena) ownerId = ajena.dueno_id;
+  } catch(e){ /* si la tabla no existe aún, trabajo sobre mi propia cuenta */ }
+}
+// Aviso cuando trabajo en la cuenta de otro (invitado)
+async function mostrarBannerCuenta(){
+  const el = document.getElementById('banner-cuenta'); if(!el) return;
+  if(ownerId === currentUser.id){ el.style.display='none'; return; }
+  let nombre = '';
+  try { const { data } = await sb.from('productores').select('nombre').eq('user_id', ownerId).maybeSingle(); nombre = data?.nombre || ''; } catch(e){}
+  el.innerHTML = `👥 Estás trabajando en la cuenta de <b>${nombre || 'otro productor'}</b> (acceso de invitado)`;
+  el.style.display = 'block';
+}
 
 // Cambio de pestaña (refleja el módulo en la URL: #bodega/#pedidos/#ventas)
 const PANES = ['bodega','alimento','pedidos','ventas'];
@@ -476,6 +499,8 @@ async function actualizarPassword(){
 async function mostrarApp(){
   pl().style.display='none'; pr().style.display='none'; document.getElementById('app').style.display='block';
   document.getElementById('nav-user').textContent='👤 '+currentUser.email+' · salir';
+  await resolverOwner();
+  mostrarBannerCuenta();
   poblarSelectsTamano();
   document.getElementById('v-fecha').value = hoy();
   document.getElementById('p-fecha').value = hoy();
@@ -532,13 +557,13 @@ async function cargarTodo(){
   const { desde, hasta } = rangoPeriodo();
 
   // Ventas del periodo
-  let qv = sb.from('ventas').select('*').eq('user_id', currentUser.id).order('fecha',{ascending:false});
+  let qv = sb.from('ventas').select('*').eq('user_id', ownerId).order('fecha',{ascending:false});
   if(desde){ qv = qv.gte('fecha',desde).lte('fecha',hasta); }
   const { data:vData } = await qv;
   ventas = vData || [];
 
   // Producción del periodo (registros del productor) — solo huevos VENDIBLES
-  let qp = sb.from('registros').select('fecha,n_huevos,sucios,rotos,trizados,sangre').eq('user_id', currentUser.id);
+  let qp = sb.from('registros').select('fecha,n_huevos,sucios,rotos,trizados,sangre').eq('user_id', ownerId);
   if(desde){ qp = qp.gte('fecha',desde).lte('fecha',hasta); }
   const { data:rData } = await qp;
 
@@ -617,7 +642,7 @@ async function guardarVenta(){
     cajas, bandejas: band, sueltos, huevos_total: huevos,
     precio_bandeja: precio, total_clp: total,
     observaciones: document.getElementById('v-obs').value.trim() || null,
-    user_id: currentUser.id
+    user_id: ownerId
   };
   const btn = document.getElementById('btn-guardar');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
@@ -672,7 +697,7 @@ async function eliminarVenta(id){
 
 // ══════════════════ PEDIDOS ══════════════════
 async function cargarPedidos(){
-  const { data } = await sb.from('pedidos').select('*').eq('user_id', currentUser.id)
+  const { data } = await sb.from('pedidos').select('*').eq('user_id', ownerId)
     .order('estado',{ascending:true}).order('fecha_entrega',{ascending:true,nullsFirst:false}).order('fecha_pedido',{ascending:false});
   pedidos = data || [];
   const pend = pedidos.filter(p=>p.estado==='pendiente');
@@ -741,7 +766,7 @@ async function guardarPedido(){
     cajas, bandejas: band, sueltos, huevos_total: huevos,
     precio_bandeja: precio, total_clp: total,
     observaciones: document.getElementById('p-obs').value.trim() || null,
-    user_id: currentUser.id
+    user_id: ownerId
   };
   const btn = document.getElementById('btn-ped');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
@@ -797,7 +822,7 @@ async function entregarPedido(id){
     cajas: p.cajas || 0, bandejas: p.bandejas, sueltos: p.sueltos, huevos_total: p.huevos_total,
     precio_bandeja: p.precio_bandeja, total_clp: p.total_clp,
     observaciones: 'Pedido entregado'+(p.observaciones?` · ${p.observaciones}`:''),
-    user_id: currentUser.id
+    user_id: ownerId
   };
   const { data:vNueva, error:eV } = await sb.from('ventas').insert(venta).select().single();
   if(eV){ toast('Error al crear venta: '+eV.message,'err'); return; }
@@ -834,9 +859,9 @@ async function eliminarPedido(id){
 async function cargarBodega(){
   // Stock físico = acumulado TOTAL (independiente del periodo seleccionado)
   const { data:rData } = await sb.from('registros')
-    .select('n_huevos,sucios,rotos,trizados,sangre,chico,mediano,grande,xl,super_xl,jumbo').eq('user_id', currentUser.id);
-  const { data:vData } = await sb.from('ventas').select('huevos_total,tamano').eq('user_id', currentUser.id);
-  const { data:aData } = await sb.from('ajustes_stock').select('*').eq('user_id', currentUser.id).order('fecha',{ascending:false});
+    .select('n_huevos,sucios,rotos,trizados,sangre,chico,mediano,grande,xl,super_xl,jumbo').eq('user_id', ownerId);
+  const { data:vData } = await sb.from('ventas').select('huevos_total,tamano').eq('user_id', ownerId);
+  const { data:aData } = await sb.from('ajustes_stock').select('*').eq('user_id', ownerId).order('fecha',{ascending:false});
   ajustes = aData || [];
 
   // Acumuladores por tamaño (+ 'mixto' = sin especificar)
@@ -942,7 +967,7 @@ async function guardarAjuste(){
     fecha, tipo, huevos,
     tamano: document.getElementById('a-tamano').value,
     motivo: document.getElementById('a-motivo').value.trim() || null,
-    user_id: currentUser.id
+    user_id: ownerId
   };
   const btn = document.getElementById('btn-aj');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
@@ -996,10 +1021,10 @@ const AL_AJ_LABEL = { merma:'Merma / pérdida', entrada:'Entrada / corrección',
 async function cargarAlimento(){
   // Datos (acumulado total, igual que el stock de huevos)
   const [prov, recep, alaj, cons] = await Promise.all([
-    sb.from('proveedores').select('*').eq('user_id', currentUser.id).order('nombre'),
-    sb.from('alimento_recepciones').select('*').eq('user_id', currentUser.id).order('fecha',{ascending:false}),
-    sb.from('alimento_ajustes').select('*').eq('user_id', currentUser.id).order('fecha',{ascending:false}),
-    sb.from('registros').select('fecha,kg_alimento').eq('user_id', currentUser.id)
+    sb.from('proveedores').select('*').eq('user_id', ownerId).order('nombre'),
+    sb.from('alimento_recepciones').select('*').eq('user_id', ownerId).order('fecha',{ascending:false}),
+    sb.from('alimento_ajustes').select('*').eq('user_id', ownerId).order('fecha',{ascending:false}),
+    sb.from('registros').select('fecha,kg_alimento').eq('user_id', ownerId)
   ]);
   proveedores = prov.data || [];
   recepciones = recep.data || [];
@@ -1065,7 +1090,7 @@ function poblarSelectProv(){
 async function nuevoProveedor(){
   const nombre = (prompt('Nombre del proveedor:')||'').trim();
   if(!nombre) return;
-  const { data, error } = await sb.from('proveedores').insert({ nombre, user_id: currentUser.id }).select().single();
+  const { data, error } = await sb.from('proveedores').insert({ nombre, user_id: ownerId }).select().single();
   if(error){ toast('Error: '+error.message,'err'); return; }
   proveedores.push(data); proveedores.sort((a,b)=>a.nombre.localeCompare(b.nombre));
   poblarSelectProv(); document.getElementById('al-prov').value = data.id;
@@ -1095,7 +1120,7 @@ async function guardarRecep(){
     lote: document.getElementById('al-lote').value.trim() || null,
     kg: kgTot, sacos, precio_kg: precio, total_clp: total,
     n_documento: document.getElementById('al-doc').value.trim() || null,
-    user_id: currentUser.id
+    user_id: ownerId
   };
   const btn = document.getElementById('btn-recep');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
@@ -1157,7 +1182,7 @@ async function guardarAlAjuste(){
   const cant = parseFloat(document.getElementById('alaj-kg').value)||0;
   if(cant<=0){ toast('Indica los kg','warn'); return; }
   const kgv = tipo==='entrada' ? Math.abs(cant) : -Math.abs(cant);
-  const fila = { fecha, tipo, kg: kgv, motivo: document.getElementById('alaj-motivo').value.trim() || null, user_id: currentUser.id };
+  const fila = { fecha, tipo, kg: kgv, motivo: document.getElementById('alaj-motivo').value.trim() || null, user_id: ownerId };
   const btn = document.getElementById('btn-alaj');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
   let error;
