@@ -39,7 +39,7 @@ create policy "equipo_acceso" on equipo for all
 do $$
 declare r record;
 begin
-  for r in (values
+  for r in select * from (values
     ('ubicaciones','ubicaciones_user','ubicaciones_acceso'),
     ('lotes','lotes_user','lotes_acceso'),
     ('pesajes','pesajes_user','pesajes_acceso'),
