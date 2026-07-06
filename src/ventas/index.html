@@ -308,8 +308,13 @@ tr:nth-child(even) td{background:#faf8f2}
         </select></label>
       </div>
       <label>Tamaño<select id="a-tamano"></select></label>
-      <label>Cantidad de huevos<input type="number" id="a-huevos" min="0" inputmode="numeric" value="0" placeholder="Ej: 24"></label>
-      <label>Motivo <span style="font-weight:400;color:#aaa">(opcional)</span><input type="text" id="a-motivo" placeholder="Ej: quiebre al trasladar, conteo físico…"></label>
+      <div class="row3">
+        <label>Cajas <span style="font-weight:400;color:#aaa">(180)</span><input type="number" id="a-cajas" min="0" step="0.5" inputmode="decimal" value="0" oninput="calcAjuste()"></label>
+        <label>Bandejas <span style="font-weight:400;color:#aaa">(30)</span><input type="number" id="a-bandejas" min="0" step="0.5" inputmode="decimal" value="0" oninput="calcAjuste()"></label>
+        <label>Sueltos<input type="number" id="a-huevos" min="0" inputmode="numeric" value="0" oninput="calcAjuste()"></label>
+      </div>
+      <div class="total-box"><span class="lbl"><span id="a-tot">0</span> huevos</span><span class="equiv" id="a-equiv"></span></div>
+      <label>Motivo <span style="font-weight:400;color:#aaa">(opcional)</span><input type="text" id="a-motivo" placeholder="Ej: cajas nuevas, conteo físico, quiebre…"></label>
       <div class="alerta alerta-ok" id="a-hint" style="display:block">Este movimiento <b>restará</b> huevos del stock.</div>
       <button class="btn btn-verde" onclick="guardarAjuste()" id="btn-aj">✅ Guardar movimiento</button>
     </div>
@@ -945,7 +950,7 @@ function renderAjustes(){
       <td>${fmtFecha(a.fecha)}</td>
       <td>${AJ_LABEL[a.tipo]||a.tipo}</td>
       <td>${labelTam(a.tamano)}</td>
-      <td style="color:${pos?'var(--verde)':'var(--rojo)'};font-weight:700">${pos?'+':'−'}${num(Math.abs(a.huevos))}</td>
+      <td style="color:${pos?'var(--verde)':'var(--rojo)'};font-weight:700">${pos?'+':'−'}${num(Math.abs(a.huevos))}<br><span style="font-size:.68rem;color:var(--muted);font-weight:400">${cajasTxt(Math.abs(a.huevos))}</span></td>
       <td>${a.motivo||'—'}</td>
       <td><div class="acc">
         <button class="mini ed" onclick="editarAjuste('${a.id}')">✏️</button>
@@ -956,12 +961,23 @@ function renderAjustes(){
   cont.innerHTML = html;
 }
 
+// Total del ajuste en huevos (cajas*180 + bandejas*30 + sueltos)
+function calcAjuste(){
+  const cajas = parseFloat(document.getElementById('a-cajas').value)||0;
+  const band  = parseFloat(document.getElementById('a-bandejas').value)||0;
+  const sueltos = parseInt(document.getElementById('a-huevos').value)||0;
+  const total = Math.round(cajas*180 + band*30) + sueltos;
+  document.getElementById('a-tot').textContent = num(total);
+  document.getElementById('a-equiv').textContent = total>0 ? '= '+cajasTxt(total) : '';
+  return total;
+}
+
 async function guardarAjuste(){
   const fecha = document.getElementById('a-fecha').value;
   if(!fecha){ toast('Indica la fecha','warn'); return; }
   const tipo = document.getElementById('a-tipo').value;
-  const cant = parseInt(document.getElementById('a-huevos').value)||0;
-  if(cant<=0){ toast('Indica la cantidad de huevos','warn'); return; }
+  const cant = calcAjuste();
+  if(cant<=0){ toast('Indica la cantidad (cajas, bandejas o huevos)','warn'); return; }
   const huevos = tipo==='entrada' ? Math.abs(cant) : -Math.abs(cant); // signo según tipo
   const fila = {
     fecha, tipo, huevos,
@@ -985,9 +1001,15 @@ function editarAjuste(id){
   document.getElementById('a-fecha').value = a.fecha;
   document.getElementById('a-tipo').value = a.tipo;
   document.getElementById('a-tamano').value = a.tamano||'mixto';
-  document.getElementById('a-huevos').value = Math.abs(a.huevos||0);
+  // Reconstruye el empaque desde el total de huevos
+  let h = Math.abs(a.huevos||0);
+  const cajas = Math.floor(h/180); h -= cajas*180;
+  const band  = Math.floor(h/30);  h -= band*30;
+  document.getElementById('a-cajas').value = cajas;
+  document.getElementById('a-bandejas').value = band;
+  document.getElementById('a-huevos').value = h;
   document.getElementById('a-motivo').value = a.motivo||'';
-  hintAjuste();
+  calcAjuste(); hintAjuste();
   document.getElementById('banner-aj-ed').classList.add('on');
   document.getElementById('btn-aj').textContent='✅ Guardar cambios';
   tab('bodega'); window.scrollTo({top:0,behavior:'smooth'});
@@ -997,10 +1019,12 @@ function limpiarAjuste(){
   editAjId=null;
   document.getElementById('a-tipo').value='merma';
   document.getElementById('a-tamano').value='mixto';
+  document.getElementById('a-cajas').value=0;
+  document.getElementById('a-bandejas').value=0;
   document.getElementById('a-huevos').value=0;
   document.getElementById('a-motivo').value='';
   document.getElementById('a-fecha').value=hoy();
-  hintAjuste();
+  calcAjuste(); hintAjuste();
   document.getElementById('banner-aj-ed').classList.remove('on');
   document.getElementById('btn-aj').textContent='✅ Guardar movimiento';
 }
