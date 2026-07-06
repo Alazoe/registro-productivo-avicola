@@ -166,6 +166,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-07 | Bodega: el **ajuste de stock** se ingresa en **cajas (180) / bandejas (30) / huevos** (antes solo huevos), con su tamaño — para agregar cajas extra, cargar stock inicial o corregir. Muestra el total y el equivalente en cajas |
 | 2026-07 | **Cuenta compartida (equipo) — Etapa 1**: el dueño invita correos (Producción → Lotes → 👥 Equipo) que ven y editan la misma información. RLS centralizada en `tiene_acceso(user_id)`; las apps resuelven el `ownerId` al entrar. Retrocompatible. `equipo-schema.sql` |
 | 2026-07 | Módulo **🌾 Alimento** en Bodega: stock de alimento = recepciones − consumo diario (registros.kg_alimento) ± ajustes; recepción con proveedor (alta rápida), lote, precio/kg y sacos de 25 kg; autonomía en días, costo/kg y alerta de stock bajo. Tablas `proveedores`, `alimento_recepciones`, `alimento_ajustes` (`alimento-schema.sql`) |
 | 2026-07 | Stock por tamaño y cajas de 180: Bodega muestra Físico/Reservado/Libre por tamaño (Chico…Jumbo + Sin especificar); ventas, pedidos y ajustes registran tamaño; se puede ingresar y ver todo en cajas de 180 (= 6 bandejas). Migración `migration-tamanos-cajas.sql` (columnas `tamano`, `cajas`) |
