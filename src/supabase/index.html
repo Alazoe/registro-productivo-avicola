@@ -275,6 +275,8 @@ label:first-child{margin-top:0}
   <div class="tab" onclick="irTab('lotes')">🐔 Lotes</div>
 </div>
 
+<div id="banner-cuenta" style="display:none;background:#1e5a7a;color:#fff;padding:9px 14px;font-size:.82rem;font-weight:600;text-align:center"></div>
+
 <!-- ══ TAB REGISTRO ══════════════════════════════════════ -->
 <div class="page active" id="page-registro">
 
@@ -581,6 +583,19 @@ label:first-child{margin-top:0}
   </div>
 
   <div class="card">
+    <div class="card-header">👥 Equipo — acceso compartido</div>
+    <div class="card-body">
+      <p style="font-size:.8rem;color:#7a8470;margin-bottom:12px">Invita a otra persona (por ejemplo un pabellonero) a esta cuenta con su correo. Verá y editará <b>la misma información</b>. Puedes desactivar su acceso cuando quieras, sin borrar nada.</p>
+      <div id="equipo-lista" style="margin-bottom:12px"></div>
+      <label>Correo del invitado
+        <input type="email" id="eq-email" placeholder="correo@ejemplo.com">
+      </label>
+      <button class="btn btn-verde" onclick="agregarInvitado()" id="btn-eq" style="margin-top:12px">➕ Dar acceso</button>
+      <p style="font-size:.75rem;color:#7a8470;margin-top:10px">ℹ️ La persona invitada debe tener una cuenta para poder entrar. Por ahora esa cuenta la crea el administrador (AviVet); pronto se creará sola.</p>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="card-header">📁 Importar historial CSV</div>
     <div class="card-body">
       <p style="font-size:.8rem;color:#7a8470;margin-bottom:10px">
@@ -651,6 +666,17 @@ let lotes = [], loteActual = null, registrosLote = [];
 let ubicaciones = [];
 let modoEdicion = false, registroEdicion = null;
 let currentUser = null, clasOculta = false;
+let ownerId = null; // dueño de la cuenta sobre la que trabajo (yo, o quien me invitó)
+
+// Determina la cuenta a usar: la mía, salvo que esté invitado a otra (activa)
+async function resolverOwner(){
+  ownerId = currentUser.id;
+  try {
+    const { data } = await sb.from('equipo').select('dueno_id').eq('activo', true).ilike('email_invitado', currentUser.email);
+    const ajena = (data||[]).find(r => r.dueno_id !== currentUser.id);
+    if(ajena) ownerId = ajena.dueno_id;
+  } catch(e){ /* si la tabla no existe aún, trabajo sobre mi propia cuenta */ }
+}
 
 const NV_DEFAULT = { sucios:'Sucios', rotos:'Rotos', trizados:'Trizados', sangre:'Con sangre' };
 const ALERTAS_DEFAULT = { email:'', copiaAsesor:true, umbralMort:0.30, umbralCaida:3, activas:true };
@@ -735,7 +761,18 @@ async function mostrarApp() {
   document.getElementById('app').style.display = 'block';
   document.getElementById('nav-user').textContent = '👤 ' + currentUser.email + ' · salir';
   document.getElementById('fecha-input').value = hoy();
+  await resolverOwner();
+  mostrarBannerCuenta();
   await Promise.all([cargarLotes(), cargarConfig(), cargarNombreProductor()]);
+}
+// Aviso cuando trabajo en la cuenta de otro (invitado)
+async function mostrarBannerCuenta(){
+  const el = document.getElementById('banner-cuenta'); if(!el) return;
+  if(ownerId === currentUser.id){ el.style.display='none'; return; }
+  let nombre = '';
+  try { const { data } = await sb.from('productores').select('nombre').eq('user_id', ownerId).maybeSingle(); nombre = data?.nombre || ''; } catch(e){}
+  el.innerHTML = `👥 Estás trabajando en la cuenta de <b>${nombre || 'otro productor'}</b> (acceso de invitado)`;
+  el.style.display = 'block';
 }
 
 // ══ TABS ════════════════════════════════════════════════════════
@@ -744,8 +781,51 @@ function irTab(tab) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
   if (tab === 'graficos') renderGraficosTab();
-  if (tab === 'lotes')    { renderListaLotes(); renderListaUbicaciones(); renderConfigCard(); renderAlertasCard(); }
+  if (tab === 'lotes')    { renderListaLotes(); renderListaUbicaciones(); renderConfigCard(); renderAlertasCard(); cargarEquipo(); }
   if (tab === 'datos')    renderHistorial();
+}
+
+// ══ EQUIPO — acceso compartido ═════════════════════════════════
+let equipo = [];
+async function cargarEquipo(){
+  const cont = document.getElementById('equipo-lista'); if(!cont) return;
+  const { data, error } = await sb.from('equipo').select('*').eq('dueno_id', ownerId).order('created_at');
+  if(error){ cont.innerHTML = '<p style="font-size:.8rem;color:#b03a2e">No se pudo cargar el equipo. ¿Ejecutaste equipo-schema.sql en Supabase?</p>'; return; }
+  equipo = data || [];
+  const soloMia = ownerId === currentUser.id;
+  if(!equipo.length){ cont.innerHTML = `<p style="font-size:.82rem;color:#7a8470">Nadie tiene acceso todavía${soloMia?'':' (cuenta ajena)'}. Agrega un correo abajo.</p>`; return; }
+  cont.innerHTML = equipo.map(e=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid var(--border);border-radius:9px;margin-bottom:7px">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:.86rem;word-break:break-all">${e.email_invitado}</div>
+        <div style="font-size:.72rem;color:${e.activo?'#3d7a42':'#a39d8c'}">${e.activo?'✅ Acceso activo':'⏸️ Desactivado'}</div>
+      </div>
+      <button onclick="toggleInvitado('${e.id}',${e.activo})" style="border:none;border-radius:7px;padding:6px 10px;font-size:.75rem;font-weight:600;cursor:pointer;background:${e.activo?'#f6efd9':'#e4ede5'};color:#5a5030">${e.activo?'Desactivar':'Activar'}</button>
+      <button onclick="eliminarInvitado('${e.id}')" style="border:1px solid #f3c4bd;border-radius:7px;padding:6px 9px;font-size:.75rem;cursor:pointer;background:#fbe9e7;color:#b03a2e">🗑️</button>
+    </div>`).join('');
+}
+async function agregarInvitado(){
+  const inp = document.getElementById('eq-email');
+  const email = (inp.value||'').trim().toLowerCase();
+  if(!email || !email.includes('@')){ alert('Escribe un correo válido.'); return; }
+  if(email === currentUser.email.toLowerCase()){ alert('Ese es tu propio correo.'); return; }
+  const btn = document.getElementById('btn-eq'); btn.disabled=true; btn.textContent='Agregando…';
+  const { error } = await sb.from('equipo').insert({ dueno_id: ownerId, email_invitado: email, activo: true });
+  btn.disabled=false; btn.textContent='➕ Dar acceso';
+  if(error){ alert(error.message.includes('duplicate')?'Ese correo ya está invitado.':'Error: '+error.message); return; }
+  inp.value=''; cargarEquipo();
+}
+async function toggleInvitado(id, activo){
+  const { error } = await sb.from('equipo').update({ activo: !activo }).eq('id', id);
+  if(error){ alert('Error: '+error.message); return; }
+  cargarEquipo();
+}
+async function eliminarInvitado(id){
+  const e = equipo.find(x=>x.id===id);
+  if(!confirm(`¿Quitar el acceso de ${e?e.email_invitado:'este correo'}?`)) return;
+  const { error } = await sb.from('equipo').delete().eq('id', id);
+  if(error){ alert('Error: '+error.message); return; }
+  cargarEquipo();
 }
 
 // ══ LOTES ═══════════════════════════════════════════════════════
@@ -859,7 +939,7 @@ async function crearLote() {
   if (!nombre || !fecha) { toast('Completa nombre y fecha de nacimiento','warn'); return; }
   const btn = document.getElementById('btn-crear-lote');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
-  const { error } = await sb.from('lotes').insert({ nombre, fecha_nac:fecha, n_aves:parseInt(aves)||0, linea_genetica:linea, ubicacion_id, user_id:currentUser.id });
+  const { error } = await sb.from('lotes').insert({ nombre, fecha_nac:fecha, n_aves:parseInt(aves)||0, linea_genetica:linea, ubicacion_id, user_id:ownerId });
   if (!error) {
     toast('✅ Lote creado','ok');
     document.getElementById('nl-nombre').value=''; document.getElementById('nl-fecha').value=''; document.getElementById('nl-aves').value='';
@@ -971,7 +1051,7 @@ async function crearUbicacion() {
   if (!nombre) { toast('Escribe un nombre para la ubicación','warn'); return; }
   const btn = document.getElementById('btn-crear-ub');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
-  const { error } = await sb.from('ubicaciones').insert({ nombre, user_id:currentUser.id });
+  const { error } = await sb.from('ubicaciones').insert({ nombre, user_id:ownerId });
   if (!error) {
     toast('✅ Ubicación creada','ok');
     document.getElementById('ub-nombre').value='';
@@ -991,7 +1071,7 @@ async function eliminarUbicacion(id, nombre) {
 
 // ══ NOMBRE DEL PRODUCTOR ═══════════════════════════════════════
 async function cargarNombreProductor() {
-  const { data } = await sb.from('productores').select('nombre').eq('user_id', currentUser.id).maybeSingle();
+  const { data } = await sb.from('productores').select('nombre').eq('user_id', ownerId).maybeSingle();
   nombreProductor = data?.nombre || '';
   const inp = document.getElementById('np-nombre');
   if (inp) inp.value = nombreProductor;
@@ -1003,7 +1083,7 @@ async function guardarNombreProductor() {
   const btn = document.getElementById('btn-np');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Guardando…';
   const { error } = await sb.from('productores').upsert(
-    { user_id: currentUser.id, nombre, updated_at: new Date().toISOString() },
+    { user_id: ownerId, nombre, updated_at: new Date().toISOString() },
     { onConflict: 'user_id' }
   );
   if (!error) { nombreProductor = nombre; toast('✅ Nombre guardado','ok'); }
@@ -1013,7 +1093,7 @@ async function guardarNombreProductor() {
 
 // ══ CONFIG USUARIO ═════════════════════════════════════════════
 async function cargarConfig() {
-  const { data } = await sb.from('user_config').select('config').eq('user_id', currentUser.id).maybeSingle();
+  const { data } = await sb.from('user_config').select('config').eq('user_id', ownerId).maybeSingle();
   if (data?.config?.noVendibles) userConfig.noVendibles = { ...NV_DEFAULT, ...data.config.noVendibles };
   if (data?.config?.alertas)     userConfig.alertas     = { ...ALERTAS_DEFAULT, ...data.config.alertas };
   aplicarLabelsNV();
@@ -1046,7 +1126,7 @@ async function guardarConfig() {
   const btn = document.getElementById('btn-guardar-cfg');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Guardando…';
   const { error } = await sb.from('user_config').upsert(
-    { user_id: currentUser.id, config: { ...userConfig, noVendibles: nv }, updated_at: new Date().toISOString() },
+    { user_id: ownerId, config: { ...userConfig, noVendibles: nv }, updated_at: new Date().toISOString() },
     { onConflict: 'user_id' }
   );
   if (!error) {
@@ -1079,7 +1159,7 @@ async function guardarAlertas() {
   const btn = document.getElementById('btn-guardar-al');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Guardando…';
   const { error } = await sb.from('user_config').upsert(
-    { user_id: currentUser.id, config: { ...userConfig, alertas: a }, updated_at: new Date().toISOString() },
+    { user_id: ownerId, config: { ...userConfig, alertas: a }, updated_at: new Date().toISOString() },
     { onConflict: 'user_id' }
   );
   if (!error) { userConfig.alertas = a; toast('✅ Alertas configuradas','ok'); }
@@ -1197,7 +1277,7 @@ async function guardarRegistro(sobreescribir=false) {
     kg_alimento:kgAlim, n_huevos:nHuevos, chico, mediano, grande, xl, super_xl:superXl, jumbo,
     sucios, rotos, trizados, sangre, kg_por_ave:kgPorAve,
     pct_postura:pctPost, pct_esperado:pctEsp, diferencia:dif,
-    observaciones:obs, user_id:currentUser.id,
+    observaciones:obs, user_id:ownerId,
   };
 
   const prevReg = [...registrosLote].reverse().find(r => r.fecha < fecha) || null;
@@ -1493,7 +1573,7 @@ async function confirmarImport() {
     const { error } = await sb.from('registros').upsert({
       ...r, lote_id:loteId, semana_vida:sem, kg_por_ave:kgPorAve,
       pct_postura:pctPost, pct_esperado:pctEsp, diferencia:Math.round((pctPost-pctEsp)*10000)/10000,
-      user_id:currentUser.id,
+      user_id:ownerId,
     }, { onConflict:'lote_id,fecha', ignoreDuplicates:false });
     if (error) err++; else ok++;
   }

@@ -54,7 +54,8 @@ El sistema está en transición de Google Apps Script (GAS) + Google Sheets a un
 ```
 src/supabase/
 ├── index.html            ← App de producción (todos los productores)
-└── supabase-schema.sql   ← Tablas y políticas RLS
+├── supabase-schema.sql   ← Tablas y políticas RLS
+└── equipo-schema.sql     ← Cuenta compartida: tabla equipo + función tiene_acceso + RLS por cuenta
 src/ventas/
 ├── index.html                  ← App de ventas, pedidos y bodega (opcional por productor)
 ├── ventas-schema.sql           ← Tabla ventas + RLS
@@ -91,6 +92,9 @@ src/ventas/
 | `alimento_recepciones` | Compras/entradas de alimento por usuario (fecha, proveedor, lote, kg, sacos, precio/kg, N° documento) |
 | `alimento_ajustes` | Mermas/correcciones del stock de alimento por usuario; `kg` es un delta con signo |
 | `user_config` | Preferencias por usuario en JSONB (no vendibles, alertas, correcciones de nombres del asesor) |
+| `equipo` | Acceso compartido: `dueno_id` → `email_invitado` activo/inactivo. Un correo invitado ve y edita la cuenta del dueño (Etapa 1: rol editor) |
+
+**Cuenta compartida (equipo):** la función `tiene_acceso(owner)` centraliza la regla de acceso: un dato con `user_id = X` es visible/editable si `auth.uid() = X` **o** tu correo está invitado y activo en la cuenta `X`. Todas las tablas de datos usan `tiene_acceso(user_id)` en sus políticas RLS. Es retrocompatible: sin invitaciones, equivale a `user_id = auth.uid()`. Las apps calculan al entrar el `ownerId` (mi cuenta, o la de quien me invitó) y trabajan sobre ella. El dueño gestiona los correos en Producción → Lotes → 👥 Equipo.
 
 Todas las tablas tienen Row Level Security activado: cada usuario ve y modifica solo sus propios datos. **Excepción:** `productores` permite a cualquier usuario autenticado *leer* los nombres (solo el nombre, sin datos productivos), para que el dashboard del asesor identifique a cada productor.
 
@@ -162,6 +166,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-07 | **Cuenta compartida (equipo) — Etapa 1**: el dueño invita correos (Producción → Lotes → 👥 Equipo) que ven y editan la misma información. RLS centralizada en `tiene_acceso(user_id)`; las apps resuelven el `ownerId` al entrar. Retrocompatible. `equipo-schema.sql` |
 | 2026-07 | Módulo **🌾 Alimento** en Bodega: stock de alimento = recepciones − consumo diario (registros.kg_alimento) ± ajustes; recepción con proveedor (alta rápida), lote, precio/kg y sacos de 25 kg; autonomía en días, costo/kg y alerta de stock bajo. Tablas `proveedores`, `alimento_recepciones`, `alimento_ajustes` (`alimento-schema.sql`) |
 | 2026-07 | Stock por tamaño y cajas de 180: Bodega muestra Físico/Reservado/Libre por tamaño (Chico…Jumbo + Sin especificar); ventas, pedidos y ajustes registran tamaño; se puede ingresar y ver todo en cajas de 180 (= 6 bandejas). Migración `migration-tamanos-cajas.sql` (columnas `tamano`, `cajas`) |
 | 2026-07 | Navegación entre módulos: la app de Producción enlaza directo a Bodega/Pedidos/Ventas (`../ventas/#tab`) y el módulo abre en la pestaña del enlace (recuerda el módulo en la URL) |
