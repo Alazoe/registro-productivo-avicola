@@ -33,7 +33,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 
 /* TABS */
 .tabs{max-width:680px;margin:14px auto 0;padding:0 14px;display:flex;gap:6px}
-.tab{flex:1;background:var(--white);border:1px solid var(--border);border-bottom:none;border-radius:10px 10px 0 0;padding:11px 6px;font-size:.82rem;font-weight:700;color:var(--muted);cursor:pointer;font-family:inherit;transition:.15s}
+.tab{flex:1;background:var(--white);border:1px solid var(--border);border-bottom:none;border-radius:10px 10px 0 0;padding:11px 3px;font-size:.74rem;font-weight:700;color:var(--muted);cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
 .tab.on{background:var(--verde-o);color:#fff;border-color:var(--verde-o)}
 .tabpane{display:none}
 .tabpane.on{display:block}
@@ -162,9 +162,10 @@ tr:nth-child(even) td{background:#faf8f2}
 </nav>
 
 <div class="tabs">
-  <button class="tab on" data-pane="bodega"  onclick="tab('bodega')">📦 Bodega</button>
-  <button class="tab"     data-pane="pedidos" onclick="tab('pedidos')">📋 Pedidos</button>
-  <button class="tab"     data-pane="ventas"  onclick="tab('ventas')">💰 Ventas</button>
+  <button class="tab on" data-pane="bodega"   onclick="tab('bodega')">📦 Bodega</button>
+  <button class="tab"     data-pane="alimento" onclick="tab('alimento')">🌾 Alimento</button>
+  <button class="tab"     data-pane="pedidos"  onclick="tab('pedidos')">📋 Pedidos</button>
+  <button class="tab"     data-pane="ventas"   onclick="tab('ventas')">💰 Ventas</button>
 </div>
 
 <div class="wrap">
@@ -321,6 +322,84 @@ tr:nth-child(even) td{background:#faf8f2}
 
 </div>
 
+<!-- ═══════════ PESTAÑA ALIMENTO ═══════════ -->
+<div class="tabpane" id="pane-alimento">
+
+  <!-- STOCK ALIMENTO -->
+  <div class="card">
+    <div class="card-header"><span>🌾 Stock de alimento</span><span style="font-weight:400;font-size:.62rem;text-transform:none;opacity:.7">acumulado total</span></div>
+    <div class="card-body">
+      <div class="cuadre-grid">
+        <div class="cu prod"><div class="cu-t">🌾 En bodega</div><div class="cu-v" id="al-stock">—</div><div class="cu-s">kg</div></div>
+        <div class="cu comp"><div class="cu-t">📆 Autonomía</div><div class="cu-v" id="al-dias">—</div><div class="cu-s">días</div></div>
+        <div class="cu libre"><div class="cu-t">💲 Costo/kg</div><div class="cu-v" id="al-costo">—</div><div class="cu-s" id="al-valor">—</div></div>
+      </div>
+      <div class="banner" id="banner-alimento"></div>
+      <div class="desglose" id="al-desglose"></div>
+    </div>
+  </div>
+
+  <!-- RECEPCIÓN -->
+  <div class="card">
+    <div class="card-header">➕ Recepción de alimento</div>
+    <div class="card-body">
+      <div class="banner-ed" id="banner-recep-ed">✏️ Editando recepción <button onclick="cancelarRecep()">✕ Cancelar</button></div>
+      <div class="row2">
+        <label>Fecha<input type="date" id="al-fecha"></label>
+        <label>Proveedor
+          <div style="display:flex;gap:6px;align-items:stretch">
+            <select id="al-prov" style="margin-top:5px"></select>
+            <button class="btn btn-verde btn-sm" style="margin-top:5px;flex:0 0 auto" onclick="nuevoProveedor()" title="Nuevo proveedor">＋</button>
+          </div>
+        </label>
+      </div>
+      <div class="row2">
+        <label>Cantidad<input type="number" id="al-cant" min="0" step="0.1" inputmode="decimal" value="0" oninput="calcRecep()"></label>
+        <label>Unidad<select id="al-unidad" onchange="calcRecep()">
+          <option value="kg">Kilos</option>
+          <option value="saco">Sacos (25 kg)</option>
+        </select></label>
+      </div>
+      <div class="row2">
+        <label>N° de lote <span style="font-weight:400;color:#aaa">(opcional)</span><input type="text" id="al-lote" placeholder="Trazabilidad"></label>
+        <label>Precio por kg (CLP)<input type="number" id="al-precio" min="0" inputmode="numeric" placeholder="Ej: 320" oninput="calcRecep()"></label>
+      </div>
+      <label>N° documento / factura <span style="font-weight:400;color:#aaa">(opcional)</span><input type="text" id="al-doc" placeholder="N° guía o factura"></label>
+      <div class="total-box"><span class="lbl"><span id="al-tkg">0</span> kg</span><span class="val" id="al-ttotal">$0</span><span class="equiv" id="al-tequiv"></span></div>
+      <button class="btn btn-verde" onclick="guardarRecep()" id="btn-recep">✅ Guardar recepción</button>
+    </div>
+  </div>
+
+  <!-- AJUSTE DE ALIMENTO -->
+  <div class="card">
+    <div class="card-header">➕ Ajuste de stock <span style="font-weight:400;font-size:.62rem;text-transform:none;opacity:.7">merma / corrección</span></div>
+    <div class="card-body">
+      <div class="banner-ed" id="banner-alaj-ed">✏️ Editando ajuste <button onclick="cancelarAlAjuste()">✕ Cancelar</button></div>
+      <div class="row2">
+        <label>Fecha<input type="date" id="alaj-fecha"></label>
+        <label>Tipo<select id="alaj-tipo" onchange="hintAlAjuste()">
+          <option value="merma">Merma / pérdida (−)</option>
+          <option value="entrada">Entrada / corrección (+)</option>
+          <option value="ajuste">Ajuste manual (−)</option>
+        </select></label>
+      </div>
+      <label>Cantidad (kg)<input type="number" id="alaj-kg" min="0" step="0.1" inputmode="decimal" value="0"></label>
+      <label>Motivo <span style="font-weight:400;color:#aaa">(opcional)</span><input type="text" id="alaj-motivo" placeholder="Ej: humedad, conteo físico…"></label>
+      <div class="alerta alerta-ok" id="alaj-hint" style="display:block">Este movimiento <b>restará</b> kg del stock.</div>
+      <button class="btn btn-verde" onclick="guardarAlAjuste()" id="btn-alaj">✅ Guardar ajuste</button>
+    </div>
+  </div>
+
+  <!-- LISTA RECEPCIONES -->
+  <div class="card">
+    <div class="card-header">📂 Recepciones y ajustes</div>
+    <div class="card-body">
+      <div id="lista-alimento"><div class="vacio">Cargando…</div></div>
+    </div>
+  </div>
+
+</div>
+
 </div></div>
 
 <div id="toast"></div>
@@ -332,9 +411,11 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null, ventas = [], editId = null, modoRecovery = false;
 let pedidos = [], editPedId = null, ajustes = [], editAjId = null;
+let recepciones = [], alAjustes = [], proveedores = [], editRecepId = null, editAlAjId = null;
+const SACO_KG = 25; // peso del saco de alimento
 
 // Cambio de pestaña (refleja el módulo en la URL: #bodega/#pedidos/#ventas)
-const PANES = ['bodega','pedidos','ventas'];
+const PANES = ['bodega','alimento','pedidos','ventas'];
 function tab(name){
   if(!PANES.includes(name)) name = 'bodega';
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.pane===name));
@@ -399,6 +480,8 @@ async function mostrarApp(){
   document.getElementById('v-fecha').value = hoy();
   document.getElementById('p-fecha').value = hoy();
   document.getElementById('a-fecha').value = hoy();
+  document.getElementById('al-fecha').value = hoy();
+  document.getElementById('alaj-fecha').value = hoy();
   if(location.hash) tab(location.hash.slice(1)); // abre en el módulo del enlace
   cargarTodo();
 }
@@ -485,6 +568,7 @@ async function cargarTodo(){
   renderVentas();
   cargarPedidos();
   cargarBodega();
+  cargarAlimento();
 }
 
 function renderVentas(){
@@ -902,6 +986,253 @@ async function eliminarAjuste(id){
   const { error } = await sb.from('ajustes_stock').delete().eq('id',id);
   if(!error){ toast('🗑️ Movimiento eliminado','warn'); await cargarTodo(); }
   else toast('Error: '+error.message,'err');
+}
+
+// ══════════════════ ALIMENTO ══════════════════
+function kg(n){ return (Math.round((n||0)*10)/10).toLocaleString('es-CL')+' kg'; }
+function nombreProv(id){ const p = proveedores.find(x=>x.id===id); return p ? p.nombre : '—'; }
+const AL_AJ_LABEL = { merma:'Merma / pérdida', entrada:'Entrada / corrección', ajuste:'Ajuste manual' };
+
+async function cargarAlimento(){
+  // Datos (acumulado total, igual que el stock de huevos)
+  const [prov, recep, alaj, cons] = await Promise.all([
+    sb.from('proveedores').select('*').eq('user_id', currentUser.id).order('nombre'),
+    sb.from('alimento_recepciones').select('*').eq('user_id', currentUser.id).order('fecha',{ascending:false}),
+    sb.from('alimento_ajustes').select('*').eq('user_id', currentUser.id).order('fecha',{ascending:false}),
+    sb.from('registros').select('fecha,kg_alimento').eq('user_id', currentUser.id)
+  ]);
+  proveedores = prov.data || [];
+  recepciones = recep.data || [];
+  alAjustes   = alaj.data || [];
+  const registros = cons.data || [];
+  poblarSelectProv();
+
+  const entradas = recepciones.reduce((s,r)=>s+(Number(r.kg)||0),0);
+  const consumo  = registros.reduce((s,r)=>s+(Number(r.kg_alimento)||0),0);
+  const ajuste   = alAjustes.reduce((s,a)=>s+(Number(a.kg)||0),0); // con signo
+  const stock    = entradas - consumo + ajuste;
+
+  // Consumo diario promedio (últimos 14 días con registro)
+  const hoyD = new Date(); const desde = new Date(hoyD); desde.setDate(desde.getDate()-13);
+  const desdeS = desde.toLocaleDateString('en-CA');
+  const recientes = registros.filter(r=>r.fecha>=desdeS);
+  const dias = new Set(recientes.map(r=>r.fecha)).size;
+  const consDiario = dias>0 ? recientes.reduce((s,r)=>s+(Number(r.kg_alimento)||0),0)/dias : 0;
+  const autonomia = consDiario>0 ? stock/consDiario : null;
+
+  // Costo por kg (promedio ponderado de recepciones con precio)
+  let kgConPrecio=0, gasto=0;
+  recepciones.forEach(r=>{ const k=Number(r.kg)||0, p=Number(r.precio_kg)||0; if(p>0){ kgConPrecio+=k; gasto+=k*p; } });
+  const costoKg = kgConPrecio>0 ? gasto/kgConPrecio : 0;
+
+  document.getElementById('al-stock').textContent = num(stock);
+  document.getElementById('al-dias').textContent  = autonomia===null ? '—' : Math.floor(autonomia);
+  document.getElementById('al-costo').textContent = costoKg>0 ? clp(costoKg) : '—';
+  document.getElementById('al-valor').textContent = costoKg>0 ? 'valor '+clp(stock*costoKg) : 'sin precio';
+
+  const stEl = document.getElementById('al-stock');
+  stEl.parentElement.style.background = stock<0 ? '#fbe9e7' : '#e4ede5';
+  stEl.style.color = stock<0 ? 'var(--rojo)' : 'var(--verde)';
+
+  const banner = document.getElementById('banner-alimento');
+  if(stock < 0){
+    banner.className='banner bad';
+    banner.textContent = `⚠️ El consumo registrado supera lo recibido en ${num(-stock)} kg. Revisa las recepciones o el consumo.`;
+  } else if(autonomia!==null && autonomia < 7){
+    banner.className='banner bad';
+    banner.textContent = `⚠️ Queda alimento para ~${Math.floor(autonomia)} día(s). Conviene comprar pronto (consumo ~${kg(consDiario)}/día).`;
+  } else {
+    banner.className='banner ok';
+    banner.textContent = autonomia!==null
+      ? `✅ Quedan ${kg(stock)} · alcanza ~${Math.floor(autonomia)} días al ritmo actual (~${kg(consDiario)}/día).`
+      : `✅ Quedan ${kg(stock)} en bodega. Registra producción para estimar la autonomía.`;
+  }
+  const signo = n => (n<0?'−':'+')+kg(Math.abs(n));
+  document.getElementById('al-desglose').innerHTML =
+    `📥 Recibido: <b>${kg(entradas)}</b><br>`+
+    `🐔 Consumido: <b>−${kg(consumo)}</b> · 🔧 ajustes: <b>${signo(ajuste)}</b><br>`+
+    `= 🌾 Stock: <b>${kg(stock)}</b>`;
+  renderAlimentoLista();
+}
+
+function poblarSelectProv(){
+  const sel = document.getElementById('al-prov'); if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— Sin proveedor —</option>' + proveedores.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
+  if(prev) sel.value = prev;
+}
+
+async function nuevoProveedor(){
+  const nombre = (prompt('Nombre del proveedor:')||'').trim();
+  if(!nombre) return;
+  const { data, error } = await sb.from('proveedores').insert({ nombre, user_id: currentUser.id }).select().single();
+  if(error){ toast('Error: '+error.message,'err'); return; }
+  proveedores.push(data); proveedores.sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  poblarSelectProv(); document.getElementById('al-prov').value = data.id;
+  toast('✅ Proveedor agregado','ok');
+}
+
+function calcRecep(){
+  const cant = parseFloat(document.getElementById('al-cant').value)||0;
+  const unidad = document.getElementById('al-unidad').value;
+  const precio = parseFloat(document.getElementById('al-precio').value)||0;
+  const kgTot = unidad==='saco' ? cant*SACO_KG : cant;
+  const total = Math.round(kgTot*precio);
+  document.getElementById('al-tkg').textContent = (Math.round(kgTot*10)/10).toLocaleString('es-CL');
+  document.getElementById('al-ttotal').textContent = clp(total);
+  document.getElementById('al-tequiv').textContent = unidad==='saco' && cant>0 ? `= ${cant} saco(s) de ${SACO_KG} kg` : '';
+  return { kgTot, total, precio, sacos: unidad==='saco'?cant:0 };
+}
+
+async function guardarRecep(){
+  const fecha = document.getElementById('al-fecha').value;
+  if(!fecha){ toast('Indica la fecha','warn'); return; }
+  const { kgTot, total, precio, sacos } = calcRecep();
+  if(kgTot<=0){ toast('Indica la cantidad recibida','warn'); return; }
+  const provId = document.getElementById('al-prov').value || null;
+  const fila = {
+    fecha, proveedor_id: provId,
+    lote: document.getElementById('al-lote').value.trim() || null,
+    kg: kgTot, sacos, precio_kg: precio, total_clp: total,
+    n_documento: document.getElementById('al-doc').value.trim() || null,
+    user_id: currentUser.id
+  };
+  const btn = document.getElementById('btn-recep');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
+  let error;
+  if(editRecepId){ ({ error } = await sb.from('alimento_recepciones').update(fila).eq('id',editRecepId)); }
+  else { ({ error } = await sb.from('alimento_recepciones').insert(fila)); }
+  if(!error){ toast(editRecepId?'✏️ Recepción actualizada':'✅ Recepción registrada','ok'); limpiarRecep(); await cargarAlimento(); }
+  else toast('Error: '+error.message,'err');
+  btn.disabled=false; btn.textContent = editRecepId?'✅ Guardar cambios':'✅ Guardar recepción';
+}
+
+function editarRecep(id){
+  const r = recepciones.find(x=>x.id===id); if(!r) return;
+  editRecepId = id;
+  document.getElementById('al-fecha').value = r.fecha;
+  document.getElementById('al-prov').value = r.proveedor_id||'';
+  document.getElementById('al-lote').value = r.lote||'';
+  document.getElementById('al-doc').value = r.n_documento||'';
+  document.getElementById('al-precio').value = Number(r.precio_kg)||'';
+  // Reconstruye cantidad/unidad
+  if(Number(r.sacos)>0){ document.getElementById('al-unidad').value='saco'; document.getElementById('al-cant').value=Number(r.sacos); }
+  else { document.getElementById('al-unidad').value='kg'; document.getElementById('al-cant').value=Number(r.kg)||0; }
+  calcRecep();
+  document.getElementById('banner-recep-ed').classList.add('on');
+  document.getElementById('btn-recep').textContent='✅ Guardar cambios';
+  tab('alimento'); window.scrollTo({top:0,behavior:'smooth'});
+}
+function cancelarRecep(){ limpiarRecep(); }
+function limpiarRecep(){
+  editRecepId=null;
+  document.getElementById('al-cant').value=0;
+  document.getElementById('al-unidad').value='kg';
+  document.getElementById('al-prov').value='';
+  document.getElementById('al-lote').value='';
+  document.getElementById('al-precio').value='';
+  document.getElementById('al-doc').value='';
+  document.getElementById('al-fecha').value=hoy();
+  calcRecep();
+  document.getElementById('banner-recep-ed').classList.remove('on');
+  document.getElementById('btn-recep').textContent='✅ Guardar recepción';
+}
+async function eliminarRecep(id){
+  const r = recepciones.find(x=>x.id===id); if(!r) return;
+  if(!confirm(`¿Eliminar la recepción del ${fmtFecha(r.fecha)} (${kg(r.kg)})?`)) return;
+  const { error } = await sb.from('alimento_recepciones').delete().eq('id',id);
+  if(!error){ toast('🗑️ Recepción eliminada','warn'); await cargarAlimento(); }
+  else toast('Error: '+error.message,'err');
+}
+
+// Ajuste de alimento
+function hintAlAjuste(){
+  const suma = document.getElementById('alaj-tipo').value==='entrada';
+  document.getElementById('alaj-hint').innerHTML = `Este movimiento <b>${suma?'sumará':'restará'}</b> kg ${suma?'al':'del'} stock.`;
+}
+async function guardarAlAjuste(){
+  const fecha = document.getElementById('alaj-fecha').value;
+  if(!fecha){ toast('Indica la fecha','warn'); return; }
+  const tipo = document.getElementById('alaj-tipo').value;
+  const cant = parseFloat(document.getElementById('alaj-kg').value)||0;
+  if(cant<=0){ toast('Indica los kg','warn'); return; }
+  const kgv = tipo==='entrada' ? Math.abs(cant) : -Math.abs(cant);
+  const fila = { fecha, tipo, kg: kgv, motivo: document.getElementById('alaj-motivo').value.trim() || null, user_id: currentUser.id };
+  const btn = document.getElementById('btn-alaj');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
+  let error;
+  if(editAlAjId){ ({ error } = await sb.from('alimento_ajustes').update(fila).eq('id',editAlAjId)); }
+  else { ({ error } = await sb.from('alimento_ajustes').insert(fila)); }
+  if(!error){ toast(editAlAjId?'✏️ Ajuste actualizado':'✅ Ajuste registrado','ok'); limpiarAlAjuste(); await cargarAlimento(); }
+  else toast('Error: '+error.message,'err');
+  btn.disabled=false; btn.textContent = editAlAjId?'✅ Guardar cambios':'✅ Guardar ajuste';
+}
+function editarAlAjuste(id){
+  const a = alAjustes.find(x=>x.id===id); if(!a) return;
+  editAlAjId = id;
+  document.getElementById('alaj-fecha').value = a.fecha;
+  document.getElementById('alaj-tipo').value = a.tipo;
+  document.getElementById('alaj-kg').value = Math.abs(Number(a.kg)||0);
+  document.getElementById('alaj-motivo').value = a.motivo||'';
+  hintAlAjuste();
+  document.getElementById('banner-alaj-ed').classList.add('on');
+  document.getElementById('btn-alaj').textContent='✅ Guardar cambios';
+  tab('alimento'); window.scrollTo({top:0,behavior:'smooth'});
+}
+function cancelarAlAjuste(){ limpiarAlAjuste(); }
+function limpiarAlAjuste(){
+  editAlAjId=null;
+  document.getElementById('alaj-tipo').value='merma';
+  document.getElementById('alaj-kg').value=0;
+  document.getElementById('alaj-motivo').value='';
+  document.getElementById('alaj-fecha').value=hoy();
+  hintAlAjuste();
+  document.getElementById('banner-alaj-ed').classList.remove('on');
+  document.getElementById('btn-alaj').textContent='✅ Guardar ajuste';
+}
+async function eliminarAlAjuste(id){
+  const a = alAjustes.find(x=>x.id===id); if(!a) return;
+  if(!confirm(`¿Eliminar el ajuste del ${fmtFecha(a.fecha)} (${AL_AJ_LABEL[a.tipo]||a.tipo})?`)) return;
+  const { error } = await sb.from('alimento_ajustes').delete().eq('id',id);
+  if(!error){ toast('🗑️ Ajuste eliminado','warn'); await cargarAlimento(); }
+  else toast('Error: '+error.message,'err');
+}
+
+// Lista combinada de recepciones (+) y ajustes de alimento
+function renderAlimentoLista(){
+  const cont = document.getElementById('lista-alimento');
+  const items = [
+    ...recepciones.map(r=>({ tipo:'recep', fecha:r.fecha, ref:r })),
+    ...alAjustes.map(a=>({ tipo:'ajuste', fecha:a.fecha, ref:a }))
+  ].sort((x,y)=> y.fecha.localeCompare(x.fecha));
+  if(!items.length){ cont.innerHTML='<div class="vacio">Sin recepciones ni ajustes.</div>'; return; }
+  let html = '<div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Detalle</th><th>Kg</th><th></th></tr></thead><tbody>';
+  items.forEach(it=>{
+    if(it.tipo==='recep'){
+      const r = it.ref;
+      const det = `📥 ${nombreProv(r.proveedor_id)}${r.lote?` · lote ${r.lote}`:''}${Number(r.precio_kg)>0?` · ${clp(r.precio_kg)}/kg`:''}`;
+      html += `<tr>
+        <td>${fmtFecha(r.fecha)}</td>
+        <td>${det}</td>
+        <td style="color:var(--verde);font-weight:700">+${num(r.kg)}</td>
+        <td><div class="acc">
+          <button class="mini ed" onclick="editarRecep('${r.id}')">✏️</button>
+          <button class="mini del" onclick="eliminarRecep('${r.id}')">🗑️</button>
+        </div></td></tr>`;
+    } else {
+      const a = it.ref; const pos = (Number(a.kg)||0)>=0;
+      html += `<tr>
+        <td>${fmtFecha(a.fecha)}</td>
+        <td>🔧 ${AL_AJ_LABEL[a.tipo]||a.tipo}${a.motivo?` · ${a.motivo}`:''}</td>
+        <td style="color:${pos?'var(--verde)':'var(--rojo)'};font-weight:700">${pos?'+':'−'}${num(Math.abs(a.kg))}</td>
+        <td><div class="acc">
+          <button class="mini ed" onclick="editarAlAjuste('${a.id}')">✏️</button>
+          <button class="mini del" onclick="eliminarAlAjuste('${a.id}')">🗑️</button>
+        </div></td></tr>`;
+    }
+  });
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
 }
 </script>
 </body>

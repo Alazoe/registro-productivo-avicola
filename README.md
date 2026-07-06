@@ -59,7 +59,8 @@ src/ventas/
 ├── index.html                  ← App de ventas, pedidos y bodega (opcional por productor)
 ├── ventas-schema.sql           ← Tabla ventas + RLS
 ├── pedidos-bodega-schema.sql   ← Tablas pedidos y ajustes_stock + RLS
-└── migration-tamanos-cajas.sql ← Agrega tamaño y cajas de 180 a ventas/pedidos/ajustes
+├── migration-tamanos-cajas.sql ← Agrega tamaño y cajas de 180 a ventas/pedidos/ajustes
+└── alimento-schema.sql         ← Tablas proveedores, alimento_recepciones, alimento_ajustes + RLS
 ```
 
 **URLs:**
@@ -71,6 +72,7 @@ src/ventas/
 > **Producción es la base**; bodega/pedidos/ventas son módulos que nacen de ella. La app de producción enlaza a este módulo (nav → 📦 Bodega) y el módulo enlaza de vuelta a producción, con las mismas cuentas y proyecto Supabase. Es opcional: solo la usan los productores que venden. Tiene 3 pestañas, en orden de importancia (abre en Bodega):
 > - **📦 Bodega** (principal) — inventario acumulado total: `stock físico = vendibles producidos − vendidos ± ajustes` y `stock libre = físico − pedidos pendientes`. Permite registrar mermas, autoconsumo, regalos, entradas y correcciones (tabla `ajustes_stock`). **Muestra el stock separado por tamaño** (Chico…Jumbo + «Sin especificar») en una tabla Físico/Reservado/Libre; los tamaños producidos salen de las columnas de `registros`. Todo se muestra también convertido a **cajas de 180** (= 6 bandejas).
 > - **📋 Pedidos** — reservas de clientes con estado `pendiente`. Al marcar **entregado** se genera la venta automáticamente (el huevo se cuenta una sola vez); mientras está pendiente compromete stock libre.
+> - **🌾 Alimento** — stock de alimento concentrado (insumo). `stock = Σ recepciones − consumo (registros.kg_alimento) ± ajustes`. Recepciones con proveedor (alta rápida), N° de lote, precio/kg y N° documento; ingreso en kilos o **sacos de 25 kg** (conversión automática). Muestra kg en bodega, **autonomía en días** (según consumo reciente), costo/kg promedio y alerta de stock bajo. Tablas `proveedores`, `alimento_recepciones`, `alimento_ajustes`.
 > - **💰 Ventas** (secundario) — registra ventas por bandejas y cuadra por periodo (mes/anterior/todo) los **huevos vendibles** (`n_huevos − sucios − rotos − trizados − sangre`, tabla `registros`) contra lo vendido (tabla `ventas`).
 
 ### Tablas
@@ -85,6 +87,9 @@ src/ventas/
 | `ventas` | Ventas de huevos por usuario (bandejas, huevos, precio, total) — cuadra contra `registros` |
 | `pedidos` | Pedidos/reservas de clientes por usuario, con estado (pendiente/entregado/anulado); al entregar enlaza la `ventas.id` generada. Incluye `tamano` y `cajas` |
 | `ajustes_stock` | Movimientos de bodega por usuario (merma, autoconsumo, regalo, entrada, ajuste); `huevos` es un delta con signo. Incluye `tamano` |
+| `proveedores` | Proveedores de alimento por usuario (nombre, teléfono); alta rápida desde el módulo Alimento |
+| `alimento_recepciones` | Compras/entradas de alimento por usuario (fecha, proveedor, lote, kg, sacos, precio/kg, N° documento) |
+| `alimento_ajustes` | Mermas/correcciones del stock de alimento por usuario; `kg` es un delta con signo |
 | `user_config` | Preferencias por usuario en JSONB (no vendibles, alertas, correcciones de nombres del asesor) |
 
 Todas las tablas tienen Row Level Security activado: cada usuario ve y modifica solo sus propios datos. **Excepción:** `productores` permite a cualquier usuario autenticado *leer* los nombres (solo el nombre, sin datos productivos), para que el dashboard del asesor identifique a cada productor.
@@ -157,6 +162,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-07 | Módulo **🌾 Alimento** en Bodega: stock de alimento = recepciones − consumo diario (registros.kg_alimento) ± ajustes; recepción con proveedor (alta rápida), lote, precio/kg y sacos de 25 kg; autonomía en días, costo/kg y alerta de stock bajo. Tablas `proveedores`, `alimento_recepciones`, `alimento_ajustes` (`alimento-schema.sql`) |
 | 2026-07 | Stock por tamaño y cajas de 180: Bodega muestra Físico/Reservado/Libre por tamaño (Chico…Jumbo + Sin especificar); ventas, pedidos y ajustes registran tamaño; se puede ingresar y ver todo en cajas de 180 (= 6 bandejas). Migración `migration-tamanos-cajas.sql` (columnas `tamano`, `cajas`) |
 | 2026-07 | Navegación entre módulos: la app de Producción enlaza directo a Bodega/Pedidos/Ventas (`../ventas/#tab`) y el módulo abre en la pestaña del enlace (recuerda el módulo en la URL) |
 | 2026-07 | App de ventas: pestañas **Pedidos** (reservas de clientes que al entregarse generan la venta) y **Bodega** (inventario acumulado con mermas/autoconsumo/ajustes y stock libre). El cuadre pasa a usar huevos **vendibles** en vez del total clasificado. Tablas `pedidos` y `ajustes_stock` |
