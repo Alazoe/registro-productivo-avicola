@@ -639,6 +639,20 @@ function renderSidebar() {
   document.getElementById('label-lotes').textContent = granja ? granja.nombre : 'Lotes';
   const listaL = document.getElementById('lista-lotes');
   listaL.innerHTML = '';
+
+  // Opción "Todos los lotes" (vista combinada del productor)
+  if (lotes.length > 1) {
+    const bt = document.createElement('button');
+    bt.className = 'lote-btn' + (state.loteIdx==='todos' ? ' activo' : '');
+    bt.onclick = () => { state.loteIdx='todos'; render(); };
+    const nm = document.createElement('span'); nm.className='lote-nombre'; nm.style.fontWeight='600';
+    nm.textContent = '★ Todos los lotes';
+    const tag = document.createElement('span'); tag.className='alert-tag';
+    Object.assign(tag.style, {background:'var(--fondo)', color:'var(--suave)', border:'1px solid var(--linea)'});
+    tag.textContent = lotes.length;
+    bt.append(nm, tag); listaL.appendChild(bt);
+  }
+
   lotes.forEach((l, i) => {
     const dias = l.diasPendientes||0, ac = alertColor(dias), activo = state.loteIdx===i;
     const btn = document.createElement('button');
@@ -683,6 +697,66 @@ function renderSidebar() {
   }
 }
 
+// ── VISTA COMBINADA: todos los lotes de un productor ───────────────────
+function renderMainTodos(main, granja, lotes) {
+  if (chartInst) { chartInst.destroy(); chartInst = null; }
+
+  // Header
+  const header = document.createElement('div'); header.className='lote-header';
+  const hLeft = document.createElement('div');
+  const meta = document.createElement('div'); meta.className='lote-header-meta'; meta.textContent = granja.nombre;
+  const titulo = document.createElement('div'); titulo.className='lote-header-titulo';
+  titulo.textContent = 'Todos los lotes'; titulo.style.color = granja.color;
+  const sub = document.createElement('div'); sub.className='lote-header-sub';
+  const totalAves = lotes.reduce((s,l)=>s+(l.aves||0),0);
+  sub.textContent = lotes.length + ' lotes · ' + totalAves.toLocaleString('es-CL') + ' aves';
+  hLeft.append(meta, titulo, sub);
+  header.append(hLeft); main.appendChild(header);
+
+  // Gráfico combinado por semana de vida
+  const chartWrap = document.createElement('div'); chartWrap.className='chart-wrap';
+  const ttl = document.createElement('div'); ttl.className='chart-titulo';
+  ttl.textContent = 'Postura por semana de vida'; ttl.style.marginBottom='4px';
+  chartWrap.appendChild(ttl);
+  const cvBox = document.createElement('div'); cvBox.style.cssText='position:relative;height:330px;margin-top:8px';
+  const cv = document.createElement('canvas'); cvBox.appendChild(cv); chartWrap.appendChild(cvBox);
+  main.appendChild(chartWrap);
+  const series = lotes.map((l,i)=>({ label:l.nombre, registros:l.registros, color:PAL_LOTES[i%PAL_LOTES.length] }));
+  chartInst = dibujarCurva(cv, series, { porSemana: true });
+
+  // Tabla resumen por lote
+  const tw = document.createElement('div');
+  tw.style.cssText = 'margin-top:20px;border:1px solid var(--linea);border-radius:4px;overflow:auto';
+  const tb = document.createElement('table');
+  tb.style.cssText = 'width:100%;border-collapse:collapse;font-size:13px';
+  const cols = ['Lote','Sem','Postura','Esperado','Δ','Mort. hoy','Consumo','Huevos','Estado'];
+  const thead = '<thead><tr>' + cols.map(c=>`<th style="background:var(--prim);color:#fff;text-align:left;padding:9px 10px;font-family:var(--fuente-m);font-size:10px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap">${c}</th>`).join('') + '</tr></thead>';
+  const filas = lotes.map((l,i) => {
+    const dif = l.diferencia;
+    const difCol = dif==null ? 'var(--tenue)' : dif>=0 ? 'var(--ok)' : 'var(--mal)';
+    const ac = alertColor(l.diasPendientes||0);
+    const td = (html,extra='') => `<td style="padding:9px 10px;border-top:1px solid var(--linea);white-space:nowrap;${extra}">${html}</td>`;
+    return `<tr style="cursor:pointer" onclick="state.loteIdx=${i};render()" onmouseover="this.style.background='var(--fondo)'" onmouseout="this.style.background=''">`
+      + td(`<span style="font-weight:600;color:${granja.color}">${l.nombre}</span>`)
+      + td(l.semanaVida ?? '—')
+      + td(l.postura!=null ? `<b>${l.postura}%</b>` : '—')
+      + td(l.posturaEsperada!=null ? l.posturaEsperada+'%' : '—', 'color:var(--suave)')
+      + td(dif!=null ? `<span style="color:${difCol};font-weight:600">${dif>0?'+':''}${dif}%</span>` : '—')
+      + td(l.mortalidadHoy!=null ? l.mortalidadHoy+' av' : '—')
+      + td(l.consumoGrAve!=null ? l.consumoGrAve+' g' : '—')
+      + td(l.huevos!=null ? l.huevos.toLocaleString('es-CL') : '—')
+      + td(`<span style="color:${ac};font-weight:600">${alertLabel(l.diasPendientes||0)}</span>`)
+      + '</tr>';
+  }).join('');
+  tb.innerHTML = thead + '<tbody>' + filas + '</tbody>';
+  tw.appendChild(tb); main.appendChild(tw);
+
+  const nota = document.createElement('div');
+  nota.style.cssText = 'font-size:11px;color:var(--tenue);margin-top:10px';
+  nota.textContent = 'Cada línea es un lote alineado por semana de vida. Toca una fila para ver el detalle de ese lote.';
+  main.appendChild(nota);
+}
+
 // ── RENDER MAIN ────────────────────────────────────────────────────────
 function renderMain() {
   const main = document.getElementById('contenido');
@@ -694,6 +768,10 @@ function renderMain() {
   const est = state.estados[state.granjaId];
   const datosG = state.datos[state.granjaId];
   const lotes = datosG?.lotes || [];
+
+  // Vista combinada: todos los lotes del productor
+  if (state.loteIdx === 'todos' && lotes.length) { renderMainTodos(main, granja, lotes); return; }
+
   const lote  = lotes[state.loteIdx];
 
   if (!lote && est==='cargando') { main.innerHTML='<div class="estado-msg"><div class="estado-msg-titulo">Cargando datos…</div></div>'; return; }
