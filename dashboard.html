@@ -139,7 +139,7 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 .dias-badge-lbl { font-family: var(--fuente-m); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; margin-top: 4px; }
 
 /* KPIs */
-.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--linea); border: 1px solid var(--linea); margin-bottom: 24px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--linea); border: 1px solid var(--linea); margin-bottom: 24px; }
 .kpi-card { background: var(--papel); padding: 20px 18px; position: relative; }
 .kpi-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
 .kpi-label { font-family: var(--fuente-m); font-size: 9px; color: var(--tenue); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 10px; }
@@ -736,6 +736,7 @@ function renderMain() {
     {label:'Postura',      value: lote.postura!=null?lote.postura+'%':'—',            color: granja.color,         sub: lote.posturaEsperada!=null?'Esperado: '+lote.posturaEsperada+'%':''},
     {label:'Diferencia',   value: lote.diferencia!=null?(lote.diferencia>0?'+':'')+lote.diferencia+'%':'—', color: lote.diferencia>=0?'var(--ok)':'var(--mal)', sub: lote.diferencia>=0?'Sobre curva':'Bajo curva'},
     {label:'Mortalidad',   value: lote.mortalidadHoy!=null?lote.mortalidadHoy+' aves':'—', color: lote.mortalidadHoy>3?'var(--mal)':'var(--ok)', sub: lote.mortalidadHoy>3?'Alta — revisar':'Normal'},
+    {label:'Consumo alim.',value: lote.consumoGrAve!=null?lote.consumoGrAve+' g':'—',  color: '#c2691c', sub: lote.kgAlimentoHoy!=null?lote.kgAlimentoHoy.toLocaleString('es-CL')+' kg/día':'g/ave/día'},
     {label:'g Alim/Huevo', value: lote.gAlimPorHuevo!=null?lote.gAlimPorHuevo+' g':'—', color: '#1565c0', sub: (lote.huevos||0).toLocaleString('es-CL')+' huevos'},
   ];
   kpis.forEach(kpi => {
@@ -746,6 +747,30 @@ function renderMain() {
     const sub = document.createElement('div'); sub.className='kpi-sub'; sub.textContent=kpi.sub;
     card.append(bar, lbl, val, sub); kpiGrid.appendChild(card);
   });
+
+  // Card especial: costo de alimentación por huevo (precio del kg de alimento, por productor)
+  const precioKey = 'precio_kg_prod_' + granja.id;
+  let precioKg = parseFloat(localStorage.getItem(precioKey)) || 0;
+  const costoCard = document.createElement('div'); costoCard.className='kpi-card';
+  const cbar = document.createElement('div'); cbar.className='kpi-bar'; cbar.style.background='#6a1e9e';
+  const clbl = document.createElement('div'); clbl.className='kpi-label'; clbl.textContent='Costo alim/huevo';
+  const cval = document.createElement('div'); cval.className='kpi-value'; cval.style.color='#6a1e9e';
+  const csub = document.createElement('div'); csub.className='kpi-sub';
+  csub.style.cssText='display:flex;align-items:center;gap:5px;margin-top:4px';
+  const clabelIn = document.createElement('span'); clabelIn.textContent='$/kg alim:';
+  const cinp = document.createElement('input');
+  cinp.type='number'; cinp.min='0'; cinp.placeholder='ej: 400'; cinp.value = precioKg || '';
+  cinp.style.cssText='width:70px;padding:3px 6px;border:1px solid var(--linea);border-radius:4px;font-family:inherit;font-size:12px;text-align:right';
+  const calcCosto = () => {
+    const c = (lote.gAlimPorHuevo!=null && precioKg>0) ? (lote.gAlimPorHuevo/1000*precioKg) : null;
+    cval.textContent = c!=null ? '$'+c.toLocaleString('es-CL',{maximumFractionDigits:1}) : '—';
+  };
+  cinp.oninput = () => { precioKg = parseFloat(cinp.value)||0; localStorage.setItem(precioKey, precioKg); calcCosto(); };
+  calcCosto();
+  csub.append(clabelIn, cinp);
+  costoCard.append(cbar, clbl, cval, csub);
+  kpiGrid.appendChild(costoCard);
+
   main.appendChild(kpiGrid);
 
   // ── Gráfico con tabs ──
@@ -940,6 +965,8 @@ function procesarLote(lote, registros) {
     mortalidadHoy:   u.mortalidad,
     huevos:          u.n_huevos,
     gAlimPorHuevo:   (u.kg_alimento&&u.n_huevos) ? Math.round(u.kg_alimento*1000/u.n_huevos) : null,
+    consumoGrAve:    (u.kg_alimento&&u.n_aves)   ? Math.round(u.kg_alimento*1000/u.n_aves)   : null,
+    kgAlimentoHoy:   u.kg_alimento || null,
     clasificacion: {
       chico:u.chico, mediano:u.mediano, grande:u.grande, xl:u.xl,
       superXl:u.super_xl, jumbo:u.jumbo, sucios:u.sucios,
