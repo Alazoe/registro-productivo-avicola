@@ -927,6 +927,8 @@ function procesarLote(lote, registros) {
   const dias = Math.max(0, Math.round((new Date(hoy)-new Date(u.fecha))/86400000));
   const pct  = v => v!=null ? parseFloat((v*100).toFixed(1)) : null;
   return {
+    id:              lote.id,
+    fechaNac:        lote.fecha_nac,
     nombre:          lote.nombre,
     semanaVida:      u.semana_vida,
     aves:            u.n_aves || lote.n_aves,
@@ -1038,6 +1040,18 @@ function kpisLoteSemana(l, inicio, fin) {
 // Paleta para distinguir lotes en la curva combinada
 const PAL_LOTES = ['#1b5e20','#1565c0','#b8860b','#6a1e9e','#00838f','#c2691c','#b03a2e','#3d7a42'];
 
+// Estación de nacimiento (hemisferio sur / Chile) según la fecha de nacimiento
+const ESTACIONES = ['Verano','Otoño','Invierno','Primavera'];
+const COLOR_ESTACION = { Verano:'#e6a817', 'Otoño':'#c2691c', Invierno:'#1e5a7a', Primavera:'#3d7a42' };
+function estacionNac(fechaNac) {
+  if (!fechaNac) return null;
+  const m = new Date(fechaNac+'T12:00:00').getMonth() + 1; // 1-12
+  if (m===12 || m<=2) return 'Verano';
+  if (m<=5)  return 'Otoño';
+  if (m<=8)  return 'Invierno';
+  return 'Primavera';
+}
+
 // Dibuja curva(s) de postura. series=[{label,registros,color}].
 // opts.conEstandar añade la línea esperada (solo 1 serie).
 // opts.porSemana usa la SEMANA DE VIDA como eje X (para comparar lotes alineados por edad).
@@ -1132,6 +1146,109 @@ function calcularPromedioRegistros(registros, fechaInicio, fechaFin) {
   const posturas = filtrados.map(r => r.postura).filter(v => v != null);
   if (!posturas.length) return null;
   return parseFloat((posturas.reduce((a,b)=>a+b,0) / posturas.length).toFixed(1));
+}
+
+// Panel desplegable para comparar postura normalizada por semana de vida.
+// Modos: por lote (con marcar todos), por estación de nacimiento, o por avícola.
+function panelComparacion(granjas) {
+  const lotesAll = [];
+  granjas.forEach(g => (state.datos[g.id]?.lotes || []).forEach(l => lotesAll.push({ l, g })));
+
+  const wrapP = document.createElement('div'); wrapP.style.cssText = 'margin-bottom:24px';
+  const btn = document.createElement('button'); btn.className = 'btn-accion sec';
+  const TXT = '🔬 Comparar por semana de vida';
+  btn.textContent = TXT;
+
+  const cont = document.createElement('div');
+  cont.style.cssText = 'display:none;background:var(--papel);border:1px solid var(--linea);border-radius:4px;padding:14px 16px;margin-top:10px';
+
+  let chart = null, modo = 'lote';
+  const seleccion = new Set(lotesAll.map(x => x.l.id));
+
+  // Controles
+  const ctrl = document.createElement('div');
+  ctrl.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px';
+  const lblModo = document.createElement('span');
+  lblModo.style.cssText = 'font-family:var(--fuente-m);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--tenue)';
+  lblModo.textContent = 'Agrupar por';
+  const selModo = document.createElement('select');
+  selModo.style.cssText = 'font-family:inherit;font-size:12px;padding:6px 8px;border:1px solid var(--linea);border-radius:4px;background:var(--papel);color:var(--tinta);cursor:pointer';
+  selModo.innerHTML = [['lote','Lote'],['estacion','Estación de nacimiento'],['avicola','Avícola']]
+    .map(([v,t])=>`<option value="${v}">${t}</option>`).join('');
+  const mkMini = txt => { const b=document.createElement('button'); b.className='nav-semana-btn'; b.textContent=txt; b.style.cssText+=';font-size:11px;padding:4px 10px'; return b; };
+  const btnTodos = mkMini('Todos');
+  const btnNada  = mkMini('Ninguno');
+  ctrl.append(lblModo, selModo, btnTodos, btnNada);
+
+  const chkWrap = document.createElement('div');
+  chkWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:12px;max-height:130px;overflow:auto';
+
+  const cv = document.createElement('canvas'); cv.style.cssText = 'width:100%;max-height:320px';
+  const vacio = document.createElement('div');
+  vacio.style.cssText = 'padding:24px;text-align:center;color:var(--tenue);font-size:13px;display:none';
+  vacio.textContent = 'Marca al menos un lote para ver la comparación.';
+
+  function construirChecks() {
+    chkWrap.innerHTML = '';
+    lotesAll.forEach(({ l, g }) => {
+      const lbl = document.createElement('label');
+      lbl.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:12px;color:var(--tinta);cursor:pointer';
+      const ch = document.createElement('input'); ch.type = 'checkbox'; ch.checked = seleccion.has(l.id);
+      ch.onchange = () => { ch.checked ? seleccion.add(l.id) : seleccion.delete(l.id); redibujar(); };
+      lbl.append(ch, document.createTextNode(l.nombre + ' · ' + g.nombre));
+      chkWrap.appendChild(lbl);
+    });
+  }
+
+  function series() {
+    if (modo === 'lote') {
+      return lotesAll.filter(x => seleccion.has(x.l.id))
+        .map((x,i) => ({ label: x.l.nombre + ' · ' + x.g.nombre, registros: x.l.registros, color: PAL_LOTES[i%PAL_LOTES.length] }));
+    }
+    if (modo === 'estacion') {
+      return ESTACIONES.map(est => {
+        const regs = [];
+        lotesAll.forEach(x => { if (estacionNac(x.l.fechaNac) === est) regs.push(...x.l.registros); });
+        return regs.length ? { label: est, registros: regs, color: COLOR_ESTACION[est] } : null;
+      }).filter(Boolean);
+    }
+    return granjas.map(g => {
+      const d = state.datos[g.id]; if (!d || !d.lotes.length) return null;
+      const regs = []; d.lotes.forEach(l => regs.push(...l.registros));
+      return regs.length ? { label: g.nombre, registros: regs, color: g.color } : null;
+    }).filter(Boolean);
+  }
+
+  function redibujar() {
+    if (chart) { chart.destroy(); chart = null; }
+    const s = series();
+    vacio.style.display = s.length ? 'none' : 'block';
+    cv.style.display = s.length ? 'block' : 'none';
+    if (s.length) chart = dibujarCurva(cv, s, { porSemana: true });
+  }
+
+  selModo.onchange = () => {
+    modo = selModo.value;
+    const esLote = modo === 'lote';
+    btnTodos.style.display = btnNada.style.display = esLote ? '' : 'none';
+    chkWrap.style.display = esLote ? 'flex' : 'none';
+    redibujar();
+  };
+  btnTodos.onclick = () => { lotesAll.forEach(x => seleccion.add(x.l.id)); construirChecks(); redibujar(); };
+  btnNada.onclick  = () => { seleccion.clear(); construirChecks(); redibujar(); };
+
+  cont.append(ctrl, chkWrap, vacio, cv);
+  btn.onclick = () => {
+    if (cont.style.display === 'none') {
+      cont.style.display = 'block'; construirChecks(); redibujar(); btn.textContent = '✕ Ocultar comparación';
+    } else {
+      if (chart) { chart.destroy(); chart = null; }
+      cont.style.display = 'none'; btn.textContent = TXT;
+    }
+  };
+
+  wrapP.append(btn, cont);
+  return wrapP;
 }
 
 function renderResumen() {
@@ -1266,30 +1383,8 @@ function renderResumen() {
   );
   wrap.appendChild(cards);
 
-  // ── Curva combinada de todos los lotes del productor filtrado ──
-  if (filtroProductor !== 'todos') {
-    const gSel = GRANJAS.find(x => x.id === filtroProductor);
-    const dSel = gSel && state.datos[gSel.id];
-    if (dSel && dSel.lotes.length) {
-      const wrapC = document.createElement('div'); wrapC.style.cssText = 'margin-bottom:24px';
-      const btnC = document.createElement('button');
-      btnC.className = 'btn-accion sec';
-      btnC.textContent = '📈 Comparar lotes por semana de vida';
-      let panelC = null, chartC = null;
-      btnC.onclick = () => {
-        if (panelC) { chartC && chartC.destroy(); panelC.remove(); panelC=null; chartC=null; btnC.textContent='📈 Comparar lotes por semana de vida'; return; }
-        panelC = document.createElement('div');
-        panelC.style.cssText = 'background:var(--papel);border:1px solid var(--linea);border-radius:4px;padding:14px 16px;margin-top:10px';
-        const cv = document.createElement('canvas'); cv.style.cssText='width:100%;max-height:300px';
-        panelC.appendChild(cv); wrapC.appendChild(panelC);
-        const series = dSel.lotes.map((l,i)=>({ label:l.nombre, registros:l.registros, color:PAL_LOTES[i%PAL_LOTES.length] }));
-        chartC = dibujarCurva(cv, series, { porSemana: true });
-        btnC.textContent = '✕ Ocultar curva combinada';
-      };
-      wrapC.appendChild(btnC);
-      wrap.appendChild(wrapC);
-    }
-  }
+  // ── Panel de comparación por semana de vida ──
+  wrap.appendChild(panelComparacion(granjasMostrar));
 
   // ── Tabla ──
   const grid = document.createElement('div'); grid.className = 'resumen-grid';
