@@ -166,6 +166,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-07 | Aviso de invitación: al dar acceso a un correo en 👥 Equipo, una Edge Function (`aviso-invitacion`, Resend) avisa al administrador para que cree la cuenta del invitado |
 | 2026-07 | Unidad **docena (12)** agregada en Ventas, Pedidos y ajuste de Bodega (junto a cajas 180, bandejas 30 y sueltos). Los huevos se pueden colocar en cajas, docenas o bandejas. Sin cambios de BD (el total se guarda en huevos, empaque canónico) |
 | 2026-07 | Bodega: el **ajuste de stock** se ingresa en **cajas (180) / bandejas (30) / huevos** (antes solo huevos), con su tamaño — para agregar cajas extra, cargar stock inicial o corregir. Muestra el total y el equivalente en cajas |
 | 2026-07 | **Cuenta compartida (equipo) — Etapa 1**: el dueño invita correos (Producción → Lotes → 👥 Equipo) que ven y editan la misma información. RLS centralizada en `tiene_acceso(user_id)`; las apps resuelven el `ownerId` al entrar. Retrocompatible. `equipo-schema.sql` |
