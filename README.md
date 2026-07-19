@@ -162,10 +162,18 @@ src/avicolas/<nombre>/
 
 ---
 
+## 💾 Respaldos
+
+- **Automático (semanal):** el repo privado [`Alazoe/avivet-respaldos`](https://github.com/Alazoe/avivet-respaldos) corre una GitHub Action cada **lunes ~03:00 (Chile)** que exporta todas las tablas de Supabase a CSV (con service_role, bypassa RLS) y las commitea; el historial de git conserva cada versión semanal. Requiere el secret `SUPABASE_SERVICE_ROLE_KEY` configurado en ese repo (instrucciones en su README). También se puede ejecutar a mano desde su pestaña Actions.
+- **Manual:** el botón **⬇ Exportar todo** en el topbar del dashboard descarga un ZIP con las tablas visibles para la sesión en CSV (con la cuenta del asesor: producción de todos los productores).
+
+---
+
 ## Registro de cambios
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-07 | Respaldos: Action semanal en repo privado `avivet-respaldos` (CSV de todas las tablas, historial en git) + botón "⬇ Exportar todo" (ZIP) en el dashboard |
 | 2026-07 | Aviso de invitación: al dar acceso a un correo en 👥 Equipo, una Edge Function (`aviso-invitacion`, Resend) avisa al administrador para que cree la cuenta del invitado |
 | 2026-07 | Unidad **docena (12)** agregada en Ventas, Pedidos y ajuste de Bodega (junto a cajas 180, bandejas 30 y sueltos). Los huevos se pueden colocar en cajas, docenas o bandejas. Sin cambios de BD (el total se guarda en huevos, empaque canónico) |
 | 2026-07 | Bodega: el **ajuste de stock** se ingresa en **cajas (180) / bandejas (30) / huevos** (antes solo huevos), con su tamaño — para agregar cajas extra, cargar stock inicial o corregir. Muestra el total y el equivalente en cajas |
