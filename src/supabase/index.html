@@ -764,6 +764,16 @@ async function mostrarApp() {
   await resolverOwner();
   mostrarBannerCuenta();
   await Promise.all([cargarLotes(), cargarConfig(), cargarNombreProductor()]);
+  autoSeleccionarLote();
+}
+// Recuerda el último lote usado (o toma el primero activo) para no perder la selección
+function autoSeleccionarLote(){
+  if (loteActual) return;
+  const activos = lotes.filter(l => l.activo);
+  if (!activos.length) return;
+  let saved = null; try { saved = localStorage.getItem('avivet_lote_'+ownerId); } catch(e){}
+  const elegir = activos.find(l => l.id === saved) || activos[0];
+  seleccionarLote(elegir.id);
 }
 // Aviso cuando trabajo en la cuenta de otro (invitado)
 async function mostrarBannerCuenta(){
@@ -868,6 +878,7 @@ function renderSelectorLotes() {
 
 async function seleccionarLote(id) {
   loteActual = lotes.find(l => l.id === id);
+  if (loteActual) { try { localStorage.setItem('avivet_lote_'+ownerId, id); } catch(e){} }
   document.querySelectorAll('.lote-btn').forEach(b => b.classList.remove('activo'));
   document.getElementById('lbtn-'+id)?.classList.add('activo');
   document.getElementById('g-lbtn-'+id)?.classList.add('activo');
