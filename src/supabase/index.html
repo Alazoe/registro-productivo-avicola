@@ -450,6 +450,12 @@ label:first-child{margin-top:0}
 
 <!-- ══ TAB DATOS ══════════════════════════════════════ -->
 <div class="page" id="page-datos">
+  <div id="datos-selector-wrap" class="card" style="display:none;margin-bottom:12px">
+    <div class="card-body" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <label style="margin:0;font-weight:600;color:var(--muted)">🐔 Lote:</label>
+      <select id="datos-lote-sel" onchange="cambiarLoteDatos(this.value)" style="flex:1;min-width:180px"></select>
+    </div>
+  </div>
   <div id="datos-sin-lote" class="alerta alerta-info">Selecciona un lote en la pestaña Registro para ver su historial.</div>
   <div id="datos-tabla-wrap" style="display:none">
     <div style="background:#fff;border-radius:var(--radio) var(--radio) 0 0;border:1px solid #e0e0e0;border-bottom:none">
@@ -1914,7 +1920,23 @@ async function verificarAlertas(loteNombre, fecha, nAves, mort, pctPost, prevReg
   }
 }
 
+// Selector de lote de la pestaña Datos (permite cambiar sin volver a Registro)
+function renderDatosSelector() {
+  const activos = lotes.filter(l => l.activo);
+  const selWrap = document.getElementById('datos-selector-wrap');
+  const sel     = document.getElementById('datos-lote-sel');
+  if (!activos.length) { selWrap.style.display = 'none'; return; }
+  selWrap.style.display = 'block';
+  sel.innerHTML = activos.map(l => `<option value="${l.id}">${l.nombre}</option>`).join('');
+  if (loteActual) sel.value = loteActual.id;
+}
+async function cambiarLoteDatos(id) {
+  await seleccionarLote(id);
+  renderHistorial();
+}
+
 function renderHistorial() {
+  renderDatosSelector();
   const sinLote = document.getElementById('datos-sin-lote');
   const wrap    = document.getElementById('datos-tabla-wrap');
   if (!loteActual) { sinLote.style.display='block'; wrap.style.display='none'; return; }
