@@ -427,6 +427,10 @@ label:first-child{margin-top:0}
           <button class="gtab" onclick="cambiarGtab('tabla')" id="gtab-tabla">📋 Tabla</button>
           <button class="gtab" onclick="cambiarGtab('dona')" id="gtab-dona">🍩 Semanal</button>
         </div>
+        <div id="postura-agrup" style="display:none;gap:6px;margin:8px 0;justify-content:flex-end">
+          <button class="gtab activo" id="pa-dia" onclick="setPosturaAgrup('dia')" style="flex:0 0 auto;min-width:auto;padding:6px 14px">Diario</button>
+          <button class="gtab" id="pa-sem" onclick="setPosturaAgrup('sem')" style="flex:0 0 auto;min-width:auto;padding:6px 14px">Semanal</button>
+        </div>
         <div id="wrap-kpis"><div id="kpis-contenido"></div></div>
         <div class="chart-wrap" id="wrap-curva"><canvas id="chart-curva"></canvas></div>
         <div class="chart-wrap" id="wrap-acumulado"><canvas id="chart-acumulado"></canvas></div>
@@ -691,6 +695,13 @@ let userConfig = { noVendibles: { ...NV_DEFAULT }, alertas: { ...ALERTAS_DEFAULT
 let nombreProductor = '';
 let csvPendiente = null;
 let chartsInst = {};
+let posturaAgrup = 'dia'; // 'dia' | 'sem' — agrupación de la curva de postura
+function setPosturaAgrup(modo){
+  posturaAgrup = modo;
+  document.getElementById('pa-dia').classList.toggle('activo', modo==='dia');
+  document.getElementById('pa-sem').classList.toggle('activo', modo==='sem');
+  renderChart('curva');
+}
 
 // ══ AUTH ════════════════════════════════════════════════════════
 let modoRecovery = false;
@@ -1399,6 +1410,7 @@ function cambiarGtab(tipo) {
     if (t==='tabla' || t==='kpis') wrap.style.display = tipo===t ? 'block' : 'none';
     else wrap.classList.toggle('visible', t===tipo);
   });
+  document.getElementById('postura-agrup').style.display = tipo==='curva' ? 'flex' : 'none';
   if (tipo==='tabla') renderTablaSemanal();
   else if (tipo==='kpis') renderKPIs();
   else renderChart(tipo);
@@ -1411,11 +1423,28 @@ function renderChart(tipo) {
   const ctx = canvas.getContext('2d');
 
   if (tipo==='curva') {
-    const labels   = registrosLote.map(r => r.fecha.slice(5).replace('-','/'));
-    const postura  = registrosLote.map(r => ((r.pct_postura||0)*100).toFixed(1));
-    const esperado = registrosLote.map(r => ((r.pct_esperado||0)*100).toFixed(1));
+    let labels, postura, esperado, prad;
+    if (posturaAgrup === 'sem') {
+      // Agrupa por semana de vida: postura = Σhuevos/Σaves; esperado = promedio de la semana
+      const m = {};
+      registrosLote.forEach(r => {
+        const s = r.semana_vida||0;
+        if (!m[s]) m[s] = { h:0, a:0, d:0, e:0 };
+        m[s].h += r.n_huevos||0; m[s].a += r.n_aves||0; m[s].d++; m[s].e += (r.pct_esperado||0);
+      });
+      const sems = Object.keys(m).map(Number).sort((a,b)=>a-b);
+      labels   = sems.map(s => 'S'+s);
+      postura  = sems.map(s => m[s].a>0 ? +(m[s].h/m[s].a*100).toFixed(1) : 0);
+      esperado = sems.map(s => m[s].d>0 ? +(m[s].e/m[s].d*100).toFixed(1) : 0);
+      prad = 3;
+    } else {
+      labels   = registrosLote.map(r => r.fecha.slice(5).replace('-','/'));
+      postura  = registrosLote.map(r => ((r.pct_postura||0)*100).toFixed(1));
+      esperado = registrosLote.map(r => ((r.pct_esperado||0)*100).toFixed(1));
+      prad = 2;
+    }
     chartsInst[tipo] = new Chart(ctx, { type:'line', data:{ labels, datasets:[
-      { label:'% Postura real', data:postura, borderColor:'#3d7a42', backgroundColor:'rgba(61,122,66,.1)', borderWidth:2, tension:.3, pointRadius:2 },
+      { label:'% Postura real', data:postura, borderColor:'#3d7a42', backgroundColor:'rgba(61,122,66,.1)', borderWidth:2, tension:.3, pointRadius:prad },
       { label:'% Esperado curva', data:esperado, borderColor:'#b8860b', backgroundColor:'transparent', borderWidth:1.5, borderDash:[5,4], tension:.3, pointRadius:0 }
     ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}}, scales:{ y:{ min:0, max:100, ticks:{callback:v=>v+'%'} } } }});
   } else if (tipo==='acumulado') {

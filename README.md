@@ -173,6 +173,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-07 | Gráfico de Postura con toggle **Diario / Semanal**: agrupa por semana de vida (postura = Σhuevos/Σaves; esperado = promedio de la semana) |
 | 2026-07 | Alertas: el asesor (AviVet, `ALERTA_EMAIL`) recibe **siempre** copia de las alertas de todos los productores, aunque el productor haya apagado sus propias alertas. Se quitó el toggle de copia al asesor |
 | 2026-07 | Gráficos: nueva pestaña **☠️ Mortalidad** (por semana + acumulada) y **⚠️ No vendibles** (% de sucios/rotos/trizados/sangre y total, por semana de vida; usa los nombres personalizados del productor) |
 | 2026-07 | Respaldos: Action semanal en repo privado `avivet-respaldos` (CSV de todas las tablas, historial en git) + botón "⬇ Exportar todo" (ZIP) en el dashboard |
