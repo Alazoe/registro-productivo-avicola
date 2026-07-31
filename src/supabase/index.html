@@ -574,10 +574,7 @@ label:first-child{margin-top:0}
         <input type="email" id="cfg-al-email" placeholder="tu@correo.com">
       </label>
 
-      <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
-        <input type="checkbox" id="cfg-al-copia" style="width:auto;margin:0">
-        <span>Enviar copia al asesor (AviVet)</span>
-      </label>
+      <p style="font-size:.75rem;color:#7a8470;background:#e4ede5;border-radius:8px;padding:9px 11px">📩 El asesor (AviVet) recibe siempre una copia de las alertas, para seguimiento.</p>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
         <label>Umbral mortalidad (% del lote/día)
@@ -1171,7 +1168,6 @@ function renderAlertasCard() {
   document.getElementById('cfg-al-activas').checked  = a.activas !== false;
   document.getElementById('cfg-al-email').value      = a.email || '';
   document.getElementById('cfg-al-email').placeholder= currentUser.email + ' (por defecto)';
-  document.getElementById('cfg-al-copia').checked    = a.copiaAsesor !== false;
   document.getElementById('cfg-al-mort').value       = a.umbralMort ?? ALERTAS_DEFAULT.umbralMort;
   document.getElementById('cfg-al-caida').value      = a.umbralCaida ?? ALERTAS_DEFAULT.umbralCaida;
 }
@@ -1180,7 +1176,7 @@ async function guardarAlertas() {
   const a = {
     activas:     document.getElementById('cfg-al-activas').checked,
     email:       document.getElementById('cfg-al-email').value.trim(),
-    copiaAsesor: document.getElementById('cfg-al-copia').checked,
+    copiaAsesor: true, // el asesor siempre recibe copia
     umbralMort:  parseFloat(document.getElementById('cfg-al-mort').value)  || ALERTAS_DEFAULT.umbralMort,
     umbralCaida: parseFloat(document.getElementById('cfg-al-caida').value) || ALERTAS_DEFAULT.umbralCaida
   };
@@ -1925,7 +1921,7 @@ function actualizarCostos(precio) {
 
 async function verificarAlertas(loteNombre, fecha, nAves, mort, pctPost, prevReg) {
   const cfg = userConfig.alertas || ALERTAS_DEFAULT;
-  if (cfg.activas === false) return;
+  const productorRecibe = cfg.activas !== false; // el asesor recibe siempre, aunque el productor apague las suyas
 
   const umbralMort  = (cfg.umbralMort  ?? ALERTAS_DEFAULT.umbralMort);   // %
   const umbralCaida = (cfg.umbralCaida ?? ALERTAS_DEFAULT.umbralCaida);  // puntos %
@@ -1951,11 +1947,12 @@ async function verificarAlertas(loteNombre, fecha, nAves, mort, pctPost, prevReg
     await sb.functions.invoke('alerta-produccion', {
       body: {
         lote: loteNombre, fecha, alertas,
-        to: cfg.email || currentUser.email,
-        copiaAsesor: cfg.copiaAsesor !== false
+        // Si el productor apagó sus alertas, igual va al asesor (to nulo → solo asesor)
+        to: productorRecibe ? (cfg.email || currentUser.email) : null,
+        copiaAsesor: true // el asesor (AviVet) recibe siempre
       },
     });
-    toast('⚠️ Alerta enviada por email','warn',4000);
+    if (productorRecibe) toast('⚠️ Alerta enviada por email','warn',4000);
   } catch (e) {
     console.warn('No se pudo enviar alerta:', e);
   }
