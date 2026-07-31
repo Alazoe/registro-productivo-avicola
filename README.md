@@ -173,6 +173,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-07 | Gráficos: nueva pestaña **☠️ Mortalidad** (por semana + acumulada) y **⚠️ No vendibles** (% de sucios/rotos/trizados/sangre y total, por semana de vida; usa los nombres personalizados del productor) |
 | 2026-07 | Respaldos: Action semanal en repo privado `avivet-respaldos` (CSV de todas las tablas, historial en git) + botón "⬇ Exportar todo" (ZIP) en el dashboard |
 | 2026-07 | Aviso de invitación: al dar acceso a un correo en 👥 Equipo, una Edge Function (`aviso-invitacion`, Resend) avisa al administrador para que cree la cuenta del invitado |
 | 2026-07 | Unidad **docena (12)** agregada en Ventas, Pedidos y ajuste de Bodega (junto a cajas 180, bandejas 30 y sueltos). Los huevos se pueden colocar en cajas, docenas o bandejas. Sin cambios de BD (el total se guarda en huevos, empaque canónico) |

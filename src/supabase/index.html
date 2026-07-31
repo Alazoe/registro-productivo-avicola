@@ -422,6 +422,8 @@ label:first-child{margin-top:0}
           <button class="gtab" onclick="cambiarGtab('curva')" id="gtab-curva">📈 Postura</button>
           <button class="gtab" onclick="cambiarGtab('acumulado')" id="gtab-acumulado">📊 Acum</button>
           <button class="gtab" onclick="cambiarGtab('tamano')" id="gtab-tamano">📏 Tam</button>
+          <button class="gtab" onclick="cambiarGtab('mortalidad')" id="gtab-mortalidad">☠️ Mort</button>
+          <button class="gtab" onclick="cambiarGtab('novend')" id="gtab-novend">⚠️ No vend</button>
           <button class="gtab" onclick="cambiarGtab('tabla')" id="gtab-tabla">📋 Tabla</button>
           <button class="gtab" onclick="cambiarGtab('dona')" id="gtab-dona">🍩 Semanal</button>
         </div>
@@ -429,6 +431,8 @@ label:first-child{margin-top:0}
         <div class="chart-wrap" id="wrap-curva"><canvas id="chart-curva"></canvas></div>
         <div class="chart-wrap" id="wrap-acumulado"><canvas id="chart-acumulado"></canvas></div>
         <div class="chart-wrap" id="wrap-tamano"><canvas id="chart-tamano"></canvas></div>
+        <div class="chart-wrap" id="wrap-mortalidad"><canvas id="chart-mortalidad"></canvas></div>
+        <div class="chart-wrap" id="wrap-novend"><canvas id="chart-novend"></canvas></div>
         <div class="chart-wrap" id="wrap-dona" style="height:360px"><canvas id="chart-dona"></canvas></div>
         <div id="wrap-tabla" style="display:none">
           <div class="tabla-wrap">
@@ -1393,7 +1397,7 @@ function actualizarResumenCards() {
 }
 
 function cambiarGtab(tipo) {
-  ['kpis','curva','acumulado','tamano','dona','tabla'].forEach(t => {
+  ['kpis','curva','acumulado','tamano','mortalidad','novend','dona','tabla'].forEach(t => {
     document.getElementById('gtab-'+t).classList.toggle('activo', t===tipo);
     const wrap = document.getElementById('wrap-'+t);
     if (t==='tabla' || t==='kpis') wrap.style.display = tipo===t ? 'block' : 'none';
@@ -1432,6 +1436,43 @@ function renderChart(tipo) {
       mk('jumbo','#1e5a7a'), mk('super_xl','#2a5430'), mk('xl','#3d7a42'),
       mk('grande','#5c9e61'), mk('mediano','#b8860b'), mk('chico','#c2691c')
     ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}}, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}} }});
+  } else if (tipo==='mortalidad') {
+    // Mortalidad por semana de vida (barras) + acumulada (línea)
+    const m = {};
+    registrosLote.forEach(r => { const s = r.semana_vida||0; m[s] = (m[s]||0) + (r.mortalidad||0); });
+    const sems = Object.keys(m).map(Number).sort((a,b)=>a-b);
+    const labels = sems.map(s => 'S'+s);
+    const data = sems.map(s => m[s]);
+    let ac=0; const acum = sems.map(s => (ac += m[s], ac));
+    chartsInst[tipo] = new Chart(ctx, { data:{ labels, datasets:[
+      { type:'bar',  label:'Mortalidad (aves/semana)', data, backgroundColor:'rgba(176,58,46,.75)', borderColor:'#b03a2e', borderWidth:1, yAxisID:'y', order:2 },
+      { type:'line', label:'Acumulada', data:acum, borderColor:'#6a7565', backgroundColor:'transparent', borderWidth:2, tension:.3, pointRadius:0, yAxisID:'y1', order:1 }
+    ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}}, scales:{
+      y:{ beginAtZero:true, position:'left', ticks:{precision:0}, title:{display:true,text:'por semana'} },
+      y1:{ beginAtZero:true, position:'right', grid:{drawOnChartArea:false}, ticks:{precision:0}, title:{display:true,text:'acumulada'} }
+    } }});
+  } else if (tipo==='novend') {
+    // % de huevos no vendibles por categoría, por semana de vida
+    const m = {};
+    registrosLote.forEach(r => {
+      const s = r.semana_vida||0;
+      if (!m[s]) m[s] = { h:0, sucios:0, rotos:0, trizados:0, sangre:0 };
+      m[s].h += r.n_huevos||0;
+      ['sucios','rotos','trizados','sangre'].forEach(k => m[s][k] += r[k]||0);
+    });
+    const sems = Object.keys(m).map(Number).sort((a,b)=>a-b);
+    const labels = sems.map(s => 'S'+s);
+    const nv = (typeof userConfig!=='undefined' && userConfig.noVendibles) || { sucios:'Sucios', rotos:'Rotos', trizados:'Trizados', sangre:'Con sangre' };
+    const pct = (s,k) => m[s].h>0 ? +(m[s][k]/m[s].h*100).toFixed(2) : 0;
+    const linea = (k,col) => ({ label:nv[k]||k, data:sems.map(s=>pct(s,k)), borderColor:col, backgroundColor:'transparent', borderWidth:2, tension:.3, pointRadius:2 });
+    const totalPct = sems.map(s => m[s].h>0 ? +(((m[s].sucios+m[s].rotos+m[s].trizados+m[s].sangre)/m[s].h)*100).toFixed(2) : 0);
+    chartsInst[tipo] = new Chart(ctx, { type:'line', data:{ labels, datasets:[
+      linea('sucios','#b8860b'), linea('rotos','#b03a2e'), linea('trizados','#c2691c'), linea('sangre','#7a2e2e'),
+      { label:'Total no vendible', data:totalPct, borderColor:'#1c2118', backgroundColor:'transparent', borderWidth:2, borderDash:[5,4], tension:.3, pointRadius:0 }
+    ]}, options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{position:'top'}, tooltip:{ callbacks:{ label:c=>` ${c.dataset.label}: ${c.raw}%` } } },
+      scales:{ y:{ beginAtZero:true, ticks:{ callback:v=>v+'%' } } }
+    }});
   } else if (tipo==='dona') {
     // Agrupar por semana — solo semanas con exactamente 7 días registrados
     const semMap = {};
