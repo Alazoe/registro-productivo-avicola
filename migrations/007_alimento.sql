@@ -1,3 +1,13 @@
+-- ══ 007_alimento ══ (orden obligatorio: requiere 006_tamanos_cajas) ══════════════════════
+do $$ begin
+  if to_regclass('public.schema_migrations') is null then
+    raise exception 'Falta la tabla schema_migrations: aplica primero migrations/000_ledger.sql';
+  end if;
+  if not exists (select 1 from schema_migrations where version = '006_tamanos_cajas') then
+    raise exception 'Aplica primero migrations/006_tamanos_cajas.sql (las migraciones van en orden)';
+  end if;
+end $$;
+
 -- ══ ALIMENTO — Stock de alimento concentrado (insumo) ═══════════════════
 -- Ejecutar UNA VEZ en el SQL Editor de Supabase (proyecto xewujmpycclqjhlmiica),
 -- en el mismo proyecto que producción/ventas. Incremental y seguro.
@@ -62,3 +72,6 @@ end $$;
 create index if not exists proveedores_user_idx   on proveedores(user_id);
 create index if not exists alim_recep_user_fecha  on alimento_recepciones(user_id, fecha);
 create index if not exists alim_aj_user_fecha      on alimento_ajustes(user_id, fecha);
+
+-- ── registro: marca esta migración como aplicada ─────────────────────────
+insert into schema_migrations (version) values ('007_alimento') on conflict (version) do nothing;

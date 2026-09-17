@@ -524,7 +524,7 @@ async function cargarTodo(){
 
   if(res.error || !res.data){
     console.warn('stock_resumen no disponible:', res.error?.message);
-    const msg = '⚠️ Falta activar el resumen de stock en Supabase: ejecuta src/ventas/stock-resumen.sql (una vez).';
+    const msg = '⚠️ Falta activar el resumen de stock en Supabase: ejecuta migrations/009_stock_resumen.sql.';
     ['banner-cuadre','banner-bodega','banner-alimento'].forEach(id=>{ const el=document.getElementById(id); el.className='banner bad'; el.textContent=msg; });
     return;
   }

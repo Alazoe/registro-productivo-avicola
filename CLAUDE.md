@@ -10,6 +10,8 @@
 ```
 src/shared.js          ← común a producción y módulo (Supabase, sesión, resolverOwner, hoy/fmtFecha/toast)
 src/supabase/          ← app nueva: una URL, todos los productores, auth real
+migrations/            ← migraciones SQL numeradas + ledger (README.md); schema_migrations registra lo aplicado
+supabase/functions/    ← Edge Functions (alerta-produccion, aviso-invitacion)
 src/avicolas/<nombre>/ ← apps GAS heredadas: una URL por productor (en mantención)
 dashboard.html         ← Monitor de Producción del asesor (Supabase): todos los productores, resumen semanal/mensual, exportación
 ```
@@ -17,8 +19,9 @@ dashboard.html         ← Monitor de Producción del asesor (Supabase): todos l
 ## Reglas IMPORTANTES
 - NUNCA agregar frameworks, librerías npm ni bundlers. La app es vanilla JS por decisión de diseño.
 - Los KPIs se calculan siempre client-side en `index.html`. No hay API intermediaria.
-- Las Edge Functions se escriben en TypeScript Deno y se despliegan desde Supabase Dashboard, no desde el repo.
-- El módulo de bodega NO descarga `registros`: los agregados (stock por tamaño, cuadre, alimento) los calcula la función SQL `stock_resumen` (`src/ventas/stock-resumen.sql`, security invoker → RLS aplica). Si cambias columnas que entran en esos totales, actualiza la función, no el JS. `p_hoy` se pasa desde el cliente en hora local.
+- Las Edge Functions (TypeScript Deno) viven en `supabase/functions/<nombre>/index.ts` (fuente de verdad). Se despliegan pegando ese archivo en el Dashboard → Edge Functions, o con `scripts/deploy-functions.sh` (Supabase CLI, opcional).
+- Cambios de base de datos: SIEMPRE como migración numerada en `migrations/NNN_nombre.sql` (idempotente, con guarda de orden y auto-registro en `schema_migrations`; ver `migrations/README.md`). Nunca SQL suelto en otras carpetas.
+- El módulo de bodega NO descarga `registros`: los agregados (stock por tamaño, cuadre, alimento) los calcula la función SQL `stock_resumen` (`migrations/009_stock_resumen.sql`, security invoker → RLS aplica). Si cambias columnas que entran en esos totales, actualiza la función, no el JS. `p_hoy` se pasa desde el cliente en hora local.
 - `src/shared.js` se carga con `<script src="../shared.js?v=N">` DESPUÉS de supabase-js y ANTES del script de la app. Si cambias shared.js, sube el `?v=N` en las dos apps para que el navegador no use la copia en caché. Las funciones de sesión, `resolverOwner`, `hoy`, `fmtFecha` y `toast` viven SOLO ahí: no las redeclares en una app (el CI lo detecta).
 - Antes de subir cambios a las apps, correr `python3 scripts/validar-apps.py` (es lo mismo que corre el CI en cada PR). Si falla, el PR queda en rojo.
 - NUNCA incluir la `SUPABASE_KEY` (anon key) como secreto — es pública por diseño de Supabase RLS.
