@@ -12,6 +12,8 @@ Revisa por cada archivo:
   5. getElementById('x') cuyo id="x" no existe en el HTML
   Los <script src> locales (p. ej. shared.js) se cargan para contar sus funciones
   y para comprobar la sintaxis de shared + app juntos (detecta let redeclarados).
+Además valida migrations/: numeración sin huecos, guarda de orden, auto-registro,
+  sin DROP TABLE y presencia en el ledger (README.md).
 Termina con código 1 si hay algún error (así falla el CI).
 """
 import re, sys, subprocess, tempfile, os
@@ -84,6 +86,34 @@ def validar(path):
 
     return errores
 
+def validar_migraciones(carpeta='migrations'):
+    """Numeración sin huecos, guarda de orden, auto-registro y presencia en el ledger."""
+    errores = []
+    if not os.path.isdir(carpeta):
+        return [f'no existe la carpeta {carpeta}/']
+    archivos = sorted(f for f in os.listdir(carpeta) if f.endswith('.sql'))
+    nums = []
+    for f in archivos:
+        m = re.match(r'^(\d{3})_[a-z0-9_]+\.sql$', f)
+        if not m: errores.append(f'nombre inválido: {f} (esperado NNN_nombre.sql)'); continue
+        nums.append(int(m.group(1)))
+    if nums != list(range(len(nums))):
+        errores.append(f'numeración con huecos o duplicados: {nums}')
+    ledger_path = os.path.join(carpeta, 'README.md')
+    ledger = open(ledger_path, encoding='utf-8').read() if os.path.exists(ledger_path) else ''
+    if not ledger: errores.append('falta migrations/README.md (ledger)')
+    for f in archivos:
+        ver = f[:-4]; txt = open(os.path.join(carpeta, f), encoding='utf-8').read()
+        if f"values ('{ver}')" not in txt:
+            errores.append(f'{f}: no se auto-registra con su versión ({ver})')
+        if ver != '000_ledger' and 'schema_migrations where version' not in txt:
+            errores.append(f'{f}: falta la guarda de orden')
+        if re.search(r'\bdrop\s+table\b', txt, re.I):
+            errores.append(f'{f}: contiene DROP TABLE (las migraciones deben ser idempotentes y no destructivas)')
+        if ledger and f'`{f}`' not in ledger:
+            errores.append(f'{f}: no está listada en migrations/README.md')
+    return errores
+
 def main():
     archivos = sys.argv[1:] or APPS_DEFAULT
     total = 0
@@ -95,6 +125,14 @@ def main():
             for e in errs: print(f'    - {e}')
         else:
             print(f'✓ {a}')
+    # Migraciones (solo cuando se valida el conjunto por defecto)
+    if not sys.argv[1:]:
+        errs = validar_migraciones()
+        if errs:
+            total += len(errs); print('✗ migrations/')
+            for e in errs: print(f'    - {e}')
+        else:
+            print('✓ migrations/')
     if total:
         print(f'\n{total} problema(s) encontrado(s).'); sys.exit(1)
     print('\nTodo OK.')

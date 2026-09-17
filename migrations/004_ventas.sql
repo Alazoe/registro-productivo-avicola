@@ -1,3 +1,13 @@
+-- ══ 004_ventas ══ (orden obligatorio: requiere 003_productores) ══════════════════════
+do $$ begin
+  if to_regclass('public.schema_migrations') is null then
+    raise exception 'Falta la tabla schema_migrations: aplica primero migrations/000_ledger.sql';
+  end if;
+  if not exists (select 1 from schema_migrations where version = '003_productores') then
+    raise exception 'Aplica primero migrations/003_productores.sql (las migraciones van en orden)';
+  end if;
+end $$;
+
 -- ══ VENTAS — App de ventas de huevos (cuadre con producción) ════════════
 -- Ejecutar UNA SOLA VEZ en el mismo proyecto Supabase (xewujmpycclqjhlmiica).
 -- Comparte cuentas y RLS con la app de producción: cada productor ve solo
@@ -27,3 +37,6 @@ begin
 end $$;
 
 create index if not exists ventas_user_fecha_idx on ventas(user_id, fecha);
+
+-- ── registro: marca esta migración como aplicada ─────────────────────────
+insert into schema_migrations (version) values ('004_ventas') on conflict (version) do nothing;

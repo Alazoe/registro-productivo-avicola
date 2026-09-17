@@ -56,15 +56,12 @@ src/shared.js             ← Código común a producción y módulo: cliente Su
                             cuenta compartida (resolverOwner) y helpers (hoy, fmtFecha, toast)
 src/supabase/
 ├── index.html            ← App de producción (todos los productores)
-├── supabase-schema.sql   ← Tablas y políticas RLS
-└── equipo-schema.sql     ← Cuenta compartida: tabla equipo + función tiene_acceso + RLS por cuenta
+└── supabase-schema.sql   ← Esquema base SOLO para instalación nueva (tiene DROP TABLE)
 src/ventas/
-├── index.html                  ← App de ventas, pedidos y bodega (opcional por productor)
-├── ventas-schema.sql           ← Tabla ventas + RLS
-├── pedidos-bodega-schema.sql   ← Tablas pedidos y ajustes_stock + RLS
-├── migration-tamanos-cajas.sql ← Agrega tamaño y cajas de 180 a ventas/pedidos/ajustes
-├── alimento-schema.sql         ← Tablas proveedores, alimento_recepciones, alimento_ajustes + RLS
-└── stock-resumen.sql           ← Función stock_resumen(): agregados de bodega, cuadre y alimento en 1 petición
+└── index.html            ← App de bodega, alimento, pedidos y ventas (opcional por productor)
+migrations/               ← Migraciones SQL numeradas (000…009) + README.md (ledger).
+                            Cada una es idempotente, exige la anterior y se registra en schema_migrations
+supabase/functions/       ← Edge Functions: alerta-produccion, aviso-invitacion (index.ts)
 ```
 
 **URLs:**
@@ -115,7 +112,7 @@ Todas las tablas tienen Row Level Security activado: cada usuario ve y modifica 
 
 ### Cómo activar Supabase (una sola vez)
 
-1. **SQL Editor de Supabase** → pegar y ejecutar `supabase-schema.sql`
+1. **SQL Editor de Supabase** → pegar y ejecutar `src/supabase/supabase-schema.sql` (solo proyecto vacío), luego `migrations/000_ledger.sql` y las migraciones `001` → `009` en orden (ver [`migrations/README.md`](./migrations/README.md))
 2. **Authentication → Users → Add user** → email + contraseña por productor
 3. El productor entra a la URL de la app, crea sus lotes e importa su historial
 
@@ -199,6 +196,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-09 | **Migraciones con registro**: carpeta `migrations/` numerada (000–009) con guarda de orden, auto-registro en `schema_migrations` y ledger en `migrations/README.md`; el CI valida numeración/guarda/registro. Edge Functions movidas a `supabase/functions/<nombre>/index.ts` + `scripts/deploy-functions.sh` (opcional) |
 | 2026-09 | **Rendimiento del módulo**: función SQL `stock_resumen(owner, desde, hasta, hoy)` (security invoker, RLS intacta) que devuelve en un JSON los agregados de bodega por tamaño, cuadre del periodo y alimento. El módulo deja de descargar el historial de `registros` (antes 3 veces por acción) y lanza las listas en paralelo. Requiere ejecutar `stock-resumen.sql` una vez; si falta, la app lo avisa |
 | 2026-09 | **`src/shared.js`**: se extrajo el código duplicado entre producción y módulo (sesión, recuperación de clave, `resolverOwner`, banner de cuenta, `hoy`, `fmtFecha`, `toast`). De paso se corrigió `hoy()` en producción, que aún usaba UTC (`toISOString`) y desde ~21:00 daba el día siguiente. El validador del CI comprueba ahora `shared + app` juntos |
 | 2026-09 | **CI de validación**: GitHub Action (`.github/workflows/validar.yml`) que corre `scripts/validar-apps.py` en cada PR y push a `main` — sintaxis JS, `<div>` balanceados, IDs duplicados, handlers sin función y `getElementById` sin elemento. Sin npm |

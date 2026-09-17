@@ -1,3 +1,13 @@
+-- ══ 009_stock_resumen ══ (orden obligatorio: requiere 008_equipo) ══════════════════════
+do $$ begin
+  if to_regclass('public.schema_migrations') is null then
+    raise exception 'Falta la tabla schema_migrations: aplica primero migrations/000_ledger.sql';
+  end if;
+  if not exists (select 1 from schema_migrations where version = '008_equipo') then
+    raise exception 'Aplica primero migrations/008_equipo.sql (las migraciones van en orden)';
+  end if;
+end $$;
+
 -- ══ stock_resumen — agregados de bodega, cuadre y alimento en UNA petición ═══
 -- Ejecutar UNA VEZ en el SQL Editor de Supabase (proyecto xewujmpycclqjhlmiica).
 -- Aditivo y re-ejecutable: crea/reemplaza una función, no toca datos ni políticas.
@@ -93,3 +103,6 @@ from h, al, aa;
 $$;
 
 grant execute on function stock_resumen(uuid, date, date, date) to authenticated;
+
+-- ── registro: marca esta migración como aplicada ─────────────────────────
+insert into schema_migrations (version) values ('009_stock_resumen') on conflict (version) do nothing;

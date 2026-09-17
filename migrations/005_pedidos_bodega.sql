@@ -1,3 +1,13 @@
+-- ══ 005_pedidos_bodega ══ (orden obligatorio: requiere 004_ventas) ══════════════════════
+do $$ begin
+  if to_regclass('public.schema_migrations') is null then
+    raise exception 'Falta la tabla schema_migrations: aplica primero migrations/000_ledger.sql';
+  end if;
+  if not exists (select 1 from schema_migrations where version = '004_ventas') then
+    raise exception 'Aplica primero migrations/004_ventas.sql (las migraciones van en orden)';
+  end if;
+end $$;
+
 -- ══ PEDIDOS Y BODEGA — extensión de la app de Ventas ════════════════════
 -- Ejecutar UNA SOLA VEZ en el mismo proyecto Supabase (xewujmpycclqjhlmiica),
 -- DESPUÉS de ventas-schema.sql (la tabla pedidos referencia a ventas).
@@ -55,3 +65,6 @@ end $$;
 
 create index if not exists pedidos_user_estado_idx on pedidos(user_id, estado);
 create index if not exists ajustes_user_fecha_idx  on ajustes_stock(user_id, fecha);
+
+-- ── registro: marca esta migración como aplicada ─────────────────────────
+insert into schema_migrations (version) values ('005_pedidos_bodega') on conflict (version) do nothing;

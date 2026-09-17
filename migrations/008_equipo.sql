@@ -1,3 +1,13 @@
+-- ══ 008_equipo ══ (orden obligatorio: requiere 007_alimento) ══════════════════════
+do $$ begin
+  if to_regclass('public.schema_migrations') is null then
+    raise exception 'Falta la tabla schema_migrations: aplica primero migrations/000_ledger.sql';
+  end if;
+  if not exists (select 1 from schema_migrations where version = '007_alimento') then
+    raise exception 'Aplica primero migrations/007_alimento.sql (las migraciones van en orden)';
+  end if;
+end $$;
+
 -- ══ EQUIPO — Compartir una cuenta entre varios usuarios (Etapa 1) ═══════
 -- Ejecutar en el SQL Editor de Supabase (proyecto xewujmpycclqjhlmiica).
 -- RETROCOMPATIBLE: sin invitaciones, cada usuario ve solo lo suyo.
@@ -67,3 +77,6 @@ end $$;
 
 create index if not exists equipo_email_idx on equipo (lower(email_invitado));
 create index if not exists equipo_dueno_idx on equipo (dueno_id);
+
+-- ── registro: marca esta migración como aplicada ─────────────────────────
+insert into schema_migrations (version) values ('008_equipo') on conflict (version) do nothing;

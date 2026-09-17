@@ -735,7 +735,7 @@ let equipo = [];
 async function cargarEquipo(){
   const cont = document.getElementById('equipo-lista'); if(!cont) return;
   const { data, error } = await sb.from('equipo').select('*').eq('dueno_id', ownerId).order('created_at');
-  if(error){ cont.innerHTML = '<p style="font-size:.8rem;color:#b03a2e">No se pudo cargar el equipo. ¿Ejecutaste equipo-schema.sql en Supabase?</p>'; return; }
+  if(error){ cont.innerHTML = '<p style="font-size:.8rem;color:#b03a2e">No se pudo cargar el equipo. ¿Ejecutaste migrations/008_equipo.sql en Supabase?</p>'; return; }
   equipo = data || [];
   const soloMia = ownerId === currentUser.id;
   if(!equipo.length){ cont.innerHTML = `<p style="font-size:.82rem;color:#7a8470">Nadie tiene acceso todavía${soloMia?'':' (cuenta ajena)'}. Agrega un correo abajo.</p>`; return; }
