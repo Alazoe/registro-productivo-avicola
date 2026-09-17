@@ -7,69 +7,76 @@
 <title>AviVet — Monitor de Producción</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
 :root {
-  --fondo:    #f8f6f1;
-  --papel:    #ffffff;
-  --tinta:    #1a1a1a;
-  --suave:    #555;
-  --tenue:    #888;
-  --linea:    #e0ddd5;
-  --linea-f:  #c4c0b6;
-  --prim:     #1b4332;
-  --prim-osc: #133024;
-  --acento:   #f0a500;
-  --ok:       #1b5e20;
-  --mal:      #b71c1c;
-  --fuente-t: 'Crimson Pro', Georgia, serif;
-  --fuente-c: 'Inter', system-ui, sans-serif;
+  --fondo:    #f5f1e8;
+  --fondo-2:  #f0ebe0;
+  --papel:    #fefefe;
+  --tinta:    #1c2118;
+  --suave:    #4d5748;
+  --tenue:    #6a7565;
+  --linea:    #ddd8cc;
+  --linea-f:  #c9c2b2;
+  --prim:     #2a5430;
+  --prim-osc: #1e3d22;
+  --prim-mid: #3d7a42;
+  --verde-cl: #e4ede5;
+  --acento:   #b8860b;
+  --ok:       #2f7d32;
+  --mal:      #b03a2e;
+  --alerta:   #c2691c;
+  --fuente-t: 'Fraunces', Georgia, serif;
+  --fuente-c: 'DM Sans', system-ui, sans-serif;
   --fuente-m: 'IBM Plex Mono', ui-monospace, monospace;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {
   font-family: var(--fuente-c);
-  font-size: 14px; line-height: 1.6;
+  font-size: 15px; line-height: 1.55;
   color: var(--tinta); background: var(--fondo);
   -webkit-font-smoothing: antialiased;
 }
 button { cursor: pointer; font-family: inherit; border: none; background: none; color: inherit; }
+select, input { font-family: inherit; }
+.print-only { display: none; }
 
 /* LOGIN */
 #login-screen {
   display: flex; align-items: center; justify-content: center; min-height: 100vh;
-  background: var(--fondo);
+  background: var(--prim);
   background-image:
-    radial-gradient(circle at 20% 10%, rgba(27,67,50,.06) 0%, transparent 50%),
-    radial-gradient(circle at 80% 90%, rgba(240,165,0,.05) 0%, transparent 50%);
+    radial-gradient(circle at 30% 20%, rgba(92,158,97,.18) 0%, transparent 55%),
+    radial-gradient(circle at 80% 80%, rgba(184,134,11,.12) 0%, transparent 50%);
+  padding: 20px;
 }
-#login-card {
-  background: var(--papel); border: 1px solid var(--linea); border-radius: 4px;
-  padding: 44px 40px; width: 360px; box-shadow: 0 4px 24px rgba(27,67,50,.08);
+#login-card, #recovery-card {
+  background: var(--papel); border-top: 4px solid var(--acento); border-radius: 14px;
+  padding: 40px 36px; width: 100%; max-width: 380px; box-shadow: 0 12px 40px rgba(10,16,10,.35);
 }
-#login-card .marca { font-family: var(--fuente-t); font-size: 28px; font-weight: 700; color: var(--prim); text-align: center; margin-bottom: 4px; }
-#login-card .marca span { color: var(--acento); }
-#login-card .sub { font-family: var(--fuente-m); font-size: 10px; color: var(--tenue); letter-spacing: .1em; text-transform: uppercase; text-align: center; margin-bottom: 32px; }
-#login-card label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--tenue); display: block; margin-bottom: 5px; }
-#login-card input {
-  width: 100%; font-family: var(--fuente-c); font-size: 14px;
-  padding: 10px 13px; border: 1px solid var(--linea-f); border-radius: 4px;
+#login-card .marca, #recovery-card .marca { font-family: var(--fuente-t); font-size: 30px; font-weight: 600; color: var(--prim); text-align: center; margin-bottom: 2px; letter-spacing: -.01em; }
+#login-card .marca span, #recovery-card .marca span { color: var(--acento); }
+#login-card .sub, #recovery-card .sub { font-size: 12px; color: var(--acento); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; text-align: center; margin-bottom: 28px; }
+#login-card label, #recovery-card label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--tenue); display: block; margin-bottom: 5px; }
+#login-card input, #recovery-card input {
+  width: 100%; font-size: 15px;
+  padding: 11px 13px; border: 1px solid var(--linea-f); border-radius: 8px;
   background: var(--fondo); color: var(--tinta); margin-bottom: 14px;
   transition: border-color .2s, box-shadow .2s; outline: none;
 }
-#login-card input:focus { border-color: var(--prim); box-shadow: 0 0 0 3px rgba(27,67,50,.1); }
-#btn-login {
+#login-card input:focus, #recovery-card input:focus { border-color: var(--prim-mid); box-shadow: 0 0 0 3px rgba(61,122,66,.15); }
+#btn-login, #btn-rec {
   width: 100%; background: var(--prim); color: #fff;
-  font-family: var(--fuente-c); font-size: 14px; font-weight: 600;
-  letter-spacing: .04em; padding: 12px; border-radius: 4px; transition: background .15s; margin-top: 4px;
+  font-size: 15px; font-weight: 600;
+  letter-spacing: .03em; padding: 13px; border-radius: 8px; transition: background .15s; margin-top: 4px;
 }
-#btn-login:hover:not(:disabled) { background: var(--prim-osc); }
-#btn-login:disabled { opacity: .55; cursor: default; }
-#login-error { color: var(--mal); font-size: 12px; margin-top: 10px; text-align: center; min-height: 16px; }
+#btn-login:hover:not(:disabled), #btn-rec:hover:not(:disabled) { background: var(--prim-osc); }
+#btn-login:disabled, #btn-rec:disabled { opacity: .55; cursor: default; }
+#login-error { color: var(--mal); font-size: 13px; margin-top: 10px; text-align: center; min-height: 16px; }
 
 /* APP */
 #app { display: none; flex-direction: column; min-height: 100vh; }
@@ -77,186 +84,189 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 /* HEADER */
 #topbar {
   background: var(--prim); border-bottom: 3px solid var(--acento);
-  padding: 13px 28px; display: flex; justify-content: space-between; align-items: center;
-  position: sticky; top: 0; z-index: 100;
+  padding: 12px 24px; display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; flex-wrap: wrap;
+  position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(42,84,48,.25);
 }
 .marca-top { display: flex; align-items: baseline; gap: 14px; }
-.marca-titulo { font-family: var(--fuente-t); font-size: 22px; font-weight: 700; color: #fff; }
+.marca-titulo { font-family: var(--fuente-t); font-size: 24px; font-weight: 600; color: #fff; letter-spacing: -.01em; }
 .marca-titulo span { color: var(--acento); }
-.marca-sub-top { font-family: var(--fuente-m); font-size: 10px; color: rgba(255,255,255,.5); letter-spacing: .1em; text-transform: uppercase; }
-.topbar-right { display: flex; align-items: center; gap: 20px; }
-#fecha-hoy { font-family: var(--fuente-m); font-size: 11px; color: rgba(255,255,255,.5); text-transform: capitalize; }
+.marca-sub-top { font-size: 11px; font-weight: 600; color: rgba(255,255,255,.6); letter-spacing: .1em; text-transform: uppercase; }
+.topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+#fecha-hoy { font-size: 12px; color: rgba(255,255,255,.6); }
 .btn-logout {
-  font-family: var(--fuente-m); font-size: 10px; letter-spacing: .08em;
-  color: rgba(255,255,255,.6); padding: 4px 12px;
-  border: 1px solid rgba(255,255,255,.25); border-radius: 3px; text-transform: uppercase; transition: all .18s;
+  font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  color: rgba(255,255,255,.7); padding: 6px 12px;
+  border: 1px solid rgba(255,255,255,.28); border-radius: 6px; text-transform: uppercase; transition: all .18s;
 }
 .btn-logout:hover { color: #fff; border-color: rgba(255,255,255,.6); }
 
 /* LAYOUT */
-#body { display: grid; grid-template-columns: 220px 1fr; flex: 1; }
+#body { display: grid; grid-template-columns: 236px 1fr; flex: 1; }
 
 /* SIDEBAR */
 #sidebar {
   background: var(--papel); border-right: 1px solid var(--linea);
-  padding: 22px 0; display: flex; flex-direction: column;
+  padding: 20px 0; display: flex; flex-direction: column;
 }
-.sidebar-section { padding: 0 16px 18px; border-bottom: 1px solid var(--linea); margin-bottom: 18px; }
+.sidebar-section { padding: 0 14px 16px; border-bottom: 1px solid var(--linea); margin-bottom: 16px; }
 .sidebar-section:last-of-type { border-bottom: none; margin-bottom: 0; }
-.sidebar-label { font-family: var(--fuente-m); font-size: 9px; color: var(--tenue); letter-spacing: .14em; text-transform: uppercase; margin-bottom: 10px; }
+.sidebar-label { font-size: 11px; font-weight: 700; color: var(--tenue); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; }
 .granja-btn {
-  width: 100%; border-radius: 4px; padding: 9px 10px;
+  width: 100%; border-radius: 8px; padding: 9px 10px;
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 3px; transition: background .12s; border: 1px solid transparent;
+  margin-bottom: 3px; transition: background .12s; border: 1px solid transparent; text-align: left;
 }
 .granja-btn:hover { background: var(--fondo); }
-.granja-btn.activa { background: var(--fondo); border-color: var(--linea); }
-.granja-nombre { font-size: 13px; font-weight: 500; }
+.granja-btn.activa { background: var(--verde-cl); border-color: rgba(42,84,48,.15); }
+.granja-nombre { font-size: 14px; font-weight: 500; }
 .lote-btn {
-  width: 100%; border-radius: 3px; padding: 7px 10px;
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 2px; transition: background .12s;
+  width: 100%; border-radius: 6px; padding: 7px 10px;
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  margin-bottom: 2px; transition: background .12s; text-align: left;
 }
 .lote-btn:hover { background: var(--fondo); }
-.lote-btn.activo { background: var(--fondo); }
-.lote-nombre { font-size: 13px; color: var(--suave); }
+.lote-btn.activo { background: var(--fondo-2); }
+.lote-nombre { font-size: 14px; color: var(--suave); }
 .lote-btn.activo .lote-nombre { color: var(--tinta); font-weight: 600; }
-.alert-tag { font-family: var(--fuente-m); font-size: 9px; font-weight: 500; padding: 2px 7px; border-radius: 3px; letter-spacing: .04em; }
-.badge-num { font-family: var(--fuente-m); font-size: 9px; font-weight: 700; background: var(--mal); color: #fff; padding: 1px 7px; border-radius: 10px; }
-.sidebar-alertas { margin: 0 12px; background: rgba(183,28,28,.05); border: 1px solid rgba(183,28,28,.2); border-radius: 4px; padding: 12px; }
-.sidebar-alertas-titulo { font-family: var(--fuente-m); font-size: 9px; color: var(--mal); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 8px; }
-.alerta-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px; }
+.alert-tag { font-family: var(--fuente-m); font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 4px; letter-spacing: .03em; white-space: nowrap; }
+.badge-num { font-family: var(--fuente-m); font-size: 10px; font-weight: 700; background: var(--mal); color: #fff; padding: 1px 7px; border-radius: 10px; }
+.sidebar-alertas { margin: 0 12px; background: rgba(176,58,46,.05); border: 1px solid rgba(176,58,46,.2); border-radius: 8px; padding: 12px; }
+.sidebar-alertas-titulo { font-size: 10px; font-weight: 700; color: var(--mal); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
+.alerta-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
 
 /* MAIN */
-#main { padding: 28px 32px; overflow-y: auto; }
+#main { padding: 28px 32px; overflow-y: auto; min-width: 0; }
 
 /* HEADER LOTE */
-.lote-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; border-bottom: 1px solid var(--linea); padding-bottom: 20px; }
-.lote-header-meta { font-family: var(--fuente-m); font-size: 10px; color: var(--tenue); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
-.lote-header-titulo { font-family: var(--fuente-t); font-size: 36px; font-weight: 700; line-height: 1.1; }
-.lote-header-sub { font-size: 13px; color: var(--tenue); margin-top: 6px; }
-.dias-badge { text-align: center; padding: 14px 20px; border-radius: 4px; min-width: 88px; border: 1px solid var(--linea); }
-.dias-badge-num { font-family: var(--fuente-t); font-size: 44px; font-weight: 700; line-height: 1; }
-.dias-badge-lbl { font-family: var(--fuente-m); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; margin-top: 4px; }
+.lote-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 26px; border-bottom: 1px solid var(--linea); padding-bottom: 20px; }
+.lote-header-meta { font-size: 11px; font-weight: 600; color: var(--tenue); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; }
+.lote-header-titulo { font-family: var(--fuente-t); font-size: 38px; font-weight: 600; line-height: 1.1; letter-spacing: -.01em; }
+.lote-header-sub { font-size: 14px; color: var(--tenue); margin-top: 6px; }
+.dias-badge { text-align: center; padding: 14px 20px; border-radius: 10px; min-width: 96px; border: 1px solid var(--linea); background: var(--papel); }
+.dias-badge-num { font-family: var(--fuente-t); font-size: 44px; font-weight: 600; line-height: 1; }
+.dias-badge-lbl { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-top: 4px; }
 
 /* KPIs */
-.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--linea); border: 1px solid var(--linea); margin-bottom: 24px; }
-.kpi-card { background: var(--papel); padding: 20px 18px; position: relative; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); background: var(--papel); border: 1px solid var(--linea); border-right: 0; border-bottom: 0; border-radius: 10px; overflow: hidden; margin-bottom: 24px; }
+.kpi-card { background: var(--papel); padding: 20px 18px; position: relative; border-right: 1px solid var(--linea); border-bottom: 1px solid var(--linea); }
 .kpi-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
-.kpi-label { font-family: var(--fuente-m); font-size: 9px; color: var(--tenue); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 10px; }
-.kpi-value { font-family: var(--fuente-t); font-size: 40px; font-weight: 700; line-height: 1; }
-.kpi-sub { font-size: 12px; color: var(--tenue); margin-top: 6px; }
+.kpi-label { font-size: 10px; font-weight: 700; color: var(--tenue); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; }
+.kpi-value { font-family: var(--fuente-t); font-size: 40px; font-weight: 600; line-height: 1; }
+.kpi-sub { font-size: 13px; color: var(--tenue); margin-top: 6px; }
 
 /* CHART */
-.chart-wrap { background: var(--papel); border: 1px solid var(--linea); padding: 22px 22px 18px; margin-bottom: 24px; }
+.chart-wrap { background: var(--papel); border: 1px solid var(--linea); border-radius: 10px; padding: 22px 22px 18px; margin-bottom: 24px; }
 .chart-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
-.chart-titulo { font-family: var(--fuente-m); font-size: 10px; color: var(--tenue); letter-spacing: .12em; text-transform: uppercase; }
-.chart-controles { display: flex; align-items: center; gap: 16px; }
-.vista-tabs { display: flex; border: 1px solid var(--linea-f); border-radius: 4px; overflow: hidden; }
+.chart-titulo { font-size: 11px; font-weight: 700; color: var(--tenue); letter-spacing: .1em; text-transform: uppercase; }
+.chart-controles { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.vista-tabs { display: flex; border: 1px solid var(--linea-f); border-radius: 6px; overflow: hidden; }
 .vista-tab {
-  font-family: var(--fuente-m); font-size: 10px; letter-spacing: .06em;
-  text-transform: uppercase; padding: 5px 14px; color: var(--tenue);
+  font-size: 11px; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; padding: 6px 14px; color: var(--tenue);
   background: var(--papel); border-right: 1px solid var(--linea-f);
   transition: all .15s;
 }
 .vista-tab:last-child { border-right: none; }
 .vista-tab:hover { background: var(--fondo); color: var(--tinta); }
 .vista-tab.activo { background: var(--prim); color: #fff; }
-.chart-leyenda { display: flex; gap: 16px; font-size: 12px; color: var(--tenue); }
+.chart-leyenda { display: flex; gap: 16px; font-size: 13px; color: var(--tenue); }
 .chart-leyenda span { display: inline-flex; align-items: center; gap: 6px; }
-.chart-canvas-wrap { position: relative; height: 230px; width: 100%; }
+.chart-canvas-wrap { position: relative; height: 240px; width: 100%; }
 .pending-aviso {
   display: flex; align-items: center; gap: 8px; margin-top: 14px;
-  padding: 9px 14px; border-radius: 3px; font-size: 12px; border: 1px dashed;
+  padding: 9px 14px; border-radius: 6px; font-size: 13px; border: 1px dashed;
 }
 
 /* CLASIFICACIÓN */
-.clasif-wrap { background: var(--papel); border: 1px solid var(--linea); padding: 22px; }
-.clasif-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.clasif-titulo { font-family: var(--fuente-m); font-size: 10px; color: var(--tenue); letter-spacing: .12em; text-transform: uppercase; }
-.barra { display: flex; height: 18px; border-radius: 2px; overflow: hidden; gap: 1px; margin-bottom: 14px; }
-.leyenda { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--suave); }
+.clasif-wrap { background: var(--papel); border: 1px solid var(--linea); border-radius: 10px; padding: 22px; }
+.clasif-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+.clasif-titulo { font-size: 11px; font-weight: 700; color: var(--tenue); letter-spacing: .1em; text-transform: uppercase; }
+.barra { display: flex; height: 18px; border-radius: 4px; overflow: hidden; gap: 1px; margin-bottom: 14px; }
+.leyenda { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--suave); }
 .leyenda-item { display: inline-flex; align-items: center; gap: 5px; }
 .cuad { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
-.nc-titulo { font-family: var(--fuente-m); font-size: 9px; color: var(--mal); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 8px; }
+.nc-titulo { font-size: 10px; font-weight: 700; color: var(--mal); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
 
 /* ESTADO VACÍO */
 .estado-msg { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 360px; gap: 12px; }
-.estado-msg-titulo { font-family: var(--fuente-t); font-size: 22px; color: var(--tenue); }
-.estado-msg-sub { font-size: 13px; color: var(--tenue); text-align: center; max-width: 380px; line-height: 1.6; }
+.estado-msg-titulo { font-family: var(--fuente-t); font-size: 24px; color: var(--tenue); }
+.estado-msg-sub { font-size: 14px; color: var(--tenue); text-align: center; max-width: 380px; line-height: 1.6; }
 
 /* ALERTA TOPBAR */
 .alerta-top {
-  font-family: var(--fuente-m); font-size: 10px; letter-spacing: .06em;
-  padding: 4px 12px; border-radius: 3px;
-  background: rgba(183,28,28,.25); color: #ffc4c4; border: 1px solid rgba(183,28,28,.4);
+  font-size: 12px; font-weight: 600; letter-spacing: .02em;
+  padding: 5px 12px; border-radius: 6px;
+  background: rgba(176,58,46,.28); color: #ffd9d3; border: 1px solid rgba(176,58,46,.45);
 }
 
 /* RESUMEN */
 .btn-resumen {
-  font-family: var(--fuente-m); font-size: 10px; letter-spacing: .08em;
-  color: rgba(255,255,255,.7); padding: 5px 14px;
-  border: 1px solid rgba(255,255,255,.35); border-radius: 3px;
+  font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  color: rgba(255,255,255,.85); padding: 6px 14px;
+  border: 1px solid rgba(255,255,255,.35); border-radius: 6px;
   text-transform: uppercase; transition: all .18s; background: rgba(255,255,255,.08);
 }
 .btn-resumen:hover  { background: rgba(255,255,255,.18); color: #fff; }
 .btn-resumen.activo { background: var(--acento); border-color: var(--acento); color: #fff; }
+.btn-resumen:disabled { opacity: .6; cursor: default; }
 
-.resumen-wrap { max-width: 900px; }
-.resumen-header { margin-bottom: 28px; border-bottom: 1px solid var(--linea); padding-bottom: 18px; }
-.resumen-titulo { font-family: var(--fuente-t); font-size: 32px; font-weight: 700; color: var(--prim); line-height: 1.1; }
-.resumen-periodo {
-  font-family: var(--fuente-m); font-size: 10px; color: var(--tenue);
-  letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px;
-}
+.resumen-wrap { max-width: 960px; }
+.resumen-header { margin-bottom: 24px; border-bottom: 1px solid var(--linea); padding-bottom: 18px; }
+.resumen-titulo { font-family: var(--fuente-t); font-size: 34px; font-weight: 600; color: var(--prim); line-height: 1.1; letter-spacing: -.01em; }
+.resumen-periodo { font-size: 11px; font-weight: 700; color: var(--tenue); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; }
 .resumen-aviso {
-  display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
-  font-size: 12px; color: #e65100; background: rgba(230,81,0,.07);
-  border: 1px solid rgba(230,81,0,.25); border-radius: 3px; padding: 5px 12px;
+  margin-top: 12px; font-size: 13px; color: var(--alerta); background: rgba(194,105,28,.07);
+  border: 1px solid rgba(194,105,28,.25); border-radius: 8px; padding: 8px 12px;
 }
-.resumen-acciones { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+.resumen-aviso-lista { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.resumen-aviso-chip { font-size: 12px; color: var(--tinta); background: var(--papel); border: 1px solid var(--linea); border-radius: 999px; padding: 2px 10px; }
+.resumen-aviso-chip b { font-family: var(--fuente-m); font-size: 11px; color: var(--alerta); }
+.resumen-acciones { display: flex; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; align-items: center; }
 .btn-accion {
-  font-family: var(--fuente-c); font-size: 13px; font-weight: 600;
-  padding: 9px 20px; border-radius: 4px; transition: all .15s; display: inline-flex; align-items: center; gap: 7px;
+  font-size: 14px; font-weight: 600;
+  padding: 9px 18px; border-radius: 8px; transition: all .15s; display: inline-flex; align-items: center; gap: 7px;
 }
 .btn-accion.prim  { background: var(--prim); color: #fff; }
 .btn-accion.prim:hover { background: var(--prim-osc); }
 .btn-accion.sec   { background: var(--papel); color: var(--suave); border: 1px solid var(--linea-f); }
 .btn-accion.sec:hover { border-color: var(--prim); color: var(--prim); }
+.sel { font-size: 14px; padding: 8px 10px; border: 1px solid var(--linea-f); border-radius: 8px; background: var(--papel); color: var(--tinta); cursor: pointer; }
 
-.resumen-grid { display: grid; gap: 1px; background: var(--linea); border: 1px solid var(--linea); margin-bottom: 24px; }
+.resumen-grid { display: grid; gap: 1px; background: var(--linea); border: 1px solid var(--linea); border-radius: 10px; margin-bottom: 22px; overflow-x: auto; }
 .resumen-fila {
   display: grid;
-  grid-template-columns: 175px 75px 135px 90px 120px 90px 100px;
+  grid-template-columns: 190px 80px 140px 95px 125px 95px 105px;
+  min-width: 830px;
   background: var(--papel);
   align-items: center;
 }
 .resumen-fila.cabecera { background: var(--prim); }
-.resumen-cel {
-  padding: 10px 14px; font-size: 13px; border-right: 1px solid var(--linea);
-}
+.resumen-cel { padding: 10px 14px; font-size: 14px; border-right: 1px solid var(--linea); }
 .resumen-cel:last-child { border-right: none; }
 .resumen-fila.cabecera .resumen-cel {
-  font-family: var(--fuente-m); font-size: 9px; letter-spacing: .1em;
-  text-transform: uppercase; color: rgba(255,255,255,.75); border-right-color: rgba(255,255,255,.1);
+  font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: rgba(255,255,255,.85); border-right-color: rgba(255,255,255,.12);
 }
 .resumen-fila:not(.cabecera):hover { background: var(--fondo); }
-.resumen-productor { font-weight: 600; font-size: 13px; }
-.resumen-lote { font-size: 11px; color: var(--tenue); margin-top: 1px; }
-.resumen-num { font-family: var(--fuente-t); font-size: 22px; font-weight: 700; line-height: 1; }
-.resumen-sub { font-family: var(--fuente-m); font-size: 9px; color: var(--tenue); margin-top: 2px; }
+.resumen-productor { font-weight: 600; font-size: 14px; }
+.resumen-lote { font-size: 12px; color: var(--tenue); margin-top: 1px; }
+.resumen-num { font-family: var(--fuente-t); font-size: 24px; font-weight: 600; line-height: 1; }
+.resumen-sub { font-family: var(--fuente-m); font-size: 10px; color: var(--tenue); margin-top: 3px; }
 .semaforo { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; }
 .semaforo-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.delta-chip {
-  font-family: var(--fuente-m); font-size: 11px; font-weight: 700;
-  padding: 3px 8px; border-radius: 3px; display: inline-block;
-}
+.delta-chip { font-family: var(--fuente-m); font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 4px; display: inline-block; }
 .resumen-pendiente { background: repeating-linear-gradient(45deg, var(--fondo), var(--fondo) 4px, var(--papel) 4px, var(--papel) 8px); }
-.resumen-pie { font-size: 12px; color: var(--tenue); line-height: 1.6; padding: 14px; background: var(--papel); border: 1px solid var(--linea); }
+.resumen-pie { font-size: 13px; color: var(--tenue); line-height: 1.6; padding: 14px; background: var(--papel); border: 1px solid var(--linea); border-radius: 8px; }
+.btn-mini {
+  margin-top: 6px; font-size: 11px; font-weight: 600; background: none;
+  border: 1px solid var(--linea); border-radius: 6px; color: var(--suave); padding: 3px 9px; cursor: pointer;
+}
+.btn-mini:hover { border-color: var(--prim); color: var(--prim); }
 
 .nav-semana-btn {
   font-family: var(--fuente-m); font-size: 14px; font-weight: 700;
-  width: 32px; height: 32px; border-radius: 4px;
+  width: 34px; height: 34px; border-radius: 6px;
   border: 1px solid var(--linea-f); background: var(--papel); color: var(--prim);
   display: flex; align-items: center; justify-content: center; transition: all .15s;
 }
@@ -266,8 +276,41 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 /* FOOTER */
 #footer {
   background: var(--papel); border-top: 1px solid var(--linea);
-  padding: 8px 28px; display: flex; justify-content: space-between;
-  font-family: var(--fuente-m); font-size: 10px; color: var(--tenue); letter-spacing: .06em;
+  padding: 8px 24px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+  font-size: 11px; color: var(--tenue); letter-spacing: .04em;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  #body { grid-template-columns: 1fr; }
+  #sidebar { border-right: none; border-bottom: 1px solid var(--linea); padding: 12px 0; }
+  #sidebar .sidebar-section { padding-bottom: 10px; margin-bottom: 10px; }
+  #lista-granjas, #lista-lotes { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+  .granja-btn, .lote-btn { width: auto; flex: 0 0 auto; gap: 8px; }
+  #alertas-panel-sidebar { display: none; }
+  #main { padding: 18px 16px; }
+  #fecha-hoy, .marca-sub-top { display: none; }
+  .lote-header-titulo { font-size: 30px; }
+  .kpi-value { font-size: 32px; }
+  .resumen-titulo { font-size: 28px; }
+}
+
+/* IMPRESIÓN (Resumen → PDF) */
+@media print {
+  @page { margin: 12mm; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { background: #fff; font-size: 12px; }
+  #topbar, #footer, #sidebar, .resumen-acciones, .no-print, .pending-aviso { display: none !important; }
+  .print-only { display: block !important; }
+  #body { grid-template-columns: 1fr !important; }
+  #main { padding: 0; overflow: visible; }
+  .resumen-wrap { max-width: none; }
+  .resumen-grid { overflow: visible; border-radius: 0; }
+  .resumen-fila { min-width: 0; break-inside: avoid; grid-template-columns: 2fr 1fr 1.4fr 1fr 1.3fr 1fr 1.1fr; }
+  .resumen-num { font-size: 18px; }
+  .resumen-cel { padding: 7px 9px; font-size: 12px; }
+  .resumen-header { margin-bottom: 14px; }
+  .resumen-titulo { font-size: 26px; }
 }
 </style>
 </head>
@@ -291,7 +334,7 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 
 <!-- NUEVA CONTRASEÑA -->
 <div id="recovery-screen" style="display:none;position:fixed;inset:0;background:var(--prim);z-index:60;align-items:center;justify-content:center;padding:20px">
-  <div id="login-card">
+  <div id="recovery-card">
     <div class="marca">AVI<span>VET</span></div>
     <div class="sub">Nueva contraseña</div>
     <label for="rec-pass">Elige tu nueva clave</label>
@@ -311,7 +354,7 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
     <div class="topbar-right">
       <div id="alerta-global"></div>
       <div id="fecha-hoy"></div>
-      <button class="btn-resumen" id="btn-resumen" onclick="toggleResumen()">Resumen Semanal</button>
+      <button class="btn-resumen" id="btn-resumen" onclick="toggleResumen()" title="Resumen consolidado por semana, 4 semanas o mes">📋 Resumen</button>
       <button class="btn-resumen" id="btn-respaldo" onclick="exportarTodo()" title="Descarga un ZIP con los datos visibles para tu cuenta en CSV">⬇ Exportar todo</button>
       <button class="btn-logout" onclick="logout()">Salir</button>
     </div>
@@ -349,9 +392,10 @@ let filtroProductor = 'todos'; // 'todos' o un g.id
 let agrupacion = 'semana';     // 'semana' | '4semanas' | 'mes'
 const SUPABASE_URL  = "https://xewujmpycclqjhlmiica.supabase.co";
 const SUPABASE_ANON = "sb_publishable_v5_FU1w-7P7oeNrW6FYRBQ_cuX-pa9_";
-const PALETTE = ["#1b4332","#1565c0","#6a1e9e","#b71c1c","#e65100","#00695c","#4527a0","#2e7d32"];
+const PALETTE = ["#2a5430","#b8860b","#1e5a7a","#b03a2e","#c2691c","#5c6b3a","#7a4b8c","#3d7a42"];
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+if (window.Chart) { Chart.defaults.font.family = "'DM Sans', system-ui, sans-serif"; Chart.defaults.color = '#6a7565'; }
 let currentToken = null;
 let currentUserId = null;
 let nombresProductores = {};   // user_id → nombre, puesto por cada productor (tabla productores)
@@ -362,18 +406,18 @@ let chartInst = null;
 let vistaActual = 'diario'; // 'diario' | 'semanal' | 'mensual'
 
 const CATEGORIAS = [
-  {key:"chico",   label:"Chico",    color:"#78909c"},
-  {key:"mediano", label:"Mediano",  color:"#1565c0"},
-  {key:"grande",  label:"Grande",   color:"#00838f"},
-  {key:"xl",      label:"XL",       color:"#2e7d32"},
-  {key:"superXl", label:"Super XL", color:"#f9a825"},
-  {key:"jumbo",   label:"Jumbo",    color:"#ef6c00"},
+  {key:"chico",   label:"Chico",    color:"#9c948a"},
+  {key:"mediano", label:"Mediano",  color:"#5b8fa8"},
+  {key:"grande",  label:"Grande",   color:"#3d7a42"},
+  {key:"xl",      label:"XL",       color:"#8aae5a"},
+  {key:"superXl", label:"Super XL", color:"#d4a017"},
+  {key:"jumbo",   label:"Jumbo",    color:"#c2691c"},
 ];
 const NO_CONFORMES = [
-  {key:"sucios",   label:"Sucios",   color:"#c62828"},
-  {key:"rotos",    label:"Rotos",    color:"#ad1457"},
-  {key:"trizados", label:"Trizados", color:"#6a1e9e"},
-  {key:"sangre",   label:"Sangre",   color:"#880e4f"},
+  {key:"sucios",   label:"Sucios",   color:"#b03a2e"},
+  {key:"rotos",    label:"Rotos",    color:"#8c2f2f"},
+  {key:"trizados", label:"Trizados", color:"#7a4b8c"},
+  {key:"sangre",   label:"Sangre",   color:"#5a1f2a"},
 ];
 
 const state = { granjaId:null, loteIdx:0, datos:{}, estados:{} };
@@ -382,7 +426,10 @@ const state = { granjaId:null, loteIdx:0, datos:{}, estados:{} };
 window.onload = async () => {
   const { data:{ session } } = await sb.auth.getSession();
   if (session) { currentToken = session.access_token; currentUserId = session.user.id; mostrarApp(); }
-  sb.auth.onAuthStateChange((evento) => {
+  sb.auth.onAuthStateChange((evento, s) => {
+    if ((evento === 'TOKEN_REFRESHED' || evento === 'SIGNED_IN') && s) {
+      currentToken = s.access_token; currentUserId = s.user.id;
+    }
     if (evento === 'PASSWORD_RECOVERY') {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('app').style.display = 'none';
@@ -443,6 +490,10 @@ async function logout() {
   currentToken = null;
   GRANJAS = []; Object.assign(state, { granjaId:null, loteIdx:0, datos:{}, estados:{} });
   if (chartInst) { chartInst.destroy(); chartInst = null; }
+  modoResumen = false; semanaOffset = 0; filtroProductor = 'todos';
+  document.getElementById('btn-resumen').classList.remove('activo');
+  document.getElementById('sidebar').style.display = '';
+  document.getElementById('body').style.gridTemplateColumns = '';
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-pass').value = '';
@@ -453,14 +504,19 @@ async function logout() {
 function mostrarApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
-  document.getElementById('fecha-hoy').textContent =
-    new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+  const f = new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('fecha-hoy').textContent = f.charAt(0).toUpperCase()+f.slice(1);
   render();
   cargarDatos();
 }
 
 // ── HELPERS ────────────────────────────────────────────────────────────
-function alertColor(d) { return d===0?'var(--ok)':d<=1?'#e65100':d<=2?'#bf360c':'var(--mal)'; }
+// Fechas SIEMPRE en hora local (Chile): toISOString() usa UTC y desde las ~21:00 marca el día siguiente
+const fmtISO = d => d.toLocaleDateString('en-CA');           // YYYY-MM-DD local
+const hoyISO = () => fmtISO(new Date());
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function refrescar() { modoResumen ? renderResumen() : render(); }
+function alertColor(d) { return d===0?'var(--ok)':d<=1?'#c2691c':d<=2?'#a8471c':'var(--mal)'; }
 function alertLabel(d) { return d===0?'Al día':d===1?'1 día':d+' días'; }
 
 // ── AGRUPACIONES ───────────────────────────────────────────────────────
@@ -469,7 +525,7 @@ function getLunes(fechaStr) {
   const dia = d.getDay(); // 0=Dom
   const diff = dia === 0 ? -6 : 1 - dia;
   d.setDate(d.getDate() + diff);
-  return d.toISOString().slice(0, 10);
+  return fmtISO(d);
 }
 
 function agrupar(registros, vista) {
@@ -539,7 +595,7 @@ function renderChart(lote, granja, vista) {
         {
           label: 'Esperado',
           data: puntos.map(p => p.esperado),
-          borderColor: '#c4c0b6',
+          borderColor: '#c9c2b2',
           backgroundColor: 'transparent',
           borderWidth: 1.5,
           borderDash: [5, 4],
@@ -559,13 +615,13 @@ function renderChart(lote, granja, vista) {
         legend: { display: false },
         tooltip: {
           backgroundColor: '#fff',
-          titleColor: '#1a1a1a',
-          bodyColor: '#555',
-          borderColor: '#e0ddd5',
+          titleColor: '#1c2118',
+          bodyColor: '#4d5748',
+          borderColor: '#ddd8cc',
           borderWidth: 1,
           padding: 10,
-          titleFont: { family: "'IBM Plex Mono'", size: 11 },
-          bodyFont: { family: "'Inter'", size: 12 },
+          titleFont: { family: "'IBM Plex Mono'", size: 12 },
+          bodyFont: { family: "'DM Sans'", size: 13 },
           callbacks: {
             title: items => {
               const lbl = items[0].label;
@@ -583,20 +639,21 @@ function renderChart(lote, granja, vista) {
       },
       scales: {
         x: {
-          grid: { color: '#f0ede6', drawBorder: false },
+          grid: { color: '#eee9de', drawBorder: false },
           ticks: {
             font: { family: "'IBM Plex Mono'", size: 10 },
-            color: '#aaa',
+            color: '#8a9384',
             maxRotation: 0,
-            maxTicksLimit: vista === 'mensual' ? 12 : vista === 'semanal' ? 16 : 14,
+            autoSkipPadding: 10,
+            maxTicksLimit: Math.max(5, Math.min(vista === 'mensual' ? 12 : vista === 'semanal' ? 16 : 14, Math.floor((canvas.parentElement.clientWidth || 600) / 75))),
           },
           border: { display: false },
         },
         y: {
-          grid: { color: '#e0ddd5', drawBorder: false },
+          grid: { color: '#ddd8cc', drawBorder: false },
           ticks: {
             font: { family: "'IBM Plex Mono'", size: 10 },
-            color: '#aaa',
+            color: '#8a9384',
             callback: v => v + '%',
             maxTicksLimit: 6,
           },
@@ -662,7 +719,7 @@ function renderSidebar() {
     btn.onclick = () => { state.loteIdx=i; render(); };
     const nm = document.createElement('span'); nm.className='lote-nombre'; nm.textContent=l.nombre;
     const tag = document.createElement('span'); tag.className='alert-tag';
-    Object.assign(tag.style, {background: dias===0?'rgba(27,94,32,.1)':'rgba(183,28,28,.08)', color:ac, border:`1px solid ${ac}30`});
+    Object.assign(tag.style, {background: dias===0?'rgba(47,125,50,.12)':'rgba(176,58,46,.08)', color:ac, border:`1px solid ${ac}30`});
     tag.textContent = alertLabel(dias);
     btn.append(nm, tag); listaL.appendChild(btn);
   });
@@ -739,7 +796,7 @@ function renderMainTodos(main, granja, lotes) {
     const ac = alertColor(l.diasPendientes||0);
     const td = (html,extra='') => `<td style="padding:9px 10px;border-top:1px solid var(--linea);white-space:nowrap;${extra}">${html}</td>`;
     return `<tr style="cursor:pointer" onclick="state.loteIdx=${i};render()" onmouseover="this.style.background='var(--fondo)'" onmouseout="this.style.background=''">`
-      + td(`<span style="font-weight:600;color:${granja.color}">${l.nombre}</span>`)
+      + td(`<span style="font-weight:600;color:${granja.color}">${esc(l.nombre)}</span>`)
       + td(l.semanaVida ?? '—')
       + td(l.postura!=null ? `<b>${l.postura}%</b>` : '—')
       + td(l.posturaEsperada!=null ? l.posturaEsperada+'%' : '—', 'color:var(--suave)')
@@ -791,9 +848,7 @@ function renderMain() {
   const btnRen = document.createElement('button');
   btnRen.textContent = '✎ renombrar';
   btnRen.title = 'Asignar o corregir el nombre de este productor';
-  btnRen.style.cssText = 'margin-left:8px;font-family:inherit;font-size:11px;background:none;border:1px solid var(--linea-f);border-radius:6px;color:var(--suave);padding:1px 8px;cursor:pointer;vertical-align:middle';
-  btnRen.onmouseover = () => btnRen.style.borderColor='var(--acento)';
-  btnRen.onmouseout  = () => btnRen.style.borderColor='var(--linea-f)';
+  btnRen.className = 'btn-mini'; btnRen.style.cssText = 'margin:0 0 0 8px;vertical-align:middle;text-transform:none;letter-spacing:0';
   btnRen.onclick = (e) => { e.stopPropagation(); renombrarProductor(granja.id); };
   meta.appendChild(btnRen);
   const titulo = document.createElement('div'); titulo.className='lote-header-titulo';
@@ -815,9 +870,9 @@ function renderMain() {
   const kpis = [
     {label:'Postura',      value: lote.postura!=null?lote.postura+'%':'—',            color: granja.color,         sub: lote.posturaEsperada!=null?'Esperado: '+lote.posturaEsperada+'%':''},
     {label:'Diferencia',   value: lote.diferencia!=null?(lote.diferencia>0?'+':'')+lote.diferencia+'%':'—', color: lote.diferencia>=0?'var(--ok)':'var(--mal)', sub: lote.diferencia>=0?'Sobre curva':'Bajo curva'},
-    {label:'Mortalidad',   value: lote.mortalidadHoy!=null?lote.mortalidadHoy+' aves':'—', color: lote.mortalidadHoy>3?'var(--mal)':'var(--ok)', sub: lote.mortalidadHoy>3?'Alta — revisar':'Normal'},
+    {label:'Mortalidad',   value: lote.mortalidadHoy!=null?lote.mortalidadHoy+' aves':'—', color: lote.mortPctHoy>0.3?'var(--mal)':'var(--ok)', sub: lote.mortPctHoy!=null ? lote.mortPctHoy+'% · '+(lote.mortPctHoy>0.3?'Alta — revisar':'Normal') : ''},
     {label:'Consumo alim.',value: lote.consumoGrAve!=null?lote.consumoGrAve+' g':'—',  color: '#c2691c', sub: lote.kgAlimentoHoy!=null?lote.kgAlimentoHoy.toLocaleString('es-CL')+' kg/día':'g/ave/día'},
-    {label:'g Alim/Huevo', value: lote.gAlimPorHuevo!=null?lote.gAlimPorHuevo+' g':'—', color: '#1565c0', sub: (lote.huevos||0).toLocaleString('es-CL')+' huevos'},
+    {label:'g Alim/Huevo', value: lote.gAlimPorHuevo!=null?lote.gAlimPorHuevo+' g':'—', color: '#1e5a7a', sub: (lote.huevos||0).toLocaleString('es-CL')+' huevos'},
   ];
   kpis.forEach(kpi => {
     const card = document.createElement('div'); card.className='kpi-card';
@@ -832,9 +887,9 @@ function renderMain() {
   const precioKey = 'precio_kg_prod_' + granja.id;
   let precioKg = parseFloat(localStorage.getItem(precioKey)) || 0;
   const costoCard = document.createElement('div'); costoCard.className='kpi-card';
-  const cbar = document.createElement('div'); cbar.className='kpi-bar'; cbar.style.background='#6a1e9e';
+  const cbar = document.createElement('div'); cbar.className='kpi-bar'; cbar.style.background='#7a4b8c';
   const clbl = document.createElement('div'); clbl.className='kpi-label'; clbl.textContent='Costo alim/huevo';
-  const cval = document.createElement('div'); cval.className='kpi-value'; cval.style.color='#6a1e9e';
+  const cval = document.createElement('div'); cval.className='kpi-value'; cval.style.color='#7a4b8c';
   const csub = document.createElement('div'); csub.className='kpi-sub';
   csub.style.cssText='display:flex;align-items:center;gap:5px;margin-top:4px';
   const clabelIn = document.createElement('span'); clabelIn.textContent='$/kg alim:';
@@ -878,7 +933,7 @@ function renderMain() {
   const leyenda = document.createElement('div'); leyenda.className='chart-leyenda';
   leyenda.innerHTML=`
     <span><span style="display:inline-block;width:18px;height:2.5px;background:${granja.color};vertical-align:middle;margin-right:4px;border-radius:2px"></span>Real</span>
-    <span><span style="display:inline-block;width:18px;height:0;border-top:2px dashed #c4c0b6;vertical-align:middle;margin-right:4px"></span>Esperado</span>`;
+    <span><span style="display:inline-block;width:18px;height:0;border-top:2px dashed #c9c2b2;vertical-align:middle;margin-right:4px"></span>Esperado</span>`;
 
   controles.append(tabs, leyenda);
   chartTop.append(chartTtl, controles);
@@ -953,12 +1008,18 @@ function renderMain() {
 function render() { renderSidebar(); renderMain(); }
 
 // ── SUPABASE ───────────────────────────────────────────────────────────
+// Token vigente: el SDK renueva la sesión cada hora; si la pestaña queda abierta, currentToken vencería
+async function getToken() {
+  const { data:{ session } } = await sb.auth.getSession();
+  if (session) { currentToken = session.access_token; currentUserId = session.user.id; }
+  return currentToken;
+}
 async function sbFetch(tabla, params={}) {
   const url = new URL(SUPABASE_URL+'/rest/v1/'+tabla);
   Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
   const r = await fetch(url.toString(), { headers: {
     'apikey': SUPABASE_ANON,
-    'Authorization': 'Bearer '+currentToken,
+    'Authorization': 'Bearer '+(await getToken()),
   }});
   if (!r.ok) throw new Error('HTTP '+r.status);
   return r.json();
@@ -976,6 +1037,7 @@ async function exportarTodo() {
   ];
   const PAGE = 1000;
   btn.disabled = true;
+  const token = await getToken();
   const zip = new JSZip();
   let ok = 0, omitidas = 0;
 
@@ -988,7 +1050,7 @@ async function exportarTodo() {
         const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?select=*&order=${pk}.asc`, {
           headers: {
             'apikey': SUPABASE_ANON,
-            'Authorization': 'Bearer ' + currentToken,
+            'Authorization': 'Bearer ' + token,
             'Accept': 'text/csv',
             'Range-Unit': 'items',
             'Range': `${desde}-${desde + PAGE - 1}`,
@@ -1040,7 +1102,7 @@ async function sbUpsert(tabla, fila, onConflict) {
     method: 'POST',
     headers: {
       'apikey': SUPABASE_ANON,
-      'Authorization': 'Bearer '+currentToken,
+      'Authorization': 'Bearer '+(await getToken()),
       'Content-Type': 'application/json',
       'Prefer': 'resolution=merge-duplicates,return=minimal',
     },
@@ -1087,7 +1149,7 @@ async function renombrarProductor(uid) {
     // Reflejar en la lista en memoria
     GRANJAS.forEach(g => { if (g.id === uid) g.nombre = resolverNombreProductor(uid); });
     GRANJAS.sort((a,b)=>a.nombre.localeCompare(b.nombre));
-    render();
+    refrescar();
   } catch(e) {
     alert('No se pudo guardar el nombre: '+e.message);
   }
@@ -1095,7 +1157,7 @@ async function renombrarProductor(uid) {
 
 function procesarLote(lote, registros) {
   if (!registros.length) return null;
-  const hoy = new Date().toISOString().slice(0,10);
+  const hoy = hoyISO();
   const u   = registros[0]; // más reciente
   const dias = Math.max(0, Math.round((new Date(hoy)-new Date(u.fecha))/86400000));
   const pct  = v => v!=null ? parseFloat((v*100).toFixed(1)) : null;
@@ -1111,6 +1173,7 @@ function procesarLote(lote, registros) {
     posturaEsperada: pct(u.pct_esperado),
     diferencia:      pct(u.diferencia),
     mortalidadHoy:   u.mortalidad,
+    mortPctHoy:      (u.mortalidad!=null && (u.n_aves||lote.n_aves)) ? parseFloat((u.mortalidad/(u.n_aves||lote.n_aves)*100).toFixed(2)) : null,
     huevos:          u.n_huevos,
     gAlimPorHuevo:   (u.kg_alimento&&u.n_huevos) ? Math.round(u.kg_alimento*1000/u.n_huevos) : null,
     consumoGrAve:    (u.kg_alimento&&u.n_aves)   ? Math.round(u.kg_alimento*1000/u.n_aves)   : null,
@@ -1153,12 +1216,15 @@ function navegarSemana(delta) {
 
 // Periodo según la agrupación elegida (semana / 4 semanas / mes cerrado) + offset de navegación
 function getPeriodo() {
-  const fmt = d => d.toISOString().slice(0,10);
+  const fmt = fmtISO;
   const hoy = new Date();
 
   if (agrupacion === 'mes') {
-    const ini = new Date(hoy.getFullYear(), hoy.getMonth() + semanaOffset, 1);
-    const fin = new Date(hoy.getFullYear(), hoy.getMonth() + semanaOffset + 1, 0);
+    // Último mes cerrado: el mes anterior, salvo que aún no pasen los 3 días de gracia (día 1-3) → el anterior a ese
+    const cierre = new Date(hoy.getFullYear(), hoy.getMonth(), 4);
+    const base = hoy >= cierre ? -1 : -2;
+    const ini = new Date(hoy.getFullYear(), hoy.getMonth() + base + semanaOffset, 1);
+    const fin = new Date(hoy.getFullYear(), hoy.getMonth() + base + semanaOffset + 1, 0);
     return { inicio:fmt(ini), fin:fmt(fin), esActual: semanaOffset===0, tipo:'mes',
              etiqueta: ini.toLocaleDateString('es-CL',{month:'long',year:'numeric'}) };
   }
@@ -1178,7 +1244,7 @@ function getPeriodo() {
 
 // Periodo inmediatamente anterior, del mismo tamaño
 function getPeriodoPrev(p) {
-  const fmt = d => d.toISOString().slice(0,10);
+  const fmt = fmtISO;
   if (p.tipo === 'mes') {
     const ini = new Date(p.inicio+'T12:00:00');
     const pi = new Date(ini.getFullYear(), ini.getMonth()-1, 1);
@@ -1213,7 +1279,7 @@ function kpisLoteSemana(l, inicio, fin) {
 }
 
 // Paleta para distinguir lotes en la curva combinada
-const PAL_LOTES = ['#1b5e20','#1565c0','#b8860b','#6a1e9e','#00838f','#c2691c','#b03a2e','#3d7a42'];
+const PAL_LOTES = ['#2a5430','#1e5a7a','#b8860b','#7a4b8c','#b03a2e','#c2691c','#5c6b3a','#3d7a42'];
 
 // Estación de nacimiento (hemisferio sur / Chile) según la fecha de nacimiento
 const ESTACIONES = ['Verano','Otoño','Invierno','Primavera'];
@@ -1277,7 +1343,7 @@ function dibujarCurva(canvas, series, opts={}) {
       const mapaE = {}; series[0].registros.forEach(r => { mapaE[r.fecha] = r.esperado; });
       datasets.push({
         label: 'Estándar', data: orden.map(f => f in mapaE ? mapaE[f] : null),
-        borderColor: '#c4c0b6', backgroundColor: 'transparent',
+        borderColor: '#c9c2b2', backgroundColor: 'transparent',
         borderWidth: 1.5, borderDash: [5,4], pointRadius: 0, tension: .3, spanGaps: true,
       });
     }
@@ -1294,33 +1360,12 @@ function dibujarCurva(canvas, series, opts={}) {
         tooltip: { callbacks: { label: ctx => ctx.parsed.y==null ? null : ' '+ctx.dataset.label+': '+ctx.parsed.y+'%' } },
       },
       scales: {
-        x: { title: { display: true, text: ejeLabel, font: { size: 10 }, color: '#aaa' },
-             ticks: { font: { size: 9 }, color: '#aaa', maxRotation: 0, maxTicksLimit: 14 }, grid: { color: '#f0ede6' } },
-        y: { min: 0, max: 100, ticks: { font: { size: 9 }, color: '#aaa', callback: v => v+'%' }, grid: { color: '#e0ddd5' } },
+        x: { title: { display: true, text: ejeLabel, font: { size: 10 }, color: '#8a9384' },
+             ticks: { font: { size: 9 }, color: '#8a9384', maxRotation: 0, autoSkipPadding: 10, maxTicksLimit: Math.max(5, Math.min(14, Math.floor((canvas.parentElement?.clientWidth || 600) / 75))) }, grid: { color: '#eee9de' } },
+        y: { min: 0, max: 100, ticks: { font: { size: 9 }, color: '#8a9384', callback: v => v+'%' }, grid: { color: '#ddd8cc' } },
       },
     },
   });
-}
-
-function getPeriodoMesAnterior() {
-  const hoy = new Date();
-  const mesAnt = hoy.getMonth() === 0 ? 11 : hoy.getMonth() - 1;
-  const anioAnt = hoy.getMonth() === 0 ? hoy.getFullYear()-1 : hoy.getFullYear();
-  const primerDia = `${anioAnt}-${String(mesAnt+1).padStart(2,'0')}-01`;
-  const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
-  return {
-    inicio:   primerDia,
-    fin:      ultimoDia.toISOString().slice(0,10),
-    etiqueta: new Date(anioAnt, mesAnt, 15).toLocaleDateString('es-CL', {month:'long', year:'numeric'}),
-  };
-}
-
-function calcularPromedioRegistros(registros, fechaInicio, fechaFin) {
-  const filtrados = registros.filter(r => r.fecha >= fechaInicio && r.fecha <= fechaFin);
-  if (!filtrados.length) return null;
-  const posturas = filtrados.map(r => r.postura).filter(v => v != null);
-  if (!posturas.length) return null;
-  return parseFloat((posturas.reduce((a,b)=>a+b,0) / posturas.length).toFixed(1));
 }
 
 // Panel desplegable para comparar postura normalizada por semana de vida.
@@ -1344,10 +1389,9 @@ function panelComparacion(granjas) {
   const ctrl = document.createElement('div');
   ctrl.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px';
   const lblModo = document.createElement('span');
-  lblModo.style.cssText = 'font-family:var(--fuente-m);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--tenue)';
+  lblModo.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tenue)';
   lblModo.textContent = 'Agrupar por';
-  const selModo = document.createElement('select');
-  selModo.style.cssText = 'font-family:inherit;font-size:12px;padding:6px 8px;border:1px solid var(--linea);border-radius:4px;background:var(--papel);color:var(--tinta);cursor:pointer';
+  const selModo = document.createElement('select'); selModo.className = 'sel';
   selModo.innerHTML = [['lote','Lote'],['estacion','Estación de nacimiento'],['avicola','Avícola']]
     .map(([v,t])=>`<option value="${v}">${t}</option>`).join('');
   const mkMini = txt => { const b=document.createElement('button'); b.className='nav-semana-btn'; b.textContent=txt; b.style.cssText+=';font-size:11px;padding:4px 10px'; return b; };
@@ -1432,7 +1476,7 @@ function renderResumen() {
   if (chartInst) { chartInst.destroy(); chartInst = null; }
 
   const semana = getPeriodo();
-  const mes    = getPeriodoMesAnterior();
+  const uniLbl = agrupacion==='mes' ? 'mes' : agrupacion==='4semanas' ? '4 sem.' : 'sem.';
 
   const fmtFecha = s => new Date(s+'T12:00:00').toLocaleDateString('es-CL', {day:'numeric',month:'short'});
   const diasPeriodo = Math.round((new Date(semana.fin)-new Date(semana.inicio))/86400000) + 1;
@@ -1452,14 +1496,16 @@ function renderResumen() {
   titulo.textContent = agrupacion==='mes'
     ? semana.etiqueta.charAt(0).toUpperCase()+semana.etiqueta.slice(1)
     : fmtFecha(semana.inicio) + ' — ' + fmtFecha(semana.fin);
-  hdrLeft.append(periodo, titulo);
+  const printMeta = document.createElement('div'); printMeta.className = 'print-only';
+  printMeta.style.cssText = 'font-size:11px;color:var(--tenue);margin-top:6px';
+  printMeta.textContent = 'Generado el ' + new Date().toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'}) + ' · AviVet.cl · Dr. Andrés Lazo Escobar, MV';
+  hdrLeft.append(periodo, titulo, printMeta);
 
   // Navegador de periodos + selector de agrupación
-  const nav = document.createElement('div');
+  const nav = document.createElement('div'); nav.className = 'no-print';
   nav.style.cssText = 'display:flex;align-items:center;gap:8px;padding-top:4px;flex-wrap:wrap';
 
-  const selAgr = document.createElement('select');
-  selAgr.style.cssText = 'font-family:inherit;font-size:12px;padding:6px 8px;border:1px solid var(--linea);border-radius:4px;background:var(--papel);color:var(--tinta);cursor:pointer';
+  const selAgr = document.createElement('select'); selAgr.className = 'sel';
   selAgr.innerHTML = [['semana','1 semana'],['4semanas','4 semanas'],['mes','Mes cerrado']]
     .map(([v,t])=>`<option value="${v}"${agrupacion===v?' selected':''}>${t}</option>`).join('');
   selAgr.onchange = () => { agrupacion = selAgr.value; semanaOffset = 0; renderResumen(); };
@@ -1477,25 +1523,30 @@ function renderResumen() {
   const uni = agrupacion==='mes'?'mes':agrupacion==='4semanas'?'bloque':'sem';
   const labelSem = document.createElement('span');
   labelSem.style.cssText = 'font-family:var(--fuente-m);font-size:10px;color:var(--tenue);letter-spacing:.06em;padding:0 4px;min-width:70px;text-align:center';
-  labelSem.textContent = semana.esActual ? 'Actual' : Math.abs(semanaOffset)+' '+uni+' atrás';
+  labelSem.textContent = semana.esActual ? (agrupacion==='mes' ? 'Último cerrado' : 'Actual') : Math.abs(semanaOffset)+' '+uni+' atrás';
   navBtns.append(btnPrev, labelSem, btnNext);
 
   nav.append(selAgr, navBtns);
   hdrTop.append(hdrLeft, nav);
   hdr.appendChild(hdrTop);
 
-  // Lotes con datos incompletos en el periodo
+  // Granjas a mostrar según filtro
+  const granjasMostrar = GRANJAS.filter(g => filtroProductor==='todos' || g.id===filtroProductor);
+
+  // Lotes con datos incompletos en el periodo: se listan con nombre y días registrados / días del periodo,
+  // para saber a quién avisar antes de enviar el resumen
   const pendientes = [];
-  GRANJAS.forEach(g => {
+  granjasMostrar.forEach(g => {
     const d = state.datos[g.id]; if (!d) return;
     d.lotes.forEach(l => {
       const enPeriodo = l.registros.filter(r => r.fecha >= semana.inicio && r.fecha <= semana.fin);
-      if (enPeriodo.length < minDias) pendientes.push(g.nombre + ' / ' + l.nombre);
+      if (enPeriodo.length < minDias) pendientes.push({ nombre: g.nombre + ' · ' + l.nombre, dias: enPeriodo.length });
     });
   });
   if (pendientes.length) {
     const aviso = document.createElement('div'); aviso.className = 'resumen-aviso';
-    aviso.innerHTML = `⚠ ${pendientes.length} lote${pendientes.length>1?'s':''} con datos incompletos en el periodo`;
+    aviso.innerHTML = `⚠ <strong>${pendientes.length} lote${pendientes.length>1?'s':''} con datos incompletos</strong> en el periodo (menos de ${minDias} de ${diasPeriodo} días registrados):`
+      + `<div class="resumen-aviso-lista">` + pendientes.map(p => `<span class="resumen-aviso-chip">${esc(p.nombre)} <b>${p.dias}/${diasPeriodo}</b></span>`).join('') + `</div>`;
     hdr.appendChild(aviso);
   }
   wrap.appendChild(hdr);
@@ -1509,18 +1560,18 @@ function renderResumen() {
   const btnCopiar = document.createElement('button');
   btnCopiar.className = 'btn-accion sec';
   btnCopiar.innerHTML = '📋 Copiar texto';
-  btnCopiar.onclick = () => copiarResumenTexto(semana, mes);
+  btnCopiar.title = 'Copia el resumen tal como se ve (respeta el productor filtrado). Ideal para WhatsApp o correo.';
+  btnCopiar.onclick = () => copiarResumenTexto(semana, granjasMostrar, minDias, uniLbl);
 
-  const sel = document.createElement('select');
-  sel.style.cssText = 'font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--linea);border-radius:4px;background:var(--papel);color:var(--tinta);cursor:pointer';
+  const sel = document.createElement('select'); sel.className = 'sel';
   sel.innerHTML = '<option value="todos">Todos los productores</option>' +
-    GRANJAS.map(g=>`<option value="${g.id}"${filtroProductor===g.id?' selected':''}>${g.nombre}</option>`).join('');
+    GRANJAS.map(g=>`<option value="${g.id}"${filtroProductor===g.id?' selected':''}>${esc(g.nombre)}</option>`).join('');
   sel.onchange = () => { filtroProductor = sel.value; renderResumen(); };
-  acciones.append(btnPrint, btnCopiar, sel);
+  const hint = document.createElement('span');
+  hint.style.cssText = 'font-size:12px;color:var(--tenue)';
+  hint.textContent = 'Filtra un productor y "Copiar texto" para enviarle solo lo suyo.';
+  acciones.append(btnPrint, btnCopiar, sel, hint);
   wrap.appendChild(acciones);
-
-  // Granjas a mostrar según filtro
-  const granjasMostrar = GRANJAS.filter(g => filtroProductor==='todos' || g.id===filtroProductor);
 
   // ── Resumen general (totales de la semana, respeta el filtro) ──
   const semPrev = getPeriodoPrev(semana);
@@ -1540,33 +1591,34 @@ function renderResumen() {
   const mortPctTot = tAves>0 ? (tMort/tAves*100).toFixed(2) : '—';
 
   const cards = document.createElement('div');
-  cards.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;background:var(--linea);border:1px solid var(--linea);margin-bottom:24px';
+  cards.className = 'kpi-grid'; cards.style.cssText = 'grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-bottom:22px';
   const mkCard = (label, val, sub, col) => {
     const c = document.createElement('div');
-    c.style.cssText = 'background:var(--papel);padding:14px 12px;text-align:center';
+    c.className = 'kpi-card'; c.style.cssText = 'padding:14px 12px;text-align:center';
     c.innerHTML = `<div style="font-family:var(--fuente-m);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--tenue);margin-bottom:5px">${label}</div>`
       + `<div style="font-family:var(--fuente-t);font-size:24px;font-weight:700;line-height:1;color:${col||'var(--prim)'}">${val}</div>`
       + (sub?`<div style="font-family:var(--fuente-m);font-size:9px;color:var(--tenue);margin-top:3px">${sub}</div>`:'');
     return c;
   };
   cards.append(
-    mkCard('Lotes', tLotes, 'con datos esta semana'),
+    mkCard('Lotes', tLotes, 'con datos en el periodo'),
     mkCard('Aves', tAves.toLocaleString('es-CL'), 'en producción'),
-    mkCard('Huevos sem.', tHuevos.toLocaleString('es-CL'), 'total del periodo'),
+    mkCard('Huevos '+uniLbl, tHuevos.toLocaleString('es-CL'), 'total del periodo'),
     mkCard('Postura prom.', postProm+'%', 'promedio de lotes'),
-    mkCard('Mortalidad sem.', tMort.toLocaleString('es-CL'), mortPctTot+'% · ant: '+tMortPrev, tMort>tMortPrev?'var(--mal)':'var(--ok)'),
+    mkCard('Mortalidad '+uniLbl, tMort.toLocaleString('es-CL'), mortPctTot+'% · ant: '+tMortPrev, tMort>tMortPrev?'var(--mal)':'var(--ok)'),
   );
   wrap.appendChild(cards);
 
-  // ── Panel de comparación por semana de vida ──
-  wrap.appendChild(panelComparacion(granjasMostrar));
+  // ── Panel de comparación por semana de vida (no se imprime) ──
+  const panelCmp = panelComparacion(granjasMostrar); panelCmp.classList.add('no-print');
+  wrap.appendChild(panelCmp);
 
   // ── Tabla ──
   const grid = document.createElement('div'); grid.className = 'resumen-grid';
 
   // Cabecera
   const cab = document.createElement('div'); cab.className = 'resumen-fila cabecera';
-  ['Productor / Lote','Sem. vida','Postura / Estándar','Δ estándar','Mortalidad sem.','Consumo','Huevos sem.']
+  ['Productor / Lote','Sem. vida','Postura / Estándar','Δ estándar','Mortalidad '+uniLbl,'Consumo','Huevos '+uniLbl]
     .forEach(t => { const c=document.createElement('div'); c.className='resumen-cel'; c.textContent=t; cab.appendChild(c); });
   grid.appendChild(cab);
 
@@ -1584,27 +1636,26 @@ function renderResumen() {
 
       // Semáforo según postura vs estándar
       let color, etiq;
-      if (incompleto)           { color='#e65100'; etiq='Incompleto'; }
-      else if (k.postura==null) { color='#888';    etiq='Sin datos';  }
-      else if (deltaStd>=0)     { color='#1b5e20'; etiq='Sobre estándar'; }
-      else if (deltaStd>=-3)    { color='#f9a825'; etiq='Leve baja';  }
-      else                      { color='#b71c1c'; etiq='Bajo estándar'; }
+      if (incompleto)           { color='#c2691c'; etiq='Incompleto'; }
+      else if (k.postura==null) { color='#6a7565';    etiq='Sin datos';  }
+      else if (deltaStd>=0)     { color='#2f7d32'; etiq='Sobre estándar'; }
+      else if (deltaStd>=-3)    { color='#b8860b'; etiq='Leve baja';  }
+      else                      { color='#b03a2e'; etiq='Bajo estándar'; }
 
       const fila = document.createElement('div');
       fila.className = 'resumen-fila' + (incompleto ? ' resumen-pendiente' : '');
 
       // Productor / Lote (+ semáforo + botón gráfico)
       const cProd = document.createElement('div'); cProd.className='resumen-cel';
-      cProd.innerHTML = `<div class="resumen-productor" style="color:${g.color}">${g.nombre}</div>`
-        + `<div class="resumen-lote">${l.nombre}</div>`
+      cProd.innerHTML = `<div class="resumen-productor" style="color:${g.color}">${esc(g.nombre)}</div>`
+        + `<div class="resumen-lote">${esc(l.nombre)}</div>`
         + `<div class="semaforo" style="margin-top:3px"><div class="semaforo-dot" style="background:${color}"></div><span style="color:${color};font-size:10px">${etiq}</span></div>`;
-      const btnG = document.createElement('button');
+      const btnG = document.createElement('button'); btnG.className = 'btn-mini no-print';
       btnG.textContent = '📈 Ver gráfico';
-      btnG.style.cssText = 'margin-top:6px;font-family:var(--fuente-m);font-size:10px;background:none;border:1px solid var(--linea);border-radius:4px;color:var(--suave);padding:3px 8px;cursor:pointer';
       let panelG = null, chartG = null;
       btnG.onclick = () => {
         if (panelG) { chartG && chartG.destroy(); panelG.remove(); panelG=null; chartG=null; btnG.textContent='📈 Ver gráfico'; return; }
-        panelG = document.createElement('div');
+        panelG = document.createElement('div'); panelG.className = 'no-print';
         panelG.style.cssText = 'background:var(--papel);border-bottom:1px solid var(--linea);padding:14px 16px';
         const cv = document.createElement('canvas'); cv.style.cssText='width:100%;max-height:240px';
         panelG.appendChild(cv);
@@ -1627,14 +1678,14 @@ function renderResumen() {
       // Δ vs estándar
       const cD = document.createElement('div'); cD.className='resumen-cel';
       if (deltaStd!=null) {
-        const bg = deltaStd>=0?'rgba(27,94,32,.1)':'rgba(183,28,28,.1)';
+        const bg = deltaStd>=0?'rgba(47,125,50,.12)':'rgba(176,58,46,.1)';
         const col= deltaStd>=0?'var(--ok)':'var(--mal)';
         cD.innerHTML=`<span class="delta-chip" style="background:${bg};color:${col}">${deltaStd>0?'+':''}${deltaStd}%</span>`;
       } else cD.innerHTML=`<span style="color:var(--tenue)">—</span>`;
 
       // Mortalidad semana (con la anterior)
       const cM = document.createElement('div'); cM.className='resumen-cel';
-      const mc = (k.mortPct!=null && k.mortPct>2.1)?'var(--mal)':(k.mortPct>0.7?'#e65100':'var(--prim)');
+      const mc = (k.mortPct!=null && k.mortPct>2.1)?'var(--mal)':(k.mortPct>0.7?'#c2691c':'var(--prim)');
       cM.innerHTML = k.dias
         ? `<div class="resumen-num" style="color:${mc};font-size:18px">${k.mort}</div><div class="resumen-sub">${k.mortPct!=null?k.mortPct+'%':''} · ant: ${kp.mort||0}</div>`
         : `<span style="color:var(--tenue)">—</span>`;
@@ -1667,37 +1718,50 @@ function renderResumen() {
 
   // Pie explicativo
   const pie = document.createElement('div'); pie.className='resumen-pie';
-  pie.innerHTML=`<strong>Período:</strong> ${fmtFecha(semana.inicio)} al ${fmtFecha(semana.fin)} &nbsp;·&nbsp; <strong>Postura/Estándar:</strong> promedio de los días registrados vs curva de la línea genética &nbsp;·&nbsp; <strong>Δ estándar:</strong> diferencia real − esperado &nbsp;·&nbsp; <strong>Mortalidad:</strong> suma de la semana (% sobre aves iniciales) y "ant." = semana previa &nbsp;·&nbsp; <strong>Consumo:</strong> g de alimento / ave / día &nbsp;·&nbsp; <strong>Gracia:</strong> 3 días tras el domingo.`;
+  pie.innerHTML=`<strong>Período:</strong> ${fmtFecha(semana.inicio)} al ${fmtFecha(semana.fin)} &nbsp;·&nbsp; <strong>Postura/Estándar:</strong> promedio de los días registrados vs curva de la línea genética &nbsp;·&nbsp; <strong>Δ estándar:</strong> diferencia real − esperado &nbsp;·&nbsp; <strong>Mortalidad:</strong> suma del periodo (% sobre aves iniciales) y "ant." = periodo previo del mismo largo &nbsp;·&nbsp; <strong>Consumo:</strong> g de alimento / ave / día &nbsp;·&nbsp; <strong>Incompleto:</strong> menos de ${minDias} de ${diasPeriodo} días registrados &nbsp;·&nbsp; <strong>Gracia:</strong> 3 días tras el cierre del periodo.`;
   wrap.appendChild(pie);
 
   main.appendChild(wrap);
 }
 
-function copiarResumenTexto(semana, mes) {
+function copiarResumenTexto(semana, granjasMostrar, minDias, uniLbl) {
   const fmtFecha = s => new Date(s+'T12:00:00').toLocaleDateString('es-CL', {day:'numeric',month:'short'});
-  let txt = `RESUMEN SEMANAL AVIVET\n`;
-  txt += `Período: ${fmtFecha(semana.inicio)} – ${fmtFecha(semana.fin)}\n`;
-  txt += `Comparación: ${mes.etiqueta}\n`;
-  txt += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  const semPrev = getPeriodoPrev(semana);
+  const tipo = agrupacion==='mes' ? 'MENSUAL' : agrupacion==='4semanas' ? '4 SEMANAS' : 'SEMANAL';
+  const periodoTxt = agrupacion==='mes'
+    ? semana.etiqueta.charAt(0).toUpperCase()+semana.etiqueta.slice(1)
+    : fmtFecha(semana.inicio)+' – '+fmtFecha(semana.fin);
+  const n = v => v==null ? '—' : v.toLocaleString('es-CL');
+  const signo = v => (v>0?'+':'')+v;
 
-  GRANJAS.forEach(g => {
-    const d = state.datos[g.id]; if (!d) return;
-    txt += `▸ ${g.nombre}\n`;
+  let txt = `📊 RESUMEN ${tipo} AVIVET\n`;
+  txt += `Período: ${periodoTxt}\n`;
+  txt += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+
+  granjasMostrar.forEach(g => {
+    const d = state.datos[g.id]; if (!d || !d.lotes.length) return;
+    txt += `\n▸ ${g.nombre.toUpperCase()}\n`;
     d.lotes.forEach(l => {
-      const semRegs  = l.registros.filter(r => r.fecha >= semana.inicio && r.fecha <= semana.fin);
-      const pSem = calcularPromedioRegistros(l.registros, semana.inicio, semana.fin);
-      const pMes = calcularPromedioRegistros(l.registros, mes.inicio, mes.fin);
-      const delta = (pSem!=null&&pMes!=null) ? (pSem-pMes).toFixed(1) : null;
-      txt += `  ${l.nombre} — Sem ${l.semanaVida||'?'}\n`;
-      txt += `  Postura semana: ${pSem!=null?pSem+'%':'Sin datos'} (${semRegs.length} días)\n`;
-      txt += `  Promedio ${mes.etiqueta}: ${pMes!=null?pMes+'%':'Sin datos'}\n`;
-      const huevos = semRegs.reduce((s,r)=>s+(r.n_huevos||0),0);
-      txt += `  Huevos semana: ${huevos>0?huevos.toLocaleString('es-CL'):'—'}\n`;
-      txt += `  Diferencia vs mes: ${delta!=null?(delta>0?'+':'')+delta+'%':'—'}\n\n`;
+      const k  = kpisLoteSemana(l, semana.inicio, semana.fin);
+      const kp = kpisLoteSemana(l, semPrev.inicio, semPrev.fin);
+      const deltaStd = (k.postura!=null && k.estandar!=null) ? parseFloat((k.postura-k.estandar).toFixed(1)) : null;
+      let sem;
+      if (k.dias < minDias)      sem = '🟠 Incompleto';
+      else if (k.postura==null)  sem = '⚪ Sin datos';
+      else if (deltaStd>=0)      sem = '🟢 Sobre estándar';
+      else if (deltaStd>=-3)     sem = '🟡 Leve baja';
+      else                       sem = '🔴 Bajo estándar';
+      txt += `${l.nombre} · Sem ${l.semanaVida ?? '?'} de vida · ${sem}\n`;
+      if (!k.dias) { txt += `  Sin registros en el periodo\n`; return; }
+      txt += `  Postura: ${k.postura!=null?k.postura+'%':'—'} (estándar ${k.estandar!=null?k.estandar+'%':'—'}`
+           + (deltaStd!=null?`, ${signo(deltaStd)}%`:'') + `) · ${k.dias} días registrados\n`;
+      txt += `  Huevos: ${n(k.huevos)} · Mortalidad: ${n(k.mort)}${k.mortPct!=null?' ('+k.mortPct+'%)':''} · anterior: ${n(kp.mort||0)}\n`;
+      if (k.consumo!=null) txt += `  Consumo: ${k.consumo} g/ave/día\n`;
     });
   });
 
-  txt += `\nAviVet.cl · Dr. Andrés Lazo Escobar, MV`;
+  txt += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+  txt += `AviVet.cl · Dr. Andrés Lazo Escobar, MV`;
   navigator.clipboard.writeText(txt).then(() => {
     alert('Resumen copiado al portapapeles.');
   }).catch(() => {
@@ -1722,27 +1786,27 @@ async function cargarDatos() {
       .map((g,i)=>({ id:g.uid, nombre:g.nombre, color:PALETTE[i%PALETTE.length], _lotes:g.lotes }));
     if (GRANJAS.length) state.granjaId = GRANJAS[0].id;
     GRANJAS.forEach(g => { state.estados[g.id]='cargando'; });
-    render();
+    refrescar();
 
-    for (const granja of GRANJAS) {
+    // Todos los lotes de todos los productores en paralelo (antes era uno por uno)
+    await Promise.all(GRANJAS.map(async granja => {
       try {
-        const lotesData = [];
-        for (const lote of granja._lotes) {
-          // Traer hasta 365 registros para soportar vistas semanal y mensual
-          const regs = await sbFetch('registros', {
+        const resultados = await Promise.all(granja._lotes.map(lote =>
+          sbFetch('registros', {
             'lote_id': 'eq.'+lote.id,
             'select':  'fecha,semana_vida,n_aves,mortalidad,kg_alimento,n_huevos,chico,mediano,grande,xl,super_xl,jumbo,sucios,rotos,trizados,sangre,pct_postura,pct_esperado,diferencia',
             'order':   'fecha.desc',
-            'limit':   '365',
-          });
-          const p = procesarLote(lote, regs);
-          if (p) lotesData.push(p);
-        }
-        state.datos[granja.id] = { fechaConsulta: new Date().toISOString().slice(0,10), lotes: lotesData };
+            'limit':   '1000',   // ~2,7 años: cubre la vida completa de un lote para la curva por semana de vida
+          }).then(regs => procesarLote(lote, regs))
+        ));
+        state.datos[granja.id] = { fechaConsulta: hoyISO(), lotes: resultados.filter(Boolean) };
         state.estados[granja.id] = 'ok';
       } catch(e) { state.estados[granja.id]='error'; }
-      render();
-    }
+      // Refresco parcial: sidebar siempre; el panel principal solo si es el productor que se está viendo
+      if (modoResumen) renderResumen();
+      else { renderSidebar(); if (granja.id === state.granjaId) renderMain(); }
+    }));
+    refrescar();
   } catch(e) {
     console.error('Error:', e);
     document.getElementById('contenido').innerHTML =
