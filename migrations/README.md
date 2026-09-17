@@ -36,6 +36,7 @@ Producción ya tiene 001–009 aplicadas (se corrieron antes de existir el regis
 create table if not exists schema_migrations (
   version text primary key, applied_at timestamptz not null default now()
 );
+alter table schema_migrations enable row level security; -- la app nunca la toca; el SQL Editor (postgres) sí puede
 insert into schema_migrations (version) values
   ('000_ledger'), ('001_ubicaciones'), ('002_user_config'), ('003_productores'),
   ('004_ventas'), ('005_pedidos_bodega'), ('006_tamanos_cajas'), ('007_alimento'),
