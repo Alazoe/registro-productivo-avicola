@@ -10,7 +10,7 @@
 ```
 src/supabase/          ← app nueva: una URL, todos los productores, auth real
 src/avicolas/<nombre>/ ← apps GAS heredadas: una URL por productor (en mantención)
-dashboard.html         ← dashboard multi-granja GAS (obsoleto al terminar migración)
+dashboard.html         ← Monitor de Producción del asesor (Supabase): todos los productores, resumen semanal/mensual, exportación
 ```
 
 ## Reglas IMPORTANTES
@@ -20,6 +20,8 @@ dashboard.html         ← dashboard multi-granja GAS (obsoleto al terminar migr
 - NUNCA incluir la `SUPABASE_KEY` (anon key) como secreto — es pública por diseño de Supabase RLS.
 
 ## No obvio
+- Fechas SIEMPRE en hora local: `d.toLocaleDateString('en-CA')` (YYYY-MM-DD). NUNCA `toISOString().slice(0,10)` para fechas de negocio — es UTC y en Chile desde ~21:00 devuelve el día siguiente (marcaba lotes al día como atrasados). `toISOString()` solo para timestamps (`updated_at`).
+- El dashboard usa las políticas RLS `vet_admin_lotes` / `vet_admin_registros` (SELECT para el correo del asesor). Las políticas `*_read_public` (`USING (true)`) se eliminaron: rompían el aislamiento entre productores.
 - `verificarAlertas()` es fire-and-forget: se llama sin `await` en `guardarRegistro`. Si falla, queda en `console.warn` sin interrumpir el flujo.
 - RLS en Supabase garantiza aislamiento: cada usuario ve y modifica solo sus propios `lotes_produccion` y `registros`.
 - El remitente de email (`ALERTA_FROM`) debe ser un dominio verificado en Resend. `onboarding@resend.dev` solo funciona en modo test de Resend.
