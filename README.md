@@ -156,9 +156,19 @@ src/avicolas/<nombre>/
 
 ---
 
-## Dashboard central (GAS)
+## 📊 Monitor de Producción (dashboard del asesor)
 
-`dashboard.html` en la raíz del repo consulta el endpoint `?action=getDashboard` de cada granja GAS y muestra KPIs en tiempo real. Este dashboard quedará obsoleto una vez que todos los productores estén en Supabase — se reemplazará por una vista centralizada que lea directo de PostgreSQL.
+`dashboard.html` en la raíz del repo, publicado en http://avivet.cl/registro-productivo-avicola/dashboard.html. Lee directo de Supabase con la cuenta del asesor (política RLS `vet_admin_*` que permite ver los lotes y registros de todos los productores; cada productor sigue viendo solo lo suyo en su app).
+
+- **Login propio** con recuperación de contraseña. El token de sesión se renueva solo: la pestaña puede quedar abierta todo el día.
+- **Barra lateral** con productores (✓ al día / N.º de lotes atrasados) y lotes; opción «★ Todos los lotes» con la curva de postura por semana de vida y tabla-resumen por lote.
+- **Detalle del lote**: días sin registro, postura vs esperado, mortalidad del día (alta si supera 0,30 % del lote, igual que la alerta por correo), consumo g/ave/día, g alimento/huevo, costo alim/huevo (precio del kg por productor), curva Diario / Semanal / Mensual y clasificación del último día.
+- **📋 Resumen**: consolidado por 1 semana (lunes a domingo), 4 semanas o mes cerrado, con 3 días de gracia tras el cierre para que los productores completen sus datos; navegación ← → por periodos; tarjetas generales; semáforo por lote (sobre / leve baja / bajo estándar / incompleto); lista de lotes incompletos con días registrados; comparación por semana de vida (lote / estación de nacimiento / avícola); filtro por productor.
+  - **Imprimir / PDF** usa una hoja de estilos de impresión (sin topbar ni botones, cabecera con fecha de generación).
+  - **Copiar texto** genera el mismo contenido de la tabla en texto plano con semáforo (🟢🟡🔴🟠) listo para WhatsApp o correo; con un productor filtrado copia solo el suyo. Flujo de los viernes: revisar → filtrar productor → copiar → enviar.
+- **⬇ Exportar todo**: ZIP con las tablas visibles en CSV (ver Respaldos).
+- Todas las fechas se calculan en hora local (Chile); el resumen y los «días sin registro» no cambian de día a las 21:00 como ocurría con UTC.
+- Identidad visual avivet.cl (Fraunces + DM Sans, crema / verde / dorado), la misma de la app de producción; usable en pantalla angosta.
 
 ---
 
@@ -173,6 +183,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-09 | Dashboard: revisión de proceso y diseño — fechas en hora local (antes UTC: desde las 21:00 marcaba lotes al día como atrasados), token de sesión que se renueva solo (antes HTTP 401 tras 1 h), carga de lotes en paralelo, «Copiar texto» con los mismos KPIs de la tabla y respetando el productor filtrado, hoja de estilos de impresión para el PDF del resumen, lista de lotes incompletos con días registrados, «Mes cerrado» = último mes completo con gracia, mortalidad «alta» relativa al lote, identidad visual avivet.cl (Fraunces + DM Sans) y layout para pantalla angosta |
 | 2026-07 | Gráfico de Postura con toggle **Diario / Semanal**: agrupa por semana de vida (postura = Σhuevos/Σaves; esperado = promedio de la semana) |
 | 2026-07 | Alertas: el asesor (AviVet, `ALERTA_EMAIL`) recibe **siempre** copia de las alertas de todos los productores, aunque el productor haya apagado sus propias alertas. Se quitó el toggle de copia al asesor |
 | 2026-07 | Gráficos: nueva pestaña **☠️ Mortalidad** (por semana + acumulada) y **⚠️ No vendibles** (% de sucios/rotos/trizados/sangre y total, por semana de vida; usa los nombres personalizados del productor) |
