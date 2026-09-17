@@ -10,6 +10,8 @@ Revisa por cada archivo:
   3. IDs duplicados
   4. Handlers inline (onclick="fn(") que apuntan a funciones no definidas
   5. getElementById('x') cuyo id="x" no existe en el HTML
+  Los <script src> locales (p. ej. shared.js) se cargan para contar sus funciones
+  y para comprobar la sintaxis de shared + app juntos (detecta let redeclarados).
 Termina con código 1 si hay algún error (así falla el CI).
 """
 import re, sys, subprocess, tempfile, os
@@ -24,17 +26,31 @@ def validar(path):
     except FileNotFoundError:
         return [f'archivo no encontrado: {path}']
 
-    # 1) Sintaxis JS (último <script> inline, sin src)
+    # 0) Scripts locales compartidos: <script src="../shared.js?v=1"> (no http)
+    compartido = ''
+    for src in re.findall(r'<script[^>]*\bsrc="([^"]+)"', html):
+        if src.startswith(('http://', 'https://', '//')): continue
+        ruta = os.path.normpath(os.path.join(os.path.dirname(path), src.split('?')[0]))
+        try:
+            compartido += open(ruta, encoding='utf-8').read() + '\n'
+        except FileNotFoundError:
+            errores.append(f'script compartido no encontrado: {src}')
+
+    # 1) Sintaxis JS: (a) el último <script> inline solo, (b) compartido + inline juntos
+    #    (b) detecta variables `let/const` declaradas dos veces entre shared.js y la app.
     bloques = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', html, re.S)
     if bloques:
-        with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-8') as t:
-            t.write(bloques[-1]); tmp = t.name
-        try:
-            r = subprocess.run(['node', '--check', tmp], capture_output=True, text=True)
-            if r.returncode != 0:
-                errores.append('sintaxis JS: ' + r.stderr.strip().splitlines()[-1])
-        finally:
-            os.unlink(tmp)
+        for etiqueta, codigo in (('sintaxis JS', bloques[-1]), ('sintaxis JS (shared + app)', compartido + bloques[-1])):
+            if etiqueta.endswith('(shared + app)') and not compartido: continue
+            with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-8') as t:
+                t.write(codigo); tmp = t.name
+            try:
+                r = subprocess.run(['node', '--check', tmp], capture_output=True, text=True)
+                if r.returncode != 0:
+                    lineas = [l for l in r.stderr.splitlines() if 'Error' in l] or r.stderr.strip().splitlines()[-1:]
+                    errores.append(etiqueta + ': ' + lineas[0].strip())
+            finally:
+                os.unlink(tmp)
     else:
         errores.append('no se encontró bloque <script> inline')
 
@@ -52,7 +68,7 @@ def validar(path):
 
     # 4) Handlers inline sin función definida
     handlers = set(re.findall(r'\bon\w+="\s*(\w+)\(', html))
-    definidas = set(re.findall(r'\bfunction\s+(\w+)\s*\(', html))
+    definidas = set(re.findall(r'\bfunction\s+(\w+)\s*\(', html + compartido))
     definidas |= set(re.findall(r'\b(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?(?:\([^)]*\)|\w+)\s*=>', html))
     faltan = sorted(h for h in handlers if h not in definidas and h not in JS_KEYWORDS)
     if faltan:

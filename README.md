@@ -52,6 +52,8 @@ El sistema está en transición de Google Apps Script (GAS) + Google Sheets a un
 ## Nueva arquitectura (`src/supabase/`)
 
 ```
+src/shared.js             ← Código común a producción y módulo: cliente Supabase, sesión,
+                            cuenta compartida (resolverOwner) y helpers (hoy, fmtFecha, toast)
 src/supabase/
 ├── index.html            ← App de producción (todos los productores)
 ├── supabase-schema.sql   ← Tablas y políticas RLS
@@ -196,6 +198,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-09 | **`src/shared.js`**: se extrajo el código duplicado entre producción y módulo (sesión, recuperación de clave, `resolverOwner`, banner de cuenta, `hoy`, `fmtFecha`, `toast`). De paso se corrigió `hoy()` en producción, que aún usaba UTC (`toISOString`) y desde ~21:00 daba el día siguiente. El validador del CI comprueba ahora `shared + app` juntos |
 | 2026-09 | **CI de validación**: GitHub Action (`.github/workflows/validar.yml`) que corre `scripts/validar-apps.py` en cada PR y push a `main` — sintaxis JS, `<div>` balanceados, IDs duplicados, handlers sin función y `getElementById` sin elemento. Sin npm |
 | 2026-09 | Dashboard: revisión de proceso y diseño — fechas en hora local (antes UTC: desde las 21:00 marcaba lotes al día como atrasados), token de sesión que se renueva solo (antes HTTP 401 tras 1 h), carga de lotes en paralelo, «Copiar texto» con los mismos KPIs de la tabla y respetando el productor filtrado, hoja de estilos de impresión para el PDF del resumen, lista de lotes incompletos con días registrados, «Mes cerrado» = último mes completo con gracia, mortalidad «alta» relativa al lote, identidad visual avivet.cl (Fraunces + DM Sans) y layout para pantalla angosta |
 | 2026-07 | Gráfico de Postura con toggle **Diario / Semanal**: agrupa por semana de vida (postura = Σhuevos/Σaves; esperado = promedio de la semana) |

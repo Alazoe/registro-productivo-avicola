@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../shared.js?v=1"></script>
 <style>
 :root{
   --verde:#3d7a42; --verde-c:#5c9e61; --verde-o:#2a5430;
@@ -417,34 +418,12 @@ tr:nth-child(even) td{background:#faf8f2}
 <div id="toast"></div>
 
 <script>
-const SUPABASE_URL = 'https://xewujmpycclqjhlmiica.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_v5_FU1w-7P7oeNrW6FYRBQ_cuX-pa9_';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let currentUser = null, ventas = [], editId = null, modoRecovery = false;
+let ventas = [], editId = null;
 let pedidos = [], editPedId = null, ajustes = [], editAjId = null;
 let recepciones = [], alAjustes = [], proveedores = [], editRecepId = null, editAlAjId = null;
-let ownerId = null; // dueño de la cuenta sobre la que trabajo (yo, o quien me invitó)
 const SACO_KG = 25; // peso del saco de alimento
 
-// Determina la cuenta a usar: la mía, salvo que esté invitado a otra (activa)
-async function resolverOwner(){
-  ownerId = currentUser.id;
-  try {
-    const { data } = await sb.from('equipo').select('dueno_id').eq('activo', true).ilike('email_invitado', currentUser.email);
-    const ajena = (data||[]).find(r => r.dueno_id !== currentUser.id);
-    if(ajena) ownerId = ajena.dueno_id;
-  } catch(e){ /* si la tabla no existe aún, trabajo sobre mi propia cuenta */ }
-}
-// Aviso cuando trabajo en la cuenta de otro (invitado)
-async function mostrarBannerCuenta(){
-  const el = document.getElementById('banner-cuenta'); if(!el) return;
-  if(ownerId === currentUser.id){ el.style.display='none'; return; }
-  let nombre = '';
-  try { const { data } = await sb.from('productores').select('nombre').eq('user_id', ownerId).maybeSingle(); nombre = data?.nombre || ''; } catch(e){}
-  el.innerHTML = `👥 Estás trabajando en la cuenta de <b>${nombre || 'otro productor'}</b> (acceso de invitado)`;
-  el.style.display = 'block';
-}
 
 // Cambio de pestaña (refleja el módulo en la URL: #bodega/#pedidos/#ventas)
 const PANES = ['bodega','alimento','pedidos','ventas'];
@@ -457,53 +436,7 @@ function tab(name){
 // Abre la pestaña indicada por el enlace de entrada (#pedidos, #ventas…)
 window.addEventListener('hashchange', ()=>tab(location.hash.slice(1)));
 
-// ── AUTH ──
-window.onload = async () => {
-  const { data:{ session } } = await sb.auth.getSession();
-  if (session?.user) { currentUser = session.user; mostrarApp(); }
-  sb.auth.onAuthStateChange((ev, s) => {
-    if (ev === 'PASSWORD_RECOVERY') { modoRecovery = true; mostrarRecovery(); return; }
-    if (modoRecovery) return;
-    currentUser = s?.user || null;
-    if (currentUser) mostrarApp(); else mostrarLogin();
-  });
-};
-function mostrarLogin(){ pl().style.display='flex'; pr().style.display='none'; document.getElementById('app').style.display='none'; }
-function mostrarRecovery(){ pl().style.display='none'; pr().style.display='flex'; document.getElementById('app').style.display='none'; }
-function pl(){ return document.getElementById('pantalla-login'); }
-function pr(){ return document.getElementById('pantalla-recovery'); }
 
-async function login(){
-  const email=document.getElementById('login-email').value.trim();
-  const pass=document.getElementById('login-pass').value;
-  const err=document.getElementById('login-error'); const btn=document.getElementById('btn-login');
-  if(!email||!pass){ err.textContent='Completa correo y contraseña'; err.style.display='block'; return; }
-  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Entrando…'; err.style.display='none';
-  const { error } = await sb.auth.signInWithPassword({ email, password:pass });
-  if(error){ err.textContent='Correo o contraseña incorrectos'; err.style.display='block'; btn.disabled=false; btn.textContent='Entrar'; }
-}
-async function logout(){ if(!confirm('¿Cerrar sesión?'))return; await sb.auth.signOut(); }
-async function recuperarPassword(){
-  const email=document.getElementById('login-email').value.trim();
-  const err=document.getElementById('login-error'); const ok=document.getElementById('login-msg');
-  err.style.display='none'; ok.style.display='none';
-  if(!email){ err.textContent='Escribe tu correo arriba y vuelve a tocar el enlace'; err.style.display='block'; return; }
-  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin+location.pathname });
-  if(error){ err.textContent='No se pudo enviar: '+error.message; err.style.display='block'; }
-  else { ok.textContent='📧 Te enviamos un correo para crear una nueva contraseña.'; ok.style.display='block'; }
-}
-async function actualizarPassword(){
-  const pass=document.getElementById('rec-pass').value; const err=document.getElementById('rec-error'); const btn=document.getElementById('btn-rec');
-  err.style.display='none';
-  if(!pass||pass.length<6){ err.textContent='Mínimo 6 caracteres'; err.style.display='block'; return; }
-  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Guardando…';
-  const { error } = await sb.auth.updateUser({ password:pass });
-  if(error){ err.textContent='Error: '+error.message; err.style.display='block'; btn.disabled=false; btn.textContent='Guardar contraseña'; return; }
-  modoRecovery=false; alert('✅ Contraseña actualizada.');
-  const { data:{ session } } = await sb.auth.getSession();
-  currentUser = session?.user||null;
-  if(currentUser) mostrarApp(); else mostrarLogin();
-}
 
 async function mostrarApp(){
   pl().style.display='none'; pr().style.display='none'; document.getElementById('app').style.display='block';
@@ -520,15 +453,11 @@ async function mostrarApp(){
   cargarTodo();
 }
 
-// ── HELPERS ──
-function hoy(){ return new Date().toLocaleDateString('en-CA'); } // YYYY-MM-DD local
 function clp(n){ return '$'+Math.round(n||0).toLocaleString('es-CL'); }
 function num(n){ return Math.round(n||0).toLocaleString('es-CL'); }
-function fmtFecha(f){ return f.split('-').reverse().join('/'); }
 // Huevos vendibles de un registro = total clasificado − no vendibles
 function vendibles(r){ return Math.max(0, (r.n_huevos||0) - (r.sucios||0) - (r.rotos||0) - (r.trizados||0) - (r.sangre||0)); }
 function bandTxt(b,s){ return (Number(b)||0) + (s>0?` +${s}u`:''); }
-function toast(m,t='ok',ms=2500){ const e=document.getElementById('toast'); e.textContent=m; e.className='show '+t; setTimeout(()=>e.className='',ms); }
 
 // ── TAMAÑOS Y CAJAS ──
 // Los 6 tamaños calzan con las columnas de la tabla registros.
