@@ -17,6 +17,7 @@ dashboard.html         ← Monitor de Producción del asesor (Supabase): todos l
 - NUNCA agregar frameworks, librerías npm ni bundlers. La app es vanilla JS por decisión de diseño.
 - Los KPIs se calculan siempre client-side en `index.html`. No hay API intermediaria.
 - Las Edge Functions se escriben en TypeScript Deno y se despliegan desde Supabase Dashboard, no desde el repo.
+- Antes de subir cambios a las apps, correr `python3 scripts/validar-apps.py` (es lo mismo que corre el CI en cada PR). Si falla, el PR queda en rojo.
 - NUNCA incluir la `SUPABASE_KEY` (anon key) como secreto — es pública por diseño de Supabase RLS.
 
 ## No obvio

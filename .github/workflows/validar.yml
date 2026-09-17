@@ -1,0 +1,18 @@
+# Valida las apps en cada PR y en cada push a main.
+# Sin npm ni frameworks: usa node (para `node --check`) y python3, que ya vienen en el runner.
+name: Validar apps
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Versiones
+        run: node --version && python3 --version
+      - name: Validar apps (sintaxis JS, divs, IDs, handlers, getElementById)
+        run: python3 scripts/validar-apps.py

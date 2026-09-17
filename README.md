@@ -125,6 +125,19 @@ Todas las tablas tienen Row Level Security activado: cada usuario ve y modifica 
 
 ---
 
+## Validación automática (CI)
+
+Cada PR y cada push a `main` corre [`scripts/validar-apps.py`](./scripts/validar-apps.py) mediante GitHub Actions (`.github/workflows/validar.yml`). Revisa las tres apps (`src/supabase/index.html`, `src/ventas/index.html`, `dashboard.html`):
+
+- sintaxis JS del bloque `<script>` (`node --check`)
+- `<div>` abiertos vs cerrados e IDs duplicados
+- botones con `onclick` que apuntan a funciones inexistentes
+- `getElementById('x')` sin ningún `id="x"` (cuenta también los asignados desde JS)
+
+Para correrlo localmente antes de subir: `python3 scripts/validar-apps.py`. No usa npm ni dependencias.
+
+---
+
 ## Arquitectura anterior (GAS) — referencia
 
 Las carpetas `src/avicolas/` se mantienen como archivo histórico. Cada una tiene:
@@ -183,6 +196,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-09 | **CI de validación**: GitHub Action (`.github/workflows/validar.yml`) que corre `scripts/validar-apps.py` en cada PR y push a `main` — sintaxis JS, `<div>` balanceados, IDs duplicados, handlers sin función y `getElementById` sin elemento. Sin npm |
 | 2026-09 | Dashboard: revisión de proceso y diseño — fechas en hora local (antes UTC: desde las 21:00 marcaba lotes al día como atrasados), token de sesión que se renueva solo (antes HTTP 401 tras 1 h), carga de lotes en paralelo, «Copiar texto» con los mismos KPIs de la tabla y respetando el productor filtrado, hoja de estilos de impresión para el PDF del resumen, lista de lotes incompletos con días registrados, «Mes cerrado» = último mes completo con gracia, mortalidad «alta» relativa al lote, identidad visual avivet.cl (Fraunces + DM Sans) y layout para pantalla angosta |
 | 2026-07 | Gráfico de Postura con toggle **Diario / Semanal**: agrupa por semana de vida (postura = Σhuevos/Σaves; esperado = promedio de la semana) |
 | 2026-07 | Alertas: el asesor (AviVet, `ALERTA_EMAIL`) recibe **siempre** copia de las alertas de todos los productores, aunque el productor haya apagado sus propias alertas. Se quitó el toggle de copia al asesor |
