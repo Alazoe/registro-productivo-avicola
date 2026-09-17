@@ -455,8 +455,6 @@ async function mostrarApp(){
 
 function clp(n){ return '$'+Math.round(n||0).toLocaleString('es-CL'); }
 function num(n){ return Math.round(n||0).toLocaleString('es-CL'); }
-// Huevos vendibles de un registro = total clasificado − no vendibles
-function vendibles(r){ return Math.max(0, (r.n_huevos||0) - (r.sucios||0) - (r.rotos||0) - (r.trizados||0) - (r.sangre||0)); }
 function bandTxt(b,s){ return (Number(b)||0) + (s>0?` +${s}u`:''); }
 
 // ── TAMAÑOS Y CAJAS ──
@@ -502,34 +500,153 @@ function rangoPeriodo(){
 }
 
 // ── DATOS ──
+// Carga TODO en paralelo: 1 RPC con los agregados (Postgres suma) + las listas acotadas.
+// El módulo ya no descarga el historial de registros: stock_resumen lo resume en la BD.
 async function cargarTodo(){
   const { desde, hasta } = rangoPeriodo();
-
-  // Ventas del periodo
   let qv = sb.from('ventas').select('*').eq('user_id', ownerId).order('fecha',{ascending:false});
   if(desde){ qv = qv.gte('fecha',desde).lte('fecha',hasta); }
-  const { data:vData } = await qv;
-  ventas = vData || [];
+  const [res, v, p, a, prov, recep, alaj] = await Promise.all([
+    sb.rpc('stock_resumen', { p_owner: ownerId, p_desde: desde, p_hasta: hasta, p_hoy: hoy() }),
+    qv,
+    sb.from('pedidos').select('*').eq('user_id', ownerId)
+      .order('estado',{ascending:true}).order('fecha_entrega',{ascending:true,nullsFirst:false}).order('fecha_pedido',{ascending:false}),
+    sb.from('ajustes_stock').select('*').eq('user_id', ownerId).order('fecha',{ascending:false}),
+    sb.from('proveedores').select('*').eq('user_id', ownerId).order('nombre'),
+    sb.from('alimento_recepciones').select('*').eq('user_id', ownerId).order('fecha',{ascending:false}),
+    sb.from('alimento_ajustes').select('*').eq('user_id', ownerId).order('fecha',{ascending:false})
+  ]);
+  ventas = v.data || []; pedidos = p.data || []; ajustes = a.data || [];
+  proveedores = prov.data || []; recepciones = recep.data || []; alAjustes = alaj.data || [];
 
-  // Producción del periodo (registros del productor) — solo huevos VENDIBLES
-  let qp = sb.from('registros').select('fecha,n_huevos,sucios,rotos,trizados,sangre').eq('user_id', ownerId);
-  if(desde){ qp = qp.gte('fecha',desde).lte('fecha',hasta); }
-  const { data:rData } = await qp;
+  renderVentas(); renderResumenPedidos(); renderPedidos();
+  poblarSelectProv(); renderAjustes(); renderAlimentoLista();
 
-  const producido = (rData||[]).reduce((s,r)=>s+vendibles(r),0);
-  const vendido   = ventas.reduce((s,v)=>s+(v.huevos_total||0),0);
-  const ingreso   = ventas.reduce((s,v)=>s+(Number(v.total_clp)||0),0);
-  const disp      = producido - vendido;
+  if(res.error || !res.data){
+    console.warn('stock_resumen no disponible:', res.error?.message);
+    const msg = '⚠️ Falta activar el resumen de stock en Supabase: ejecuta src/ventas/stock-resumen.sql (una vez).';
+    ['banner-cuadre','banner-bodega','banner-alimento'].forEach(id=>{ const el=document.getElementById(id); el.className='banner bad'; el.textContent=msg; });
+    return;
+  }
+  renderCuadre(res.data.periodo || {});
+  renderBodega(res.data.huevos || {});
+  renderAlimento(res.data.alimento || {});
+}
+// Los guardados llaman a estas; ahora todo se recarga junto en una sola pasada.
+function renderResumenPedidos(){
+  const pend = pedidos.filter(p=>p.estado==='pendiente');
+  const comprometido = pend.reduce((s,p)=>s+(p.huevos_total||0),0);
+  document.getElementById('pd-comprometido').textContent = num(comprometido)+' huevos';
+  document.getElementById('pd-resumen').innerHTML =
+    `<b>${pend.length}</b> pedido(s) pendiente(s) · equivalen a <b>${cajasTxt(comprometido)}</b> comprometidas a clientes.`;
+}
+// Stock físico = acumulado TOTAL (independiente del periodo) — agregados de stock_resumen.huevos
+function renderBodega(h){
+  const KEYS = SIZE_KEYS.concat('mixto');
+  const norm = t => SIZE_KEYS.includes(t) ? t : 'mixto';
+  const prod={}, vend={}, aj={}, comp={};
+  KEYS.forEach(k=>{ prod[k]=Number((h.producido||{})[k])||0; vend[k]=0; aj[k]=0; comp[k]=0; });
+  Object.entries(h.vendido||{}).forEach(([t,x])=> vend[norm(t)] += Number(x)||0);
+  Object.entries(h.ajuste||{}).forEach(([t,x])=> aj[norm(t)]   += Number(x)||0);
+  Object.entries(h.comprometido||{}).forEach(([t,x])=> comp[norm(t)] += Number(x)||0);
+  const vendibleTot = Number(h.vendible_total)||0;
+  const vendidoTot  = KEYS.reduce((s,k)=>s+vend[k],0);
+  const ajusteTot   = KEYS.reduce((s,k)=>s+aj[k],0);
+  const compTot     = KEYS.reduce((s,k)=>s+comp[k],0);
+  const fisicoTot = vendibleTot - vendidoTot + ajusteTot;
+  const libreTot  = fisicoTot - compTot;
 
+  // Tarjetas (totales)
+  document.getElementById('bo-fisico').textContent = num(fisicoTot);
+  document.getElementById('bo-comp').textContent   = num(compTot);
+  document.getElementById('bo-libre').textContent  = num(libreTot);
+  const libreEl = document.getElementById('bo-libre');
+  libreEl.parentElement.style.background = libreTot<0 ? '#fbe9e7' : '#dce8ec';
+  libreEl.style.color = libreTot<0 ? 'var(--rojo)' : 'var(--azul)';
+
+  const banner = document.getElementById('banner-bodega');
+  if(libreTot < 0){
+    banner.className='banner bad';
+    banner.textContent = `⚠️ Comprometiste ${num(-libreTot)} huevos más de los que tienes en bodega. Revisa producción, ventas o pedidos.`;
+  } else {
+    banner.className='banner ok';
+    banner.textContent = `✅ Puedes comprometer hasta ${num(libreTot)} huevos más (${cajasTxt(libreTot)}) sin quedar corto.`;
+  }
+
+  // Tabla por tamaño
+  const activos = KEYS.filter(k=> prod[k]||vend[k]||aj[k]||comp[k]);
+  let filas = activos.map(k=>{
+    const f = prod[k]-vend[k]+aj[k];
+    const lib = f - comp[k];
+    return `<tr class="${k==='mixto'?'trow-sin':''}">
+      <td>${labelTam(k)}</td>
+      <td class="num">${num(f)}</td>
+      <td class="num">${num(comp[k])}</td>
+      <td class="num ${lib<0?'lib-neg':''}">${num(lib)}</td></tr>`;
+  }).join('');
+  filas += `<tr class="trow-tot"><td>Total</td><td class="num">${num(fisicoTot)}</td><td class="num">${num(compTot)}</td><td class="num ${libreTot<0?'lib-neg':''}">${num(libreTot)}</td></tr>`;
+  document.getElementById('bo-tabla').innerHTML =
+    `<div class="tabla-wrap"><table class="tsize"><thead><tr><th>Tamaño</th><th class="num">Físico</th><th class="num">Reserv.</th><th class="num">Libre</th></tr></thead><tbody>${filas}</tbody></table></div>`;
+
+  // Desglose (con equivalente en cajas)
+  const signo = n => (n<0?'−':'+')+num(Math.abs(n));
+  document.getElementById('bo-desglose').innerHTML =
+    `🥚 Vendibles producidos: <b>${num(vendibleTot)}</b><br>`+
+    `📦 Vendidos: <b>−${num(vendidoTot)}</b> · 🔧 ajustes: <b>${signo(ajusteTot)}</b><br>`+
+    `= 📦 Físico <b>${num(fisicoTot)}</b> (${cajasTxt(fisicoTot)}) · ✅ libre <b>${num(libreTot)}</b> (${cajasTxt(libreTot)})`;
+}
+// Stock de alimento (acumulado total) — agregados de stock_resumen.alimento
+function renderAlimento(al){
+  const entradas = Number(al.entradas)||0, consumo = Number(al.consumo)||0, ajuste = Number(al.ajuste)||0; // ajuste con signo
+  const stock    = entradas - consumo + ajuste;
+  // Consumo diario promedio (últimos 14 días con registro; p_hoy = fecha local del cliente)
+  const dias = Number(al.cons14_dias)||0;
+  const consDiario = dias>0 ? (Number(al.cons14_kg)||0)/dias : 0;
+  const autonomia = consDiario>0 ? stock/consDiario : null;
+  // Costo por kg (promedio ponderado de recepciones con precio)
+  const kgConPrecio = Number(al.kg_con_precio)||0, gasto = Number(al.gasto)||0;
+  const costoKg = kgConPrecio>0 ? gasto/kgConPrecio : 0;
+
+  document.getElementById('al-stock').textContent = num(stock);
+  document.getElementById('al-dias').textContent  = autonomia===null ? '—' : Math.floor(autonomia);
+  document.getElementById('al-costo').textContent = costoKg>0 ? clp(costoKg) : '—';
+  document.getElementById('al-valor').textContent = costoKg>0 ? 'valor '+clp(stock*costoKg) : 'sin precio';
+
+  const stEl = document.getElementById('al-stock');
+  stEl.parentElement.style.background = stock<0 ? '#fbe9e7' : '#e4ede5';
+  stEl.style.color = stock<0 ? 'var(--rojo)' : 'var(--verde)';
+
+  const banner = document.getElementById('banner-alimento');
+  if(stock < 0){
+    banner.className='banner bad';
+    banner.textContent = `⚠️ El consumo registrado supera lo recibido en ${num(-stock)} kg. Revisa las recepciones o el consumo.`;
+  } else if(autonomia!==null && autonomia < 7){
+    banner.className='banner bad';
+    banner.textContent = `⚠️ Queda alimento para ~${Math.floor(autonomia)} día(s). Conviene comprar pronto (consumo ~${kg(consDiario)}/día).`;
+  } else {
+    banner.className='banner ok';
+    banner.textContent = autonomia!==null
+      ? `✅ Quedan ${kg(stock)} · alcanza ~${Math.floor(autonomia)} días al ritmo actual (~${kg(consDiario)}/día).`
+      : `✅ Quedan ${kg(stock)} en bodega. Registra producción para estimar la autonomía.`;
+  }
+  const signo = n => (n<0?'−':'+')+kg(Math.abs(n));
+  document.getElementById('al-desglose').innerHTML =
+    `📥 Recibido: <b>${kg(entradas)}</b><br>`+
+    `🐔 Consumido: <b>−${kg(consumo)}</b> · 🔧 ajustes: <b>${signo(ajuste)}</b><br>`+
+    `= 🌾 Stock: <b>${kg(stock)}</b>`;
+}
+
+// Cuadre del periodo (vendibles vs vendidos) — agregados de stock_resumen.periodo
+function renderCuadre(per){
+  const producido = Number(per.vendible)||0, vendido = Number(per.vendido)||0, ingreso = Number(per.ingreso)||0;
+  const disp = producido - vendido;
   document.getElementById('cu-prod').textContent = num(producido);
   document.getElementById('cu-vend').textContent = num(vendido);
   document.getElementById('cu-disp').textContent = num(disp);
   document.getElementById('cu-ingreso').textContent = clp(ingreso);
-
   const dispEl = document.getElementById('cu-disp');
   dispEl.parentElement.style.background = disp<0 ? '#fbe9e7' : '#dce8ec';
   dispEl.style.color = disp<0 ? 'var(--rojo)' : 'var(--azul)';
-
   const banner = document.getElementById('banner-cuadre');
   if(disp < 0){
     banner.className='banner bad';
@@ -539,10 +656,6 @@ async function cargarTodo(){
     const pct = producido>0 ? Math.round(vendido/producido*100) : 0;
     banner.textContent = `✅ Cuadra. Vendido el ${pct}% de lo vendible · quedan ${num(disp)} huevos (${Math.floor(disp/30)} bandejas) en el periodo.`;
   }
-  renderVentas();
-  cargarPedidos();
-  cargarBodega();
-  cargarAlimento();
 }
 
 function renderVentas(){
@@ -649,17 +762,7 @@ async function eliminarVenta(id){
 }
 
 // ══════════════════ PEDIDOS ══════════════════
-async function cargarPedidos(){
-  const { data } = await sb.from('pedidos').select('*').eq('user_id', ownerId)
-    .order('estado',{ascending:true}).order('fecha_entrega',{ascending:true,nullsFirst:false}).order('fecha_pedido',{ascending:false});
-  pedidos = data || [];
-  const pend = pedidos.filter(p=>p.estado==='pendiente');
-  const comprometido = pend.reduce((s,p)=>s+(p.huevos_total||0),0);
-  document.getElementById('pd-comprometido').textContent = num(comprometido)+' huevos';
-  document.getElementById('pd-resumen').innerHTML =
-    `<b>${pend.length}</b> pedido(s) pendiente(s) · equivalen a <b>${cajasTxt(comprometido)}</b> comprometidas a clientes.`;
-  renderPedidos();
-}
+async function cargarPedidos(){ return cargarTodo(); } // alias: todo se recarga junto
 
 function renderPedidos(){
   const cont = document.getElementById('lista-pedidos');
@@ -813,77 +916,7 @@ async function eliminarPedido(id){
 }
 
 // ══════════════════ BODEGA ══════════════════
-async function cargarBodega(){
-  // Stock físico = acumulado TOTAL (independiente del periodo seleccionado)
-  const { data:rData } = await sb.from('registros')
-    .select('n_huevos,sucios,rotos,trizados,sangre,chico,mediano,grande,xl,super_xl,jumbo').eq('user_id', ownerId);
-  const { data:vData } = await sb.from('ventas').select('huevos_total,tamano').eq('user_id', ownerId);
-  const { data:aData } = await sb.from('ajustes_stock').select('*').eq('user_id', ownerId).order('fecha',{ascending:false});
-  ajustes = aData || [];
-
-  // Acumuladores por tamaño (+ 'mixto' = sin especificar)
-  const KEYS = SIZE_KEYS.concat('mixto');
-  const prod={}, vend={}, aj={}, comp={};
-  KEYS.forEach(k=>{ prod[k]=0; vend[k]=0; aj[k]=0; comp[k]=0; });
-  const norm = t => SIZE_KEYS.includes(t) ? t : 'mixto';
-
-  let vendibleTot=0;
-  (rData||[]).forEach(r=>{
-    const vend_r = vendibles(r); vendibleTot += vend_r;
-    let clasif=0;
-    SIZE_KEYS.forEach(k=>{ const q=r[k]||0; prod[k]+=q; clasif+=q; });
-    prod.mixto += Math.max(0, vend_r - clasif); // lo no clasificado del día
-  });
-  let vendidoTot=0;
-  (vData||[]).forEach(v=>{ vend[norm(v.tamano)] += (v.huevos_total||0); vendidoTot += (v.huevos_total||0); });
-  let ajusteTot=0;
-  ajustes.forEach(a=>{ aj[norm(a.tamano)] += (a.huevos||0); ajusteTot += (a.huevos||0); });
-  let compTot=0;
-  pedidos.filter(p=>p.estado==='pendiente').forEach(p=>{ comp[norm(p.tamano)] += (p.huevos_total||0); compTot += (p.huevos_total||0); });
-
-  const fisicoTot = vendibleTot - vendidoTot + ajusteTot;
-  const libreTot  = fisicoTot - compTot;
-
-  // Tarjetas (totales)
-  document.getElementById('bo-fisico').textContent = num(fisicoTot);
-  document.getElementById('bo-comp').textContent   = num(compTot);
-  document.getElementById('bo-libre').textContent  = num(libreTot);
-  const libreEl = document.getElementById('bo-libre');
-  libreEl.parentElement.style.background = libreTot<0 ? '#fbe9e7' : '#dce8ec';
-  libreEl.style.color = libreTot<0 ? 'var(--rojo)' : 'var(--azul)';
-
-  const banner = document.getElementById('banner-bodega');
-  if(libreTot < 0){
-    banner.className='banner bad';
-    banner.textContent = `⚠️ Comprometiste ${num(-libreTot)} huevos más de los que tienes en bodega. Revisa producción, ventas o pedidos.`;
-  } else {
-    banner.className='banner ok';
-    banner.textContent = `✅ Puedes comprometer hasta ${num(libreTot)} huevos más (${cajasTxt(libreTot)}) sin quedar corto.`;
-  }
-
-  // Tabla por tamaño
-  const activos = KEYS.filter(k=> prod[k]||vend[k]||aj[k]||comp[k]);
-  let filas = activos.map(k=>{
-    const f = prod[k]-vend[k]+aj[k];
-    const lib = f - comp[k];
-    return `<tr class="${k==='mixto'?'trow-sin':''}">
-      <td>${labelTam(k)}</td>
-      <td class="num">${num(f)}</td>
-      <td class="num">${num(comp[k])}</td>
-      <td class="num ${lib<0?'lib-neg':''}">${num(lib)}</td></tr>`;
-  }).join('');
-  filas += `<tr class="trow-tot"><td>Total</td><td class="num">${num(fisicoTot)}</td><td class="num">${num(compTot)}</td><td class="num ${libreTot<0?'lib-neg':''}">${num(libreTot)}</td></tr>`;
-  document.getElementById('bo-tabla').innerHTML =
-    `<div class="tabla-wrap"><table class="tsize"><thead><tr><th>Tamaño</th><th class="num">Físico</th><th class="num">Reserv.</th><th class="num">Libre</th></tr></thead><tbody>${filas}</tbody></table></div>`;
-
-  // Desglose (con equivalente en cajas)
-  const signo = n => (n<0?'−':'+')+num(Math.abs(n));
-  document.getElementById('bo-desglose').innerHTML =
-    `🥚 Vendibles producidos: <b>${num(vendibleTot)}</b><br>`+
-    `📦 Vendidos: <b>−${num(vendidoTot)}</b> · 🔧 ajustes: <b>${signo(ajusteTot)}</b><br>`+
-    `= 📦 Físico <b>${num(fisicoTot)}</b> (${cajasTxt(fisicoTot)}) · ✅ libre <b>${num(libreTot)}</b> (${cajasTxt(libreTot)})`;
-  renderAjustes();
-}
+async function cargarBodega(){ return cargarTodo(); } // alias: todo se recarga junto
 
 const AJ_LABEL = { merma:'Merma / pérdida', autoconsumo:'Autoconsumo', regalo:'Regalo / donación', entrada:'Entrada / corrección', ajuste:'Ajuste manual' };
 function hintAjuste(){
@@ -997,67 +1030,7 @@ function kg(n){ return (Math.round((n||0)*10)/10).toLocaleString('es-CL')+' kg';
 function nombreProv(id){ const p = proveedores.find(x=>x.id===id); return p ? p.nombre : '—'; }
 const AL_AJ_LABEL = { merma:'Merma / pérdida', entrada:'Entrada / corrección', ajuste:'Ajuste manual' };
 
-async function cargarAlimento(){
-  // Datos (acumulado total, igual que el stock de huevos)
-  const [prov, recep, alaj, cons] = await Promise.all([
-    sb.from('proveedores').select('*').eq('user_id', ownerId).order('nombre'),
-    sb.from('alimento_recepciones').select('*').eq('user_id', ownerId).order('fecha',{ascending:false}),
-    sb.from('alimento_ajustes').select('*').eq('user_id', ownerId).order('fecha',{ascending:false}),
-    sb.from('registros').select('fecha,kg_alimento').eq('user_id', ownerId)
-  ]);
-  proveedores = prov.data || [];
-  recepciones = recep.data || [];
-  alAjustes   = alaj.data || [];
-  const registros = cons.data || [];
-  poblarSelectProv();
-
-  const entradas = recepciones.reduce((s,r)=>s+(Number(r.kg)||0),0);
-  const consumo  = registros.reduce((s,r)=>s+(Number(r.kg_alimento)||0),0);
-  const ajuste   = alAjustes.reduce((s,a)=>s+(Number(a.kg)||0),0); // con signo
-  const stock    = entradas - consumo + ajuste;
-
-  // Consumo diario promedio (últimos 14 días con registro)
-  const hoyD = new Date(); const desde = new Date(hoyD); desde.setDate(desde.getDate()-13);
-  const desdeS = desde.toLocaleDateString('en-CA');
-  const recientes = registros.filter(r=>r.fecha>=desdeS);
-  const dias = new Set(recientes.map(r=>r.fecha)).size;
-  const consDiario = dias>0 ? recientes.reduce((s,r)=>s+(Number(r.kg_alimento)||0),0)/dias : 0;
-  const autonomia = consDiario>0 ? stock/consDiario : null;
-
-  // Costo por kg (promedio ponderado de recepciones con precio)
-  let kgConPrecio=0, gasto=0;
-  recepciones.forEach(r=>{ const k=Number(r.kg)||0, p=Number(r.precio_kg)||0; if(p>0){ kgConPrecio+=k; gasto+=k*p; } });
-  const costoKg = kgConPrecio>0 ? gasto/kgConPrecio : 0;
-
-  document.getElementById('al-stock').textContent = num(stock);
-  document.getElementById('al-dias').textContent  = autonomia===null ? '—' : Math.floor(autonomia);
-  document.getElementById('al-costo').textContent = costoKg>0 ? clp(costoKg) : '—';
-  document.getElementById('al-valor').textContent = costoKg>0 ? 'valor '+clp(stock*costoKg) : 'sin precio';
-
-  const stEl = document.getElementById('al-stock');
-  stEl.parentElement.style.background = stock<0 ? '#fbe9e7' : '#e4ede5';
-  stEl.style.color = stock<0 ? 'var(--rojo)' : 'var(--verde)';
-
-  const banner = document.getElementById('banner-alimento');
-  if(stock < 0){
-    banner.className='banner bad';
-    banner.textContent = `⚠️ El consumo registrado supera lo recibido en ${num(-stock)} kg. Revisa las recepciones o el consumo.`;
-  } else if(autonomia!==null && autonomia < 7){
-    banner.className='banner bad';
-    banner.textContent = `⚠️ Queda alimento para ~${Math.floor(autonomia)} día(s). Conviene comprar pronto (consumo ~${kg(consDiario)}/día).`;
-  } else {
-    banner.className='banner ok';
-    banner.textContent = autonomia!==null
-      ? `✅ Quedan ${kg(stock)} · alcanza ~${Math.floor(autonomia)} días al ritmo actual (~${kg(consDiario)}/día).`
-      : `✅ Quedan ${kg(stock)} en bodega. Registra producción para estimar la autonomía.`;
-  }
-  const signo = n => (n<0?'−':'+')+kg(Math.abs(n));
-  document.getElementById('al-desglose').innerHTML =
-    `📥 Recibido: <b>${kg(entradas)}</b><br>`+
-    `🐔 Consumido: <b>−${kg(consumo)}</b> · 🔧 ajustes: <b>${signo(ajuste)}</b><br>`+
-    `= 🌾 Stock: <b>${kg(stock)}</b>`;
-  renderAlimentoLista();
-}
+async function cargarAlimento(){ return cargarTodo(); } // alias: todo se recarga junto
 
 function poblarSelectProv(){
   const sel = document.getElementById('al-prov'); if(!sel) return;
