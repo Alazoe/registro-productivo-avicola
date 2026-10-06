@@ -1592,15 +1592,15 @@ async function confirmarImport() {
 }
 
 // ══ UTILS ═══════════════════════════════════════════════════════
-// Semana de vida en curso (convención de las guías genéticas): nacimiento = día 0,
-// días 1-7 = semana 1, días 8-14 = semana 2… El mismo cálculo usa la integración Odoo (odoo_postura.py).
+// Semana de vida: el día de nacimiento es el día 1; días 1-7 = semana 1 y la semana 2 empieza el
+// mismo día de la semana en que nacieron. Mismo cálculo que la integración Odoo (odoo_postura.py).
 function calcEdad(fechaNac) {
   return calcEdadFecha(fechaNac, hoy());
 }
 function calcEdadFecha(fechaNac, fechaReg) {
   const d0 = new Date(fechaNac + 'T00:00:00Z');
   const d1 = new Date(fechaReg  + 'T00:00:00Z');
-  return Math.max(1, Math.ceil(Math.round((d1-d0)/86400000)/7));
+  return Math.max(1, Math.floor(Math.round((d1-d0)/86400000)/7)+1);
 }
 function pctEsperado(sem, linea) {
   const curva = CURVAS[linea] || CURVAS['Hy-line Brown'];
