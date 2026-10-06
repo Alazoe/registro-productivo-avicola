@@ -105,7 +105,7 @@ Todas las tablas tienen Row Level Security activado: cada usuario ve y modifica 
 - **Detección de huecos** — avisa qué días faltan en la secuencia del lote
 - **Gráficos** — curva de postura vs esperado, acumulado, distribución por tamaño, tabla semanal por semana de vida
 - **Importar CSV** — herramienta integrada para migrar historial desde Google Sheets (tab Lotes → Importar)
-- **KPIs calculados client-side** — semana de vida, kg/ave, % postura, % esperado por línea genética, diferencia vs curva
+- **KPIs calculados client-side** — semana de vida (el día de nacimiento es el día 1; la semana 2 empieza el mismo día de la semana en que nacieron), kg/ave, % postura, % esperado por línea genética, diferencia vs curva
 - **Alertas por email** — notificación automática vía Resend cuando mortalidad o caída de postura superan el umbral. **Configurables por productor** (tab Lotes → 🔔 Alertas): destino del correo, umbrales propios, activar/desactivar y copia opcional al asesor
 - **Ubicaciones físicas** — catálogo de espacios por productor (carros, pabellones, galpones); asignación opcional por lote, cambiable en cualquier momento sin afectar registros
 - **Personalización de no vendibles** — cada productor renombra sus 4 categorías de huevos no vendibles (tab Lotes → ⚙️ Personalización)
@@ -196,6 +196,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-10 | **Semana de vida** documentada: el día de nacimiento es el día 1 y cada semana nueva empieza el mismo día de la semana en que nacieron (sin cambio de fórmula). `calcEdad` (semana actual del lote) usa la fecha local (`hoy()`) en vez de UTC, que desde ~21:00 en Chile daba el día siguiente |
 | 2026-09 | **Migraciones con registro**: carpeta `migrations/` numerada (000–009) con guarda de orden, auto-registro en `schema_migrations` y ledger en `migrations/README.md`; el CI valida numeración/guarda/registro. Edge Functions movidas a `supabase/functions/<nombre>/index.ts` + `scripts/deploy-functions.sh` (opcional) |
 | 2026-09 | **Rendimiento del módulo**: función SQL `stock_resumen(owner, desde, hasta, hoy)` (security invoker, RLS intacta) que devuelve en un JSON los agregados de bodega por tamaño, cuadre del periodo y alimento. El módulo deja de descargar el historial de `registros` (antes 3 veces por acción) y lanza las listas en paralelo. Requiere ejecutar `stock-resumen.sql` una vez; si falta, la app lo avisa |
 | 2026-09 | **`src/shared.js`**: se extrajo el código duplicado entre producción y módulo (sesión, recuperación de clave, `resolverOwner`, banner de cuenta, `hoy`, `fmtFecha`, `toast`). De paso se corrigió `hoy()` en producción, que aún usaba UTC (`toISOString`) y desde ~21:00 daba el día siguiente. El validador del CI comprueba ahora `shared + app` juntos |
