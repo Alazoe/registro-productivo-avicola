@@ -102,7 +102,8 @@ Todas las tablas tienen Row Level Security activado: cada usuario ve y modifica 
 
 - **Registro diario** — aves, mortalidad, kg alimento, huevos, clasificación por tamaño (Chico → Jumbo) y calidad (sucios, rotos, trizados, sangre)
 - **Modo edición** — detecta fechas con registro existente y permite sobreescribir con confirmación
-- **Detección de huecos** — avisa qué días faltan en la secuencia del lote
+- **Detección de huecos** — tira de los últimos 7 días (faltantes en rojo) y aviso con botón *Completar* que lleva al día pendiente más reciente
+- **Saludo y hoja de guardado** — el encabezado recuerda si faltan los datos de hoy; tras guardar muestra un dato positivo del lote
 - **Gráficos** — curva de postura vs esperado, acumulado, distribución por tamaño, tabla semanal por semana de vida
 - **Importar CSV** — herramienta integrada para migrar historial desde Google Sheets (tab Lotes → Importar)
 - **KPIs calculados client-side** — semana de vida, kg/ave, % postura, % esperado por línea genética, diferencia vs curva
@@ -196,6 +197,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-10 | **Rediseño de la app de producción — Etapa 1 (Registro)**, estilo minimalista con la misma paleta: barra de navegación inferior (Registro · Tendencia · Historial · Plantel), menú en el avatar (Bodega, Pedidos, Ventas, Manual, salir), saludo que avisa "Faltan los datos de hoy" y, ya registrado, muestra un dato positivo rotativo (huevos del día, días sin bajas, sobre la curva, hitos de 50 mil). Tarjeta de postura con anillo vs curva, tira de 7 días con faltantes y botón Completar, huevos como campo grande con % postura en vivo, aves/mortalidad/alimento con − / +, clasificación con huevos a escala y barra, nota plegable y hoja "¡Día guardado!" al guardar. Al guardar salta al siguiente día pendiente (nunca a una fecha futura). Prototipos en `docs/propuesta-rediseno/` |
 | 2026-09 | **Migraciones con registro**: carpeta `migrations/` numerada (000–009) con guarda de orden, auto-registro en `schema_migrations` y ledger en `migrations/README.md`; el CI valida numeración/guarda/registro. Edge Functions movidas a `supabase/functions/<nombre>/index.ts` + `scripts/deploy-functions.sh` (opcional) |
 | 2026-09 | **Rendimiento del módulo**: función SQL `stock_resumen(owner, desde, hasta, hoy)` (security invoker, RLS intacta) que devuelve en un JSON los agregados de bodega por tamaño, cuadre del periodo y alimento. El módulo deja de descargar el historial de `registros` (antes 3 veces por acción) y lanza las listas en paralelo. Requiere ejecutar `stock-resumen.sql` una vez; si falta, la app lo avisa |
 | 2026-09 | **`src/shared.js`**: se extrajo el código duplicado entre producción y módulo (sesión, recuperación de clave, `resolverOwner`, banner de cuenta, `hoy`, `fmtFecha`, `toast`). De paso se corrigió `hoy()` en producción, que aún usaba UTC (`toISOString`) y desde ~21:00 daba el día siguiente. El validador del CI comprueba ahora `shared + app` juntos |

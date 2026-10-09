@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Propuesta Registro v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f1e8;--card:#fffdf8;--ink:#1c2118;--muted:#8a9284;--line:#e8e2d4;--green:#2a5430;--green-m:#3d7a42;--green-l:#e4ede5;--gold:#b8860b;--gold-l:#f6eed8;--red:#b03a2e;--red-l:#f8e4e0;--serif:'Fraunces',Georgia,serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:#d9d3c4;color:var(--ink);padding:40px;-webkit-font-smoothing:antialiased}
+.board{display:flex;align-items:flex-start;gap:36px;flex-wrap:wrap;justify-content:center;max-width:2200px;margin:auto}
+.frame h2{font-family:var(--serif);font-weight:600;font-size:1.1rem;margin:0 0 4px 8px}
+.frame p.cap{font-size:.8rem;color:#5a6450;margin:0 0 14px 8px;max-width:380px;line-height:1.4}
+.phone{width:390px;min-height:844px;padding-bottom:96px;background:var(--bg);border-radius:36px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.phone.short{height:844px}
+.top{padding:22px 20px 6px;display:flex;align-items:center;gap:12px}
+.top .hola{flex:1}
+.hola small{font-size:.74rem;color:var(--muted);font-weight:500}
+.hola h1{font-family:var(--serif);font-weight:600;font-size:1.45rem;letter-spacing:-.02em;line-height:1.1}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-weight:700;font-size:.85rem}
+.chips{display:flex;gap:8px;padding:12px 20px 4px;overflow:hidden}
+.chip{padding:8px 14px;border-radius:999px;font-size:.8rem;font-weight:600;border:1px solid var(--line);background:var(--card);white-space:nowrap;color:#5a6450}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip span{opacity:.6;font-weight:500;margin-left:4px}
+.sec{padding:0 20px;margin-top:14px}
+.hero{background:var(--green);color:#fff;border-radius:24px;padding:20px;display:flex;gap:16px;align-items:center;position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;right:-40px;top:-40px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.05)}
+.ring{width:92px;height:92px;flex-shrink:0;position:relative}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--serif);font-size:1.4rem;font-weight:600}
+.hero-t small{font-size:.7rem;opacity:.7;text-transform:uppercase;letter-spacing:.08em}
+.hero-t p{font-size:.9rem;margin-top:4px;line-height:1.35}
+.hero-t .pill{display:inline-block;margin-top:10px;background:rgba(255,255,255,.14);padding:4px 10px;border-radius:999px;font-size:.74rem;font-weight:600}
+/* racha + semana en una sola tarjeta */
+.racha{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px 12px 10px}
+.racha-h{display:flex;align-items:center;gap:8px;padding:0 4px 10px}
+.racha-h b{font-family:var(--serif);font-size:1.15rem;color:var(--gold);font-weight:600}
+.racha-h span{font-size:.82rem}
+.racha-h em{margin-left:auto;font-style:normal;font-size:.72rem;color:var(--muted);font-weight:600}
+.week{display:flex;justify-content:space-between}
+.day{width:44px;text-align:center;padding:7px 0 8px;border-radius:14px;font-size:.66rem;color:var(--muted);font-weight:600}
+.day b{display:block;font-size:1rem;color:var(--ink);margin:2px 0 5px;font-weight:600}
+.day i{display:block;width:6px;height:6px;border-radius:50%;margin:0 auto;background:var(--green-m)}
+.day.miss{background:var(--red-l)} .day.miss i{background:var(--red)} .day.miss b{color:var(--red)}
+.day.on{background:var(--ink);color:#c9c4b6} .day.on b{color:#fff} .day.on i{background:transparent;border:1.5px solid var(--gold);width:7px;height:7px}
+.hint{display:flex;align-items:center;gap:8px;margin-top:10px;background:var(--red-l);color:var(--red);border-radius:12px;padding:8px 12px;font-size:.76rem;font-weight:600}
+.hint u{margin-left:auto;text-decoration:none;background:var(--card);padding:4px 10px;border-radius:999px;font-size:.72rem}
+.lbl{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin:22px 20px 10px;display:flex;align-items:center}
+.lbl .r{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600;color:var(--green-m);font-size:.76rem}
+.field{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 6px 6px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.field .ico{width:36px;height:36px;border-radius:12px;background:var(--bg);display:grid;place-items:center;font-size:1.05rem}
+.field .t{flex:1}.field .t div{font-weight:600;font-size:.92rem}.field .t small{font-size:.72rem;color:var(--muted)}
+.step{display:flex;align-items:center;background:var(--bg);border-radius:14px}
+.step button{width:38px;height:44px;border:0;background:none;font-size:1.2rem;color:#5a6450}
+.step input{width:62px;border:0;background:none;text-align:center;font:700 1.15rem 'DM Sans';color:var(--ink)}
+.big{background:var(--card);border:1.5px solid var(--green-m);border-radius:24px;padding:16px 18px;margin-bottom:8px;box-shadow:0 0 0 4px rgba(61,122,66,.08)}
+.big input{border:0;background:none;font:600 2.4rem var(--serif);color:var(--ink);width:100%}
+.big .live{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.tag{font-size:.74rem;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--green-l);color:var(--green)}
+.tag.g{background:var(--gold-l);color:#8a6508}
+.sizes{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px}
+.eggs{display:flex;justify-content:space-between;align-items:flex-end}
+.egg{text-align:center;font-size:.66rem;color:var(--muted);font-weight:600;width:48px}
+.egg svg{display:block;margin:0 auto 6px}
+.egg b{display:block;color:var(--ink);font-size:.95rem;margin-bottom:2px;background:var(--bg);border-radius:8px;padding:4px 0}
+.bar{height:8px;border-radius:99px;background:var(--bg);margin-top:16px;overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.bar-t{display:flex;justify-content:space-between;font-size:.74rem;color:var(--muted);margin-top:8px}
+.nv{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.nv div{background:var(--card);border:1px solid var(--line);border-radius:14px;text-align:center;padding:10px 4px;font-size:.66rem;color:var(--muted);font-weight:600}
+.nv b{display:block;font-size:1.05rem;color:var(--ink);margin-top:2px}
+.nota{display:flex;align-items:center;gap:10px;background:var(--card);border:1px dashed #d3cbb8;border-radius:16px;padding:13px 16px;font-size:.84rem;color:var(--muted);font-weight:500}
+.cta{position:absolute;left:16px;right:16px;bottom:84px;background:var(--ink);color:#fff;border-radius:18px;padding:17px;text-align:center;font-weight:700;font-size:1rem;box-shadow:0 10px 30px rgba(28,33,24,.3)}
+.cta span{color:var(--gold);margin-left:6px}
+.fade{position:absolute;left:0;right:0;bottom:72px;height:120px;background:linear-gradient(transparent,var(--bg) 60%)}
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:72px;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;padding-bottom:6px}
+.tabbar div{text-align:center;font-size:.66rem;color:var(--muted);font-weight:600;position:relative}
+.tabbar svg{display:block;margin:0 auto 3px}
+.tabbar .on{color:var(--green)}
+.tabbar .dot:after{content:"";position:absolute;top:-2px;right:12px;width:7px;height:7px;border-radius:50%;background:var(--red)}
+/* celebración */
+.dim{position:absolute;inset:0;background:rgba(17,21,16,.55)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--card);border-radius:32px 32px 0 0;padding:14px 24px 30px;text-align:center}
+.grab{width:40px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 22px}
+.sheet h3{font-family:var(--serif);font-size:1.7rem;font-weight:600;letter-spacing:-.02em;margin-top:14px}
+.sheet .sub{color:var(--muted);font-size:.88rem;margin-top:4px}
+.flames{display:flex;justify-content:center;gap:6px;margin:20px 0 6px}
+.flames i{width:30px;height:30px;border-radius:10px;background:var(--gold-l);display:grid;place-items:center;font-style:normal;font-size:.9rem}
+.flames i.new{background:var(--gold);color:#fff;transform:scale(1.15);box-shadow:0 4px 12px rgba(184,134,11,.4)}
+.unlock{display:flex;gap:12px;align-items:center;text-align:left;background:var(--gold-l);border-radius:18px;padding:14px;margin-top:18px}
+.unlock .m{width:44px;height:44px;border-radius:14px;background:var(--card);display:grid;place-items:center;font-size:1.3rem}
+.unlock small{display:block;font-size:.68rem;color:#8a6508;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.unlock b{font-size:.92rem}
+.resumen{display:flex;justify-content:space-around;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.resumen div{font-size:.7rem;color:var(--muted);font-weight:600}.resumen b{display:block;font-size:1.1rem;color:var(--ink);font-family:var(--serif)}
+.btn2{display:flex;gap:8px;margin-top:22px}
+.btn2 div{flex:1;padding:15px;border-radius:16px;font-weight:700;font-size:.92rem}
+/* tendencia */
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px}
+.kpi small{font-size:.7rem;color:var(--muted);font-weight:600}
+.kpi b{display:block;font-family:var(--serif);font-size:1.6rem;font-weight:600;margin:4px 0 2px;letter-spacing:-.02em}
+.kpi em{font-style:normal;font-size:.72rem;font-weight:600}
+.up{color:var(--green-m)}.dn{color:#a8481f}
+.chart{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:16px}
+.chart h3{font-size:.95rem;font-weight:600}.chart p{font-size:.74rem;color:var(--muted)}
+.seg{display:flex;background:var(--bg);border-radius:12px;padding:3px;margin-top:12px}
+.seg div{flex:1;text-align:center;font-size:.74rem;font-weight:600;padding:7px;border-radius:10px;color:var(--muted)}
+.seg .on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.logro{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px;margin-bottom:8px}
+.logro .m{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:1.3rem;background:var(--gold-l)}
+.logro div small{display:block;font-size:.74rem;color:var(--muted)}
+.logro div b{font-size:.9rem}
+.logro.lock{opacity:.55}.logro.lock .m{background:var(--bg);filter:grayscale(1)}
+.prog{height:5px;border-radius:9px;background:var(--bg);margin-top:6px;width:180px;overflow:hidden}.prog i{display:block;height:100%;background:var(--gold)}
+/* historial */
+.wk{margin:18px 20px 8px;display:flex;align-items:baseline;gap:8px}
+.wk b{font-family:var(--serif);font-size:1.05rem;font-weight:600}.wk small{font-size:.74rem;color:var(--muted)}
+.wk em{margin-left:auto;font-style:normal;font-size:.76rem;font-weight:700;color:var(--green-m)}
+.list{background:var(--card);border:1px solid var(--line);border-radius:20px;margin:0 20px;overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .d{width:38px;text-align:center;font-size:.64rem;color:var(--muted);font-weight:700;text-transform:uppercase}
+.row .d b{display:block;font-size:1.05rem;color:var(--ink)}
+.row .mid{flex:1}
+.row .mid div{font-size:.86rem;font-weight:600}.row .mid small{font-size:.72rem;color:var(--muted)}
+.mini{height:6px;border-radius:9px;background:var(--bg);margin-top:6px;position:relative}
+.mini i{display:block;height:100%;border-radius:9px;background:var(--green-m)}
+.mini u{position:absolute;top:-3px;width:2px;height:12px;background:var(--gold)}
+.row .pct{font-family:var(--serif);font-weight:600;font-size:1.05rem;width:54px;text-align:right}
+.row.miss{background:var(--red-l)}
+.row.miss .mid div{color:var(--red)}
+.pillbtn{font-size:.72rem;font-weight:700;padding:6px 12px;border-radius:999px;background:var(--red);color:#fff}
+/* plantel */
+.grp{margin:0 20px 8px;background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.it{display:flex;align-items:center;gap:12px;padding:14px;border-bottom:1px solid var(--line)}
+.it:last-child{border-bottom:0}
+.it .ico{width:34px;height:34px;border-radius:11px;background:var(--bg);display:grid;place-items:center;font-size:1rem}
+.it .t{flex:1}.it .t div{font-size:.9rem;font-weight:600}.it .t small{font-size:.72rem;color:var(--muted)}
+.it .v{font-size:.78rem;color:var(--muted);font-weight:600}
+.chev{color:#c3bba8;font-size:1.1rem;margin-left:4px}
+.lotecard{display:flex;align-items:center;gap:12px;padding:14px;border-bottom:1px solid var(--line)}
+.lotecard .bad{width:42px;height:42px;border-radius:14px;background:var(--green-l);color:var(--green);display:grid;place-items:center;font-family:var(--serif);font-weight:600}
+.add{display:flex;align-items:center;justify-content:center;gap:6px;padding:13px;font-size:.84rem;font-weight:700;color:var(--green-m)}
+.sw{width:42px;height:26px;border-radius:99px;background:var(--green-m);position:relative}.sw:after{content:"";position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff}
+</style></head><body>
+<div class="board">
+
+<!-- ═════ 1. REGISTRO ═════ -->
+<div class="frame">
+<h2>1 · Registro</h2>
+<p class="cap">La racha y la semana van en una sola tarjeta. Los días sin registro se pueden completar después sin perder la racha.</p>
+<div class="phone" style="padding-bottom:170px">
+  <div class="top">
+    <div class="hola"><small>Viernes 9 de octubre</small><h1>Buenos días,<br>Avícola Demo</h1></div>
+    <div class="avatar">AD</div>
+  </div>
+  <div class="chips"><div class="chip on">Lote Primavera<span>43 sem</span></div><div class="chip">Lote Invierno<span>25 sem</span></div></div>
+
+  <div class="sec">
+    <div class="hero">
+      <div class="ring"><svg width="92" height="92" viewBox="0 0 96 96"><circle cx="48" cy="48" r="40" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="9"/><circle cx="48" cy="48" r="40" fill="none" stroke="#e0b44a" stroke-width="9" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="36" transform="rotate(-90 48 48)"/><line x1="48" y1="3" x2="48" y2="15" stroke="#fff" stroke-width="2" transform="rotate(331 48 48)"/></svg><b>85%</b></div>
+      <div class="hero-t"><small>Postura de ayer</small><p>990 huevos de 1.157 aves.<br>Meta de la curva: 92 %</p><span class="pill">▲ 0,3 pts vs semana pasada</span></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="racha">
+      <div class="racha-h"><span style="font-size:1.2rem">🔥</span><b>12 días</b><span>de racha</span><em>Récord 31</em></div>
+      <div class="week">
+        <div class="day">S<b>3</b><i></i></div><div class="day">D<b>4</b><i></i></div><div class="day miss">L<b>5</b><i></i></div><div class="day">M<b>6</b><i></i></div><div class="day">M<b>7</b><i></i></div><div class="day">J<b>8</b><i></i></div><div class="day on">V<b>9</b><i></i></div>
+      </div>
+      <div class="hint">Falta el lunes 5 · completa para no cortar la racha<u>Completar</u></div>
+    </div>
+  </div>
+
+  <div class="lbl">Producción de hoy</div>
+  <div class="sec" style="margin-top:0">
+    <div class="big">
+      <small style="font-size:.74rem;color:var(--muted);font-weight:600">🥚 Huevos recogidos</small>
+      <input value="1.002">
+      <div class="live"><span class="tag">86,6 % postura</span><span class="tag g">+12 vs ayer</span></div>
+    </div>
+    <div class="field"><div class="ico">🐔</div><div class="t"><div>Aves</div><small>Ayer 1.157 · se descuenta la mortalidad</small></div><div class="step"><button>−</button><input value="1.156"><button>+</button></div></div>
+    <div class="field"><div class="ico">🕊️</div><div class="t"><div>Mortalidad</div><small>0,09 % · dentro de lo normal</small></div><div class="step"><button>−</button><input value="1"><button>+</button></div></div>
+    <div class="field"><div class="ico">🌾</div><div class="t"><div>Alimento (kg)</div><small>115 g por ave</small></div><div class="step"><button>−</button><input value="133"><button>+</button></div></div>
+  </div>
+
+  <div class="lbl">Clasificación<span class="r">Clasificar después ›</span></div>
+  <div class="sec" style="margin-top:0">
+    <div class="sizes">
+      <div class="eggs">
+        <div class="egg"><svg width="18" height="23"><ellipse cx="9" cy="12.5" rx="8" ry="10" fill="#efe4cc"/></svg><b>50</b>Chico</div>
+        <div class="egg"><svg width="21" height="27"><ellipse cx="10.5" cy="14.5" rx="9.5" ry="12" fill="#e6d5b1"/></svg><b>200</b>Med</div>
+        <div class="egg"><svg width="24" height="31"><ellipse cx="12" cy="16.5" rx="11" ry="14" fill="#d9bf8c"/></svg><b>450</b>Grande</div>
+        <div class="egg"><svg width="27" height="35"><ellipse cx="13.5" cy="18.5" rx="12.5" ry="16" fill="#c9a66a"/></svg><b>200</b>XL</div>
+        <div class="egg"><svg width="30" height="39"><ellipse cx="15" cy="20.5" rx="14" ry="18" fill="#b8860b"/></svg><b>50</b>S.XL</div>
+        <div class="egg"><svg width="32" height="42"><ellipse cx="16" cy="22" rx="15" ry="19.5" fill="#8a6508"/></svg><b>0</b>Jumbo</div>
+      </div>
+      <div class="bar"><i style="width:5%;background:#efe4cc"></i><i style="width:20%;background:#e6d5b1"></i><i style="width:45%;background:#d9bf8c"></i><i style="width:20%;background:#c9a66a"></i><i style="width:5%;background:#b8860b"></i><i style="width:4%;background:var(--red);opacity:.7"></i></div>
+      <div class="bar-t"><span>1.000 de 1.002 clasificados</span><span style="color:var(--gold);font-weight:600">faltan 2</span></div>
+    </div>
+    <div class="lbl" style="margin:16px 0 8px">No vendibles</div>
+    <div class="nv"><div>Sucios<b>20</b></div><div>Rotos<b>10</b></div><div>Trizados<b>10</b></div><div>Sangre<b>0</b></div></div>
+  </div>
+  <div class="sec"><div class="nota">✎ &nbsp;Agregar una nota del día</div></div>
+
+  <div class="fade"></div>
+  <div class="cta">Guardar día<span>→</span></div>
+  <div class="tabbar">
+    <div class="on"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="14" height="17" rx="3"/><path d="M8 9h6M8 13h6"/></svg>Registro</div>
+    <div><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18l5-6 4 3 7-9"/></svg>Tendencia</div>
+    <div class="dot"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h14M4 11h14M4 17h9"/></svg>Historial</div>
+    <div><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="3"/><path d="M11 2v3M11 17v3M2 11h3M17 11h3"/></svg>Plantel</div>
+  </div>
+</div>
+</div>
+
+<!-- ═════ 2. AL GUARDAR ═════ -->
+<div class="frame">
+<h2>2 · Al guardar</h2>
+<p class="cap">Celebración breve y sobria: suma un día a la racha y, si corresponde, muestra un logro. Solo aparece lo positivo.</p>
+<div class="phone short">
+  <div class="top"><div class="hola"><small>Viernes 9 de octubre</small><h1>Buenos días,<br>Avícola Demo</h1></div><div class="avatar">AD</div></div>
+  <div class="dim"></div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <svg width="76" height="92" viewBox="0 0 76 92"><ellipse cx="38" cy="50" rx="34" ry="40" fill="#f6eed8"/><ellipse cx="38" cy="50" rx="34" ry="40" fill="none" stroke="#b8860b" stroke-width="3"/><path d="M24 52l10 10 19-22" fill="none" stroke="#2a5430" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <h3>¡Día guardado!</h3>
+    <div class="sub">Lote Primavera · viernes 9 de octubre</div>
+    <div class="flames"><i>🔥</i><i>🔥</i><i>🔥</i><i>🔥</i><i>🔥</i><i>🔥</i><i class="new">13</i></div>
+    <div style="font-size:.84rem;font-weight:600">13 días de racha · <span style="color:var(--muted)">te faltan 18 para tu récord</span></div>
+    <div class="unlock"><div class="m">🏆</div><div><small>Logro desbloqueado</small><b>Semana sin mortalidad</b><div style="font-size:.74rem;color:var(--muted)">7 días seguidos con 0 bajas</div></div></div>
+    <div class="resumen"><div>Postura<b>86,6 %</b></div><div>Huevos<b>1.002</b></div><div>vs ayer<b style="color:var(--green-m)">+12</b></div></div>
+    <div class="btn2"><div style="background:var(--bg)">Ver tendencia</div><div style="background:var(--ink);color:#fff">Listo</div></div>
+  </div>
+</div>
+</div>
+
+<!-- ═════ 3. TENDENCIA ═════ -->
+<div class="frame">
+<h2>3 · Tendencia</h2>
+<p class="cap">Cuatro indicadores con flecha de cambio, un gráfico principal con selector, y logros obtenidos o por obtener (con barra de avance).</p>
+<div class="phone">
+  <div class="top"><div class="hola"><small>Lote Primavera · Hy-line Brown · sem 43</small><h1>Tendencia</h1></div><div class="avatar">AD</div></div>
+  <div class="chips"><div class="chip on">7 días</div><div class="chip">30 días</div><div class="chip">Todo el lote</div></div>
+  <div class="sec">
+    <div class="kpis">
+      <div class="kpi"><small>Postura</small><b>85,2 %</b><em class="dn">▼ 6,8 bajo la curva</em></div>
+      <div class="kpi"><small>Mortalidad 7d</small><b>0,0 %</b><em class="up">● sin bajas</em></div>
+      <div class="kpi"><small>Conversión</small><b>0,135</b><em style="color:var(--muted)">kg alimento / huevo</em></div>
+      <div class="kpi"><small>No vendibles</small><b>4,0 %</b><em class="up">▼ 0,5 vs semana ant.</em></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="chart">
+      <h3>Postura vs curva genética</h3><p>Promedio semanal · línea dorada = esperado</p>
+      <svg viewBox="0 0 320 150" width="100%" style="margin-top:12px">
+        <path d="M0 40H320" stroke="#e8e2d4"/><path d="M0 80H320" stroke="#e8e2d4"/><path d="M0 120H320" stroke="#e8e2d4"/>
+        <path d="M0 34 C60 33 120 35 180 38 S280 42 320 44" fill="none" stroke="#b8860b" stroke-width="2" stroke-dasharray="5 5"/>
+        <path d="M0 140 L20 110 L40 70 L60 48 L80 44 L100 42 L120 45 L140 43 L160 46 L180 47 L200 49 L220 50 L240 52 L260 53 L280 55 L300 54 L320 56 V150 H0Z" fill="#3d7a42" opacity=".08"/>
+        <path d="M0 140 L20 110 L40 70 L60 48 L80 44 L100 42 L120 45 L140 43 L160 46 L180 47 L200 49 L220 50 L240 52 L260 53 L280 55 L300 54 L320 56" fill="none" stroke="#2a5430" stroke-width="2.5" stroke-linejoin="round"/>
+        <circle cx="320" cy="56" r="5" fill="#2a5430" stroke="#fff" stroke-width="2"/>
+        <text x="2" y="30" font-size="9" fill="#8a9284">90%</text><text x="2" y="76" font-size="9" fill="#8a9284">70%</text>
+      </svg>
+      <div class="seg"><div class="on">Postura</div><div>Mortalidad</div><div>Tamaños</div><div>Alimento</div></div>
+    </div>
+  </div>
+  <div class="lbl">Logros del lote<span class="r">3 de 8</span></div>
+  <div class="sec" style="margin-top:0">
+    <div class="logro"><div class="m">🏆</div><div><b>Mejor semana: sem 28</b><small>93,1 % de postura promedio</small></div></div>
+    <div class="logro"><div class="m" style="background:var(--green-l)">🕊️</div><div><b>Semana sin mortalidad</b><small>Obtenido hoy</small></div></div>
+    <div class="logro"><div class="m">🔥</div><div><b>Racha de 30 días</b><small>Obtenido en agosto</small></div></div>
+    <div class="logro lock"><div class="m">🥚</div><div><b>150 mil huevos</b><small>149.420 · faltan 580</small><div class="prog"><i style="width:96%"></i></div></div></div>
+    <div class="logro lock"><div class="m">📅</div><div><b>Mes completo</b><small>Todos los días de un mes registrados</small><div class="prog"><i style="width:30%"></i></div></div></div>
+  </div>
+  <div class="tabbar">
+    <div><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="14" height="17" rx="3"/><path d="M8 9h6M8 13h6"/></svg>Registro</div>
+    <div class="on"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18l5-6 4 3 7-9"/></svg>Tendencia</div>
+    <div class="dot"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h14M4 11h14M4 17h9"/></svg>Historial</div>
+    <div><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="3"/><path d="M11 2v3M11 17v3M2 11h3M17 11h3"/></svg>Plantel</div>
+  </div>
+</div>
+</div>
+
+<!-- ═════ 4. HISTORIAL ═════ -->
+<div class="frame">
+<h2>4 · Historial</h2>
+<p class="cap">Reemplaza la tabla ancha. Va por semanas, con una barra de postura por día y su marca de la curva. Al tocar un día se edita; los que faltan se completan desde aquí.</p>
+<div class="phone">
+  <div class="top"><div class="hola"><small>Lote Primavera</small><h1>Historial</h1></div><div class="avatar">AD</div></div>
+  <div class="chips"><div class="chip on">Lote Primavera</div><div class="chip">Lote Invierno</div><div class="chip">⬇ CSV</div></div>
+  <div class="wk"><b>Semana 43</b><small>3 – 9 oct</small><em>85,4 % prom.</em></div>
+  <div class="list">
+    <div class="row"><div class="d">vie<b>9</b></div><div class="mid"><div>1.002 huevos · 1 baja</div><div class="mini"><i style="width:86.6%"></i><u style="left:92%"></u></div></div><div class="pct">86,6</div></div>
+    <div class="row"><div class="d">jue<b>8</b></div><div class="mid"><div>990 huevos · 0 bajas</div><div class="mini"><i style="width:85.5%"></i><u style="left:92%"></u></div></div><div class="pct">85,5</div></div>
+    <div class="row"><div class="d">mié<b>7</b></div><div class="mid"><div>978 huevos · 0 bajas</div><div class="mini"><i style="width:84.5%"></i><u style="left:92%"></u></div></div><div class="pct">84,5</div></div>
+    <div class="row"><div class="d">mar<b>6</b></div><div class="mid"><div>994 huevos · 1 baja</div><div class="mini"><i style="width:85.8%"></i><u style="left:92%"></u></div></div><div class="pct">85,8</div></div>
+    <div class="row miss"><div class="d">lun<b style="color:var(--red)">5</b></div><div class="mid"><div>Sin registro</div><small>Complétalo para mantener la racha</small></div><div class="pillbtn">Completar</div></div>
+    <div class="row"><div class="d">dom<b>4</b></div><div class="mid"><div>985 huevos · 0 bajas</div><div class="mini"><i style="width:85%"></i><u style="left:92%"></u></div></div><div class="pct">85,0</div></div>
+    <div class="row"><div class="d">sáb<b>3</b></div><div class="mid"><div>992 huevos · 0 bajas</div><div class="mini"><i style="width:85.6%"></i><u style="left:92%"></u></div></div><div class="pct">85,6</div></div>
+  </div>
+  <div class="wk"><b>Semana 42</b><small>26 sep – 2 oct</small><em>86,1 % prom.</em></div>
+  <div class="list">
+    <div class="row"><div class="d">vie<b>2</b></div><div class="mid"><div>1.001 huevos · 0 bajas</div><div class="mini"><i style="width:86.3%"></i><u style="left:92.3%"></u></div></div><div class="pct">86,3</div></div>
+    <div class="row"><div class="d">jue<b>1</b></div><div class="mid"><div>998 huevos · 2 bajas</div><div class="mini"><i style="width:86%"></i><u style="left:92.3%"></u></div></div><div class="pct">86,0</div></div>
+    <div class="row"><div class="d">mié<b>30</b></div><div class="mid"><div>1.003 huevos · 0 bajas</div><div class="mini"><i style="width:86.4%"></i><u style="left:92.3%"></u></div></div><div class="pct">86,4</div></div>
+  </div>
+  <div class="tabbar">
+    <div><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="14" height="17" rx="3"/><path d="M8 9h6M8 13h6"/></svg>Registro</div>
+    <div><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18l5-6 4 3 7-9"/></svg>Tendencia</div>
+    <div class="on dot"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h14M4 11h14M4 17h9"/></svg>Historial</div>
+    <div><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="3"/><path d="M11 2v3M11 17v3M2 11h3M17 11h3"/></svg>Plantel</div>
+  </div>
+</div>
+</div>
+
+<!-- ═════ 5. PLANTEL ═════ -->
+<div class="frame">
+<h2>5 · Plantel</h2>
+<p class="cap">Las 8 tarjetas de configuración pasan a una lista agrupada, como los ajustes del celular. Cada fila abre su propia pantalla.</p>
+<div class="phone">
+  <div class="top"><div class="hola"><small>Configuración</small><h1>Avícola Demo</h1></div><div class="avatar">AD</div></div>
+  <div class="lbl">Lotes activos</div>
+  <div class="grp">
+    <div class="lotecard"><div class="bad">43</div><div class="t" style="flex:1"><div style="font-weight:600;font-size:.92rem">Lote Primavera</div><small style="font-size:.72rem;color:var(--muted)">Hy-line Brown · 1.156 aves · Pabellón 1</small></div><span class="chev">›</span></div>
+    <div class="lotecard"><div class="bad">25</div><div class="t" style="flex:1"><div style="font-weight:600;font-size:.92rem">Lote Invierno</div><small style="font-size:.72rem;color:var(--muted)">Hy-line Brown · 798 aves · Carro 2</small></div><span class="chev">›</span></div>
+    <div class="add">＋ Nuevo lote</div>
+  </div>
+  <div class="lbl">Plantel</div>
+  <div class="grp">
+    <div class="it"><div class="ico">🏷️</div><div class="t"><div>Nombre del plantel</div></div><span class="v">Avícola Demo</span><span class="chev">›</span></div>
+    <div class="it"><div class="ico">📍</div><div class="t"><div>Ubicaciones</div></div><span class="v">2</span><span class="chev">›</span></div>
+    <div class="it"><div class="ico">⚠️</div><div class="t"><div>Categorías no vendibles</div></div><span class="v">4</span><span class="chev">›</span></div>
+    <div class="it"><div class="ico">🗄️</div><div class="t"><div>Lotes archivados</div></div><span class="v">1</span><span class="chev">›</span></div>
+  </div>
+  <div class="lbl">Avisos y equipo</div>
+  <div class="grp">
+    <div class="it"><div class="ico">🔔</div><div class="t"><div>Alertas por correo</div><small>Mortalidad &gt; 0,3 % · caída &gt; 3 pts</small></div><div class="sw"></div></div>
+    <div class="it"><div class="ico">👥</div><div class="t"><div>Equipo</div><small>Personas con acceso a la cuenta</small></div><span class="v">1</span><span class="chev">›</span></div>
+  </div>
+  <div class="lbl">Más</div>
+  <div class="grp">
+    <div class="it"><div class="ico">📦</div><div class="t"><div>Bodega, pedidos y ventas</div></div><span class="chev">›</span></div>
+    <div class="it"><div class="ico">📁</div><div class="t"><div>Importar historial CSV</div></div><span class="chev">›</span></div>
+    <div class="it"><div class="ico">📖</div><div class="t"><div>Manual de uso</div></div><span class="chev">›</span></div>
+    <div class="it"><div class="ico">↪</div><div class="t"><div style="color:var(--red)">Cerrar sesión</div><small>demo@avivet.cl</small></div></div>
+  </div>
+  <div class="tabbar">
+    <div><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="14" height="17" rx="3"/><path d="M8 9h6M8 13h6"/></svg>Registro</div>
+    <div><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18l5-6 4 3 7-9"/></svg>Tendencia</div>
+    <div class="dot"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h14M4 11h14M4 17h9"/></svg>Historial</div>
+    <div class="on"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="3"/><path d="M11 2v3M11 17v3M2 11h3M17 11h3"/></svg>Plantel</div>
+  </div>
+</div>
+</div>
+
+</div>
+</body></html>
