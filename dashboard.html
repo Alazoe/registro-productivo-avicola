@@ -319,6 +319,12 @@ select, input { font-family: inherit; }
 .const-leyenda .l-h::before { background: transparent; outline: 1.5px dashed var(--prim-mid); outline-offset: -1.5px; }
 @media (max-width: 640px) { .const-fila { grid-template-columns: 1fr auto; } .const-fila .cuad { grid-column: 1 / -1; order: 3; } }
 
+.nota-fila { display: grid; grid-template-columns: 64px 110px 1fr; gap: 12px; padding: 7px 0; border-top: 1px solid var(--fondo-2); font-size: 13.5px; align-items: baseline; }
+.nota-fecha { font-family: var(--fuente-m); font-size: 11px; color: var(--tenue); }
+.nota-quien { font-size: 11px; font-weight: 600; color: var(--prim); background: var(--verde-cl); border-radius: 4px; padding: 2px 7px; justify-self: start; }
+.nota-quien.gral { color: #7b5e00; background: #f6efd9; }
+@media (max-width: 640px) { .nota-fila { grid-template-columns: 56px 1fr; } .nota-txt { grid-column: 1 / -1; } }
+
 /* IMPRESIÓN (Resumen → PDF) */
 @media print {
   @page { margin: 12mm; }
@@ -576,6 +582,25 @@ function htmlCuadritos(c, mini = false) {
   const tit = { ok:'registrado', n:'sin registro', h:'hoy (pendiente)', x:'antes del primer registro' };
   return `<div class="cuad${mini?' mini':''}">` + c.dias.map(d => `<i class="${d.e==='ok'?'':d.e}" title="${diaCorto(d.fecha)} · ${tit[d.e]}"></i>`).join('') + '</div>';
 }
+// Notas de los últimos 30 días: las de cada lote y las generales del día, de la más reciente a la más antigua.
+// Las marcas automáticas tipo "[Odoo]" no son notas del productor y se omiten.
+function tarjetaNotas(lotes, notasGral, mostrarLote) {
+  const desde = masDias(hoyISO(), -29);
+  const items = [];
+  (notasGral || []).forEach(n => { if (n.fecha >= desde && (n.texto||'').trim()) items.push({ fecha:n.fecha, quien:'General', txt:n.texto.trim(), gral:true }); });
+  lotes.forEach(l => l.registros.forEach(r => {
+    if (r.fecha >= desde && r.obs && !/^\[[^\]]+\]$/.test(r.obs)) items.push({ fecha:r.fecha, quien:l.nombre, txt:r.obs });
+  }));
+  if (!items.length) return null;
+  items.sort((a,b) => b.fecha.localeCompare(a.fecha) || (b.gral?1:0) - (a.gral?1:0));
+  const card = document.createElement('div'); card.className = 'const-card';
+  card.innerHTML = `<div class="const-top"><div class="const-titulo">Notas del productor · últimos 30 días</div></div>`
+    + items.map(it => `<div class="nota-fila"><span class="nota-fecha">${diaCorto(it.fecha)}</span>`
+      + `<span class="nota-quien${it.gral?' gral':''}">${it.gral ? 'General' : (mostrarLote ? esc(it.quien) : 'Lote')}</span>`
+      + `<span class="nota-txt">${esc(it.txt)}</span></div>`).join('');
+  return card;
+}
+
 function tarjetaConstancia(lotes, mostrarNombre) {
   const card = document.createElement('div'); card.className = 'const-card';
   let html = `<div class="const-top"><div class="const-titulo">Constancia de registro · últimos 30 días</div></div>`;
@@ -847,6 +872,7 @@ function renderMainTodos(main, granja, lotes) {
   hLeft.append(meta, titulo, sub);
   header.append(hLeft); main.appendChild(header);
   main.appendChild(tarjetaConstancia(lotes, true));
+  const tn = tarjetaNotas(lotes, state.datos[granja.id]?.notasGral, true); if (tn) main.appendChild(tn);
 
   // Gráfico combinado por semana de vida
   const chartWrap = document.createElement('div'); chartWrap.className='chart-wrap';
@@ -984,6 +1010,7 @@ function renderMain() {
 
   main.appendChild(kpiGrid);
   main.appendChild(tarjetaConstancia([lote], false));
+  const tn = tarjetaNotas([lote], datosG?.notasGral, false); if (tn) main.appendChild(tn);
 
   // ── Gráfico con tabs ──
   const chartWrap = document.createElement('div'); chartWrap.className='chart-wrap';
@@ -1270,6 +1297,7 @@ function procesarLote(lote, registros) {
       mortalidad:  r.mortalidad || 0,
       n_aves:      r.n_aves || 0,
       kg_alimento: r.kg_alimento || 0,
+      obs:         (r.observaciones || '').trim(),
     })),
   };
 }
@@ -1915,12 +1943,15 @@ async function cargarDatos() {
         const resultados = await Promise.all(granja._lotes.map(lote =>
           sbFetch('registros', {
             'lote_id': 'eq.'+lote.id,
-            'select':  'fecha,semana_vida,n_aves,mortalidad,kg_alimento,n_huevos,chico,mediano,grande,xl,super_xl,jumbo,sucios,rotos,trizados,sangre,pct_postura,pct_esperado,diferencia',
+            'select':  'fecha,semana_vida,n_aves,mortalidad,kg_alimento,n_huevos,chico,mediano,grande,xl,super_xl,jumbo,sucios,rotos,trizados,sangre,pct_postura,pct_esperado,diferencia,observaciones',
             'order':   'fecha.desc',
             'limit':   '1000',   // ~2,7 años: cubre la vida completa de un lote para la curva por semana de vida
           }).then(regs => procesarLote(lote, regs))
         ));
-        state.datos[granja.id] = { fechaConsulta: hoyISO(), lotes: resultados.filter(Boolean) };
+        // Notas generales del día de este productor (tabla notas_dia; si no existe, sin ellas)
+        let notasGral = [];
+        try { notasGral = await sbFetch('notas_dia', { 'user_id':'eq.'+granja.id, 'select':'fecha,texto', 'order':'fecha.desc', 'limit':'200' }); } catch(e) {}
+        state.datos[granja.id] = { fechaConsulta: hoyISO(), lotes: resultados.filter(Boolean), notasGral };
         state.estados[granja.id] = 'ok';
       } catch(e) { state.estados[granja.id]='error'; }
       // Refresco parcial: sidebar siempre; el panel principal solo si es el productor que se está viendo
