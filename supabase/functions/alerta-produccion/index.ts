@@ -9,7 +9,10 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Headers': 'authorization, content-type',
+  // supabase-js envía también apikey y x-client-info: si no se permiten, el navegador bloquea el POST
+  // tras la consulta previa (OPTIONS) y la alerta nunca sale.
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Content-Type': 'application/json',
 };
 
@@ -66,7 +69,8 @@ serve(async (req) => {
     });
 
     const data = await res.json();
-    return new Response(JSON.stringify({ ok: res.ok, data }), { headers: CORS });
+    if (!res.ok) console.error('Resend rechazó el correo:', res.status, JSON.stringify(data));
+    return new Response(JSON.stringify({ ok: res.ok, data }), { status: res.ok ? 200 : 502, headers: CORS });
 
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: String(e) }), { headers: CORS });

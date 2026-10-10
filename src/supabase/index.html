@@ -1888,7 +1888,8 @@ async function verificarAlertas(loteNombre, fecha, nAves, mort, pctPost, prevReg
   if (!alertas.length) return;
 
   try {
-    await sb.functions.invoke('alerta-produccion', {
+    // invoke() no lanza excepción si falla: devuelve { error }. Hay que revisarlo.
+    const { data, error } = await sb.functions.invoke('alerta-produccion', {
       body: {
         lote: loteNombre, fecha, alertas,
         // Si el productor apagó sus alertas, igual va al asesor (to nulo → solo asesor)
@@ -1896,6 +1897,7 @@ async function verificarAlertas(loteNombre, fecha, nAves, mort, pctPost, prevReg
         copiaAsesor: true // el asesor (AviVet) recibe siempre
       },
     });
+    if (error || data?.ok === false) throw error || new Error(JSON.stringify(data?.data || data));
     if (productorRecibe) toast('⚠️ Alerta enviada por email','warn',4000);
   } catch (e) {
     console.warn('No se pudo enviar alerta:', e);
