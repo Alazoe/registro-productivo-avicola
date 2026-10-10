@@ -366,6 +366,36 @@ input[type=number]{-moz-appearance:textfield}
 .hoja-res div{font-size:.7rem;color:var(--muted);font-weight:600}
 .hoja-res b{display:block;font-size:1.1rem;color:var(--ink);font-family:var(--serif);font-weight:600}
 #toast{bottom:150px}
+
+/* Tendencia */
+.t-periodo{margin-top:12px}
+.chip-p{flex:0 0 auto;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);font:600 .8rem 'DM Sans',sans-serif;color:#5a6450;cursor:pointer}
+.chip-p.activo{background:var(--verde-o);border-color:var(--verde-o);color:#fff}
+.t-kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.t-kpi{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px}
+.t-kpi small{font-size:.7rem;color:var(--muted);font-weight:600}
+.t-kpi b{display:block;font-family:var(--serif);font-size:1.55rem;font-weight:600;margin:4px 0 2px;letter-spacing:-.02em;color:var(--ink)}
+.t-kpi em{font-style:normal;font-size:.72rem;font-weight:600;color:var(--muted)}
+.t-kpi em.up{color:var(--verde)} .t-kpi em.dn{color:#a8481f}
+.t-chart{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:16px 14px;margin-top:12px}
+.t-chart h3{font-size:.95rem;font-weight:600}
+.t-chart p{font-size:.74rem;color:var(--muted);margin-top:2px}
+.seg{display:flex;background:var(--gris-f);border-radius:12px;padding:3px;margin:12px 0 10px;overflow-x:auto;scrollbar-width:none;gap:2px}
+.seg::-webkit-scrollbar{display:none}
+.seg .gtab{flex:1 0 auto;min-width:0;border:0;background:none;font:600 .74rem 'DM Sans',sans-serif;padding:8px 10px;border-radius:10px;color:var(--muted);white-space:nowrap}
+.seg .gtab.activo{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.seg.mini{display:inline-flex;margin:0 0 8px}
+.chart-wrap{height:280px}
+.tabla-semanal th{background:var(--ink)}
+#t-hitos .hito{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:13px 14px;margin-bottom:8px}
+.hito .m{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:1.25rem;background:var(--gold-l);flex-shrink:0}
+.hito b{font-size:.9rem}.hito small{display:block;font-size:.74rem;color:var(--muted)}
+.hito.lock{opacity:.6}.hito.lock .m{background:var(--gris-f);filter:grayscale(1)}
+.hito .prog{height:5px;border-radius:9px;background:var(--gris-f);margin-top:6px;width:170px;overflow:hidden}
+.hito .prog i{display:block;height:100%;background:var(--gold)}
+.t-detalle{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:4px 14px}
+.t-detalle summary{cursor:pointer;padding:12px 0;font-size:.84rem;font-weight:600;color:var(--verde-o)}
+.t-detalle[open]{padding-bottom:14px}
 </style>
 </head>
 <body>
@@ -547,60 +577,60 @@ input[type=number]{-moz-appearance:textfield}
   <button class="btn btn-verde" onclick="cerrarHoja()" style="margin-top:18px">Listo</button>
 </div>
 
-<!-- ══ TAB GRÁFICOS ══════════════════════════════════════ -->
+<!-- ══ TAB TENDENCIA (id interno: graficos) ══════════════════════ -->
 <div class="page" id="page-graficos">
-  <div class="card">
-    <div class="card-header">📋 Lote</div>
-    <div class="card-body">
-      <div class="lotes-btns" id="g-lotes-btns"><span style="color:#aaa;font-size:.85rem">Cargando…</span></div>
+  <div class="lotes-btns chips" id="g-lotes-btns"><span style="color:#aaa;font-size:.85rem">Cargando…</span></div>
+  <div id="g-sin-lote" class="alerta alerta-info" style="margin-top:14px">Selecciona un lote para ver su tendencia</div>
+  <div id="g-contenido" style="display:none">
+
+    <div class="chips t-periodo" id="t-periodo">
+      <button class="chip-p activo" onclick="setPeriodoT(7)">7 días</button>
+      <button class="chip-p" onclick="setPeriodoT(30)">30 días</button>
+      <button class="chip-p" onclick="setPeriodoT(0)">Todo el lote</button>
     </div>
-  </div>
-  <div class="card">
-    <div class="card-header">📊 Gráficos</div>
-    <div class="card-body">
-      <div id="g-sin-lote" class="alerta alerta-info">Selecciona un lote arriba para ver los gráficos</div>
-      <div id="g-contenido" style="display:none">
-        <div class="resumen-cards">
-          <div class="r-card azul"><div class="r-card-titulo">📦 Acumulado</div><div class="r-card-valor" id="g-acumulado">—</div><div class="r-card-sub">huevos</div></div>
-          <div class="r-card verde"><div class="r-card-titulo">📅 Prom. 7 días</div><div class="r-card-valor" id="g-semana">—</div><div class="r-card-sub">% postura</div></div>
-          <div class="r-card naranja"><div class="r-card-titulo">🥚 Último día</div><div class="r-card-valor" id="g-ultimo">—</div><div class="r-card-sub">% postura</div></div>
-        </div>
-        <div class="graficos-tabs">
-          <button class="gtab activo" onclick="cambiarGtab('kpis')" id="gtab-kpis">🎯 KPIs</button>
-          <button class="gtab" onclick="cambiarGtab('curva')" id="gtab-curva">📈 Postura</button>
-          <button class="gtab" onclick="cambiarGtab('acumulado')" id="gtab-acumulado">📊 Acum</button>
-          <button class="gtab" onclick="cambiarGtab('tamano')" id="gtab-tamano">📏 Tam</button>
-          <button class="gtab" onclick="cambiarGtab('mortalidad')" id="gtab-mortalidad">☠️ Mort</button>
-          <button class="gtab" onclick="cambiarGtab('novend')" id="gtab-novend">⚠️ No vend</button>
-          <button class="gtab" onclick="cambiarGtab('tabla')" id="gtab-tabla">📋 Tabla</button>
-          <button class="gtab" onclick="cambiarGtab('dona')" id="gtab-dona">🍩 Semanal</button>
-        </div>
-        <div id="postura-agrup" style="display:none;gap:6px;margin:8px 0;justify-content:flex-end">
-          <button class="gtab activo" id="pa-dia" onclick="setPosturaAgrup('dia')" style="flex:0 0 auto;min-width:auto;padding:6px 14px">Diario</button>
-          <button class="gtab" id="pa-sem" onclick="setPosturaAgrup('sem')" style="flex:0 0 auto;min-width:auto;padding:6px 14px">Semanal</button>
-        </div>
-        <div id="wrap-kpis"><div id="kpis-contenido"></div></div>
-        <div class="chart-wrap" id="wrap-curva"><canvas id="chart-curva"></canvas></div>
-        <div class="chart-wrap" id="wrap-acumulado"><canvas id="chart-acumulado"></canvas></div>
-        <div class="chart-wrap" id="wrap-tamano"><canvas id="chart-tamano"></canvas></div>
-        <div class="chart-wrap" id="wrap-mortalidad"><canvas id="chart-mortalidad"></canvas></div>
-        <div class="chart-wrap" id="wrap-novend"><canvas id="chart-novend"></canvas></div>
-        <div class="chart-wrap" id="wrap-dona" style="height:360px"><canvas id="chart-dona"></canvas></div>
-        <div id="wrap-tabla" style="display:none">
-          <div class="tabla-wrap">
-            <table class="tabla-semanal">
-              <thead><tr>
-                <th>Sem</th><th>Días</th><th>Aves</th><th>Huevos</th>
-                <th style="background:var(--verde)">% Post</th>
-                <th style="background:var(--azul)">% Esp</th>
-                <th>Dif</th><th>Mort</th><th>Kg Alim</th>
-              </tr></thead>
-              <tbody id="tabla-body"></tbody>
-            </table>
-          </div>
+    <div class="t-kpis" id="t-kpis"></div>
+
+    <div class="t-chart">
+      <div class="t-chart-h"><div><h3 id="t-chart-tit">Postura vs curva genética</h3><p id="t-chart-sub"></p></div></div>
+      <div class="seg" id="t-seg">
+        <button class="gtab activo" id="gtab-curva" onclick="cambiarGtab('curva')">Postura</button>
+        <button class="gtab" id="gtab-mortalidad" onclick="cambiarGtab('mortalidad')">Mortalidad</button>
+        <button class="gtab" id="gtab-tamano" onclick="cambiarGtab('tamano')">Tamaños</button>
+        <button class="gtab" id="gtab-dona" onclick="cambiarGtab('dona')">Distribución</button>
+        <button class="gtab" id="gtab-novend" onclick="cambiarGtab('novend')">No vend.</button>
+        <button class="gtab" id="gtab-acumulado" onclick="cambiarGtab('acumulado')">Acumulado</button>
+        <button class="gtab" id="gtab-tabla" onclick="cambiarGtab('tabla')">Semanas</button>
+      </div>
+      <div id="postura-agrup" class="seg mini" style="display:none">
+        <button class="gtab activo" id="pa-dia" onclick="setPosturaAgrup('dia')">Diario</button>
+        <button class="gtab" id="pa-sem" onclick="setPosturaAgrup('sem')">Semanal</button>
+      </div>
+      <div class="chart-wrap" id="wrap-curva"><canvas id="chart-curva"></canvas></div>
+      <div class="chart-wrap" id="wrap-acumulado"><canvas id="chart-acumulado"></canvas></div>
+      <div class="chart-wrap" id="wrap-tamano"><canvas id="chart-tamano"></canvas></div>
+      <div class="chart-wrap" id="wrap-mortalidad"><canvas id="chart-mortalidad"></canvas></div>
+      <div class="chart-wrap" id="wrap-novend"><canvas id="chart-novend"></canvas></div>
+      <div class="chart-wrap" id="wrap-dona" style="height:340px"><canvas id="chart-dona"></canvas></div>
+      <div id="wrap-tabla" style="display:none">
+        <div class="tabla-wrap">
+          <table class="tabla-semanal">
+            <thead><tr>
+              <th>Sem</th><th>Días</th><th>Aves</th><th>Huevos</th>
+              <th>% Post</th><th>% Esp</th><th>Dif</th><th>Mort</th><th>Kg Alim</th>
+            </tr></thead>
+            <tbody id="tabla-body"></tbody>
+          </table>
         </div>
       </div>
     </div>
+
+    <div class="lbl">Hitos del lote</div>
+    <div id="t-hitos"></div>
+
+    <details class="t-detalle" id="wrap-kpis" ontoggle="if(this.open)renderKPIs()">
+      <summary>Ver todos los indicadores y costo de alimentación</summary>
+      <div id="kpis-contenido"></div>
+    </details>
   </div>
 </div>
 
@@ -1019,6 +1049,15 @@ let nombreProductor = '';
 let notasDia = {}; // fecha → nota general del día (tabla notas_dia, una por cuenta y fecha)
 let csvPendiente = null;
 let chartsInst = {};
+if (window.Chart) {
+  Chart.defaults.font.family = "'DM Sans', system-ui, sans-serif";
+  Chart.defaults.color = '#6a7565';
+  Chart.defaults.borderColor = '#ece6d9';
+  Chart.defaults.plugins.legend.position = 'bottom';
+  Chart.defaults.plugins.legend.labels.boxWidth = 12;
+  Chart.defaults.scales.category.ticks.maxRotation = 0;   // etiquetas del eje X derechas; Chart.js salta las que no caben
+  Chart.defaults.scales.category.ticks.autoSkipPadding = 8;
+}
 let posturaAgrup = 'dia'; // 'dia' | 'sem' — agrupación de la curva de postura
 function setPosturaAgrup(modo){
   posturaAgrup = modo;
@@ -1671,35 +1710,114 @@ function toggleClas() {
 }
 
 // ══ GRÁFICOS ════════════════════════════════════════════════════
+let periodoT = 7; // días de los indicadores de Tendencia (0 = todo el lote)
+const TITULOS_GRAF = {
+  curva:      ['Postura vs curva genética', 'Línea dorada = lo esperado para la línea genética'],
+  mortalidad: ['Mortalidad', 'Aves por semana de vida y acumulada'],
+  tamano:     ['Tamaños', 'Clasificación de los últimos 28 días'],
+  dona:       ['Distribución por tamaño', 'Proporción de cada tamaño por semana'],
+  novend:     ['No vendibles', '% de sucios, rotos, trizados y con sangre por semana'],
+  acumulado:  ['Huevos acumulados', 'Producción total del lote'],
+  tabla:      ['Resumen por semana de vida', 'Postura real vs esperada y mortalidad'],
+};
+
 function renderGraficosTab() {
   const sinLote = document.getElementById('g-sin-lote');
   const cont    = document.getElementById('g-contenido');
   if (!loteActual || !registrosLote.length) { sinLote.style.display='block'; cont.style.display='none'; return; }
   sinLote.style.display='none'; cont.style.display='block';
   actualizarResumenCards();
-  cambiarGtab('kpis');
+  renderHitos();
+  if (document.getElementById('wrap-kpis').open) renderKPIs();
+  const activo = document.querySelector('#t-seg .gtab.activo');
+  cambiarGtab(activo ? activo.id.replace('gtab-','') : 'curva');
+}
+
+function setPeriodoT(dias) {
+  periodoT = dias;
+  document.querySelectorAll('#t-periodo .chip-p').forEach((b,i) => b.classList.toggle('activo', [7,30,0][i] === dias));
+  actualizarResumenCards();
+}
+
+// Indicadores del periodo elegido y su cambio contra el periodo anterior del mismo largo
+function indicadoresPeriodo(regs) {
+  if (!regs.length) return null;
+  const conAves = regs.filter(r => r.n_aves > 0);
+  const huevos = regs.reduce((s,r) => s + (r.n_huevos||0), 0);
+  const kg     = regs.reduce((s,r) => s + (r.kg_alimento||0), 0);
+  const mort   = regs.reduce((s,r) => s + (r.mortalidad||0), 0);
+  const nv     = regs.reduce((s,r) => s + (r.sucios||0) + (r.rotos||0) + (r.trizados||0) + (r.sangre||0), 0);
+  const post   = conAves.length ? conAves.reduce((s,r) => s + r.n_huevos/r.n_aves, 0) / conAves.length : null;
+  const esp    = conAves.length ? conAves.reduce((s,r) => s + pctEsperado(calcEdadFecha(loteActual.fecha_nac, r.fecha), loteActual.linea_genetica), 0) / conAves.length : null;
+  const aves0  = regs[0].n_aves || loteActual.n_aves || 0;
+  return { post, esp, mort, mortPct: aves0 > 0 ? mort/aves0*100 : null, conv: huevos > 0 && kg > 0 ? kg/huevos : null, nvPct: huevos > 0 ? nv/huevos*100 : null, huevos };
 }
 
 function actualizarResumenCards() {
-  const total = registrosLote.reduce((s,r)=>s+(r.n_huevos||0),0);
-  const ult7  = registrosLote.slice(-7);
-  const prom7 = ult7.length ? ult7.reduce((s,r)=>s+(r.pct_postura||0),0)/ult7.length : 0;
-  const ultimo= registrosLote[registrosLote.length-1];
-  document.getElementById('g-acumulado').textContent = total.toLocaleString('es-CL');
-  document.getElementById('g-semana').textContent    = (prom7*100).toFixed(1)+'%';
-  document.getElementById('g-ultimo').textContent    = ultimo ? (((ultimo.pct_postura||0)*100).toFixed(1)+'%') : '—';
+  const cont = document.getElementById('t-kpis'); if (!cont) return;
+  const ult = registrosLote[registrosLote.length-1]; if (!ult) { cont.innerHTML = ''; return; }
+  let actual, prev = [];
+  if (periodoT > 0) {
+    const desde = fechaMas(ult.fecha, -(periodoT-1)), desdePrev = fechaMas(desde, -periodoT);
+    actual = registrosLote.filter(r => r.fecha >= desde);
+    prev   = registrosLote.filter(r => r.fecha >= desdePrev && r.fecha < desde);
+  } else actual = registrosLote;
+  const a = indicadoresPeriodo(actual), b = indicadoresPeriodo(prev);
+  const dec = (v, d=1) => v == null ? '—' : v.toFixed(d).replace('.', ',');
+  const ant = periodoT > 0 ? 'vs ' + periodoT + ' días ant.' : '';
+  // Flecha: "mejor" puede ser subir (postura) o bajar (mortalidad, conversión, no vendibles)
+  const cambio = (va, vb, d, menorEsMejor, unidad='') => {
+    if (va == null || vb == null || !ant) return '';
+    const dif = va - vb; if (Math.abs(dif) < Math.pow(10,-d)/2) return `<em>= igual ${ant}</em>`;
+    const bien = menorEsMejor ? dif < 0 : dif > 0;
+    return `<em class="${bien?'up':'dn'}">${dif>0?'▲':'▼'} ${dec(Math.abs(dif), d)}${unidad} ${ant}</em>`;
+  };
+  const difCurva = a.post != null && a.esp ? (a.post - a.esp) * 100 : null;
+  cont.innerHTML =
+    `<div class="t-kpi"><small>Postura</small><b>${dec(a.post!=null?a.post*100:null)} %</b>`
+      + (difCurva != null ? `<em class="${difCurva>=0?'up':'dn'}">${difCurva>=0?'▲':'▼'} ${dec(Math.abs(difCurva))} ${difCurva>=0?'sobre':'bajo'} la curva</em>` : '') + `</div>`
+    + `<div class="t-kpi"><small>Mortalidad</small><b>${dec(a.mortPct, 2)} %</b>${cambio(a.mortPct, b?.mortPct, 2, true, ' pts') || `<em>${fmtN(a.mort)} aves</em>`}</div>`
+    + `<div class="t-kpi"><small>Conversión</small><b>${dec(a.conv, 3)}</b>${cambio(a.conv, b?.conv, 3, true) || '<em>kg alimento / huevo</em>'}</div>`
+    + `<div class="t-kpi"><small>No vendibles</small><b>${dec(a.nvPct)} %</b>${cambio(a.nvPct, b?.nvPct, 1, true, ' pts') || `<em>del total de huevos</em>`}</div>`;
+}
+
+// Hitos del lote: solo cosas logradas (o por lograr), nunca reproches
+function renderHitos() {
+  const cont = document.getElementById('t-hitos'); if (!cont) return;
+  const regs = registrosLote, h = [];
+  // Mejor semana de postura (semanas con al menos 5 días registrados)
+  const porSem = {};
+  regs.filter(r => r.n_aves > 0).forEach(r => { const k = r.semana_vida; (porSem[k] = porSem[k] || []).push(r.n_huevos/r.n_aves); });
+  let mejor = null;
+  Object.entries(porSem).forEach(([sem, v]) => { if (v.length >= 5) { const p = v.reduce((x,y)=>x+y,0)/v.length; if (!mejor || p > mejor.p) mejor = { sem, p }; } });
+  if (mejor) h.push(`<div class="hito"><div class="m">🏆</div><div><b>Mejor semana: sem ${mejor.sem}</b><small>${fmtPct(mejor.p)} de postura promedio</small></div></div>`);
+  // Días seguidos sin bajas: actual y récord del lote
+  let racha = 0, record = 0;
+  regs.forEach(r => { racha = (r.mortalidad||0) === 0 ? racha + 1 : 0; record = Math.max(record, racha); });
+  if (racha >= 3) h.push(`<div class="hito"><div class="m" style="background:var(--green-l)">🕊️</div><div><b>${racha} días seguidos sin bajas</b><small>${racha >= record ? '¡Es el récord del lote!' : 'Récord del lote: ' + record + ' días'}</small></div></div>`);
+  // Huevos acumulados y próximo hito de 50 mil
+  const total = regs.reduce((s,r) => s + (r.n_huevos||0), 0);
+  const logrado = Math.floor(total/50000)*50000, proximo = logrado + 50000;
+  if (logrado > 0) h.push(`<div class="hito"><div class="m">🥚</div><div><b>${fmtN(logrado/1000)} mil huevos</b><small>${fmtN(total)} producidos en el lote</small></div></div>`);
+  h.push(`<div class="hito lock"><div class="m">🥚</div><div><b>${fmtN(proximo/1000)} mil huevos</b><small>Faltan ${fmtN(proximo-total)}</small><div class="prog"><i style="width:${(total-logrado)/50000*100}%"></i></div></div></div>`);
+  cont.innerHTML = h.join('');
 }
 
 function cambiarGtab(tipo) {
-  ['kpis','curva','acumulado','tamano','mortalidad','novend','dona','tabla'].forEach(t => {
+  ['curva','acumulado','tamano','mortalidad','novend','dona','tabla'].forEach(t => {
     document.getElementById('gtab-'+t).classList.toggle('activo', t===tipo);
     const wrap = document.getElementById('wrap-'+t);
-    if (t==='tabla' || t==='kpis') wrap.style.display = tipo===t ? 'block' : 'none';
+    if (t==='tabla') wrap.style.display = tipo===t ? 'block' : 'none';
     else wrap.classList.toggle('visible', t===tipo);
   });
-  document.getElementById('postura-agrup').style.display = tipo==='curva' ? 'flex' : 'none';
+  // Deja visible el botón activo del selector (en celular el selector se desplaza de lado)
+  const btnAct = document.getElementById('gtab-'+tipo), seg = document.getElementById('t-seg');
+  if (btnAct && seg) seg.scrollTo({ left: Math.max(0, btnAct.offsetLeft - seg.clientWidth/2 + btnAct.clientWidth/2), behavior:'smooth' });
+  const [tit, sub] = TITULOS_GRAF[tipo] || ['', ''];
+  document.getElementById('t-chart-tit').textContent = tit;
+  document.getElementById('t-chart-sub').textContent = sub;
+  document.getElementById('postura-agrup').style.display = tipo==='curva' ? 'inline-flex' : 'none';
   if (tipo==='tabla') renderTablaSemanal();
-  else if (tipo==='kpis') renderKPIs();
   else renderChart(tipo);
 }
 
@@ -1728,18 +1846,21 @@ function renderChart(tipo) {
       labels   = registrosLote.map(r => r.fecha.slice(5).replace('-','/'));
       postura  = registrosLote.map(r => ((r.pct_postura||0)*100).toFixed(1));
       esperado = registrosLote.map(r => ((r.pct_esperado||0)*100).toFixed(1));
-      prad = 2;
+      prad = registrosLote.length > 45 ? 0 : 2;  // con muchos días, solo la línea
     }
+    // Eje Y desde la decena bajo el valor más bajo (la curva no queda aplastada arriba)
+    const valores = [...postura, ...esperado].map(Number).filter(v => v > 0);
+    const yMin = valores.length ? Math.max(0, Math.floor((Math.min(...valores) - 5) / 10) * 10) : 0;
     chartsInst[tipo] = new Chart(ctx, { type:'line', data:{ labels, datasets:[
-      { label:'% Postura real', data:postura, borderColor:'#3d7a42', backgroundColor:'rgba(61,122,66,.1)', borderWidth:2, tension:.3, pointRadius:prad },
-      { label:'% Esperado curva', data:esperado, borderColor:'#b8860b', backgroundColor:'transparent', borderWidth:1.5, borderDash:[5,4], tension:.3, pointRadius:0 }
-    ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}}, scales:{ y:{ min:0, max:100, ticks:{callback:v=>v+'%'} } } }});
+      { label:'% Postura real', data:postura, borderColor:'#2a5430', backgroundColor:'rgba(61,122,66,.08)', fill:'start', borderWidth:2.5, tension:.3, pointRadius:prad, pointHoverRadius:4 },
+      { label:'% Esperado curva', data:esperado, borderColor:'#b8860b', backgroundColor:'transparent', borderWidth:2, borderDash:[5,5], tension:.3, pointRadius:0 }
+    ]}, options:{ responsive:true, maintainAspectRatio:false, interaction:{ mode:'index', intersect:false }, plugins:{legend:{position:'bottom'}}, scales:{ x:{ grid:{ display:false }, ticks:{ maxTicksLimit:7, maxRotation:0 } }, y:{ min:yMin, max:100, ticks:{callback:v=>v+'%'} } } }});
   } else if (tipo==='acumulado') {
     const labels  = registrosLote.map(r => r.fecha.slice(5).replace('-','/'));
     let acum=0; const acumulado = registrosLote.map(r=>(acum+=(r.n_huevos||0),acum));
     chartsInst[tipo] = new Chart(ctx, { type:'bar', data:{ labels, datasets:[
       { label:'Acumulado huevos', data:acumulado, backgroundColor:'rgba(30,90,122,.7)', borderColor:'#1e5a7a', borderWidth:1 }
-    ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}}, scales:{y:{beginAtZero:true}} }});
+    ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}, scales:{y:{beginAtZero:true}} }});
   } else if (tipo==='tamano') {
     const labels = registrosLote.slice(-28).map(r => r.fecha.slice(5).replace('-','/'));
     const last28 = registrosLote.slice(-28);
@@ -1747,7 +1868,7 @@ function renderChart(tipo) {
     chartsInst[tipo] = new Chart(ctx, { type:'bar', data:{ labels, datasets:[
       mk('jumbo','#1e5a7a'), mk('super_xl','#2a5430'), mk('xl','#3d7a42'),
       mk('grande','#5c9e61'), mk('mediano','#b8860b'), mk('chico','#c2691c')
-    ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}}, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}} }});
+    ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}} }});
   } else if (tipo==='mortalidad') {
     // Mortalidad por semana de vida (barras) + acumulada (línea)
     const m = {};
@@ -1759,7 +1880,7 @@ function renderChart(tipo) {
     chartsInst[tipo] = new Chart(ctx, { data:{ labels, datasets:[
       { type:'bar',  label:'Mortalidad (aves/semana)', data, backgroundColor:'rgba(176,58,46,.75)', borderColor:'#b03a2e', borderWidth:1, yAxisID:'y', order:2 },
       { type:'line', label:'Acumulada', data:acum, borderColor:'#6a7565', backgroundColor:'transparent', borderWidth:2, tension:.3, pointRadius:0, yAxisID:'y1', order:1 }
-    ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}}, scales:{
+    ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}, scales:{
       y:{ beginAtZero:true, position:'left', ticks:{precision:0}, title:{display:true,text:'por semana'} },
       y1:{ beginAtZero:true, position:'right', grid:{drawOnChartArea:false}, ticks:{precision:0}, title:{display:true,text:'acumulada'} }
     } }});
