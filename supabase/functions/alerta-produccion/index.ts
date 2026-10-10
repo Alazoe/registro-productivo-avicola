@@ -9,7 +9,10 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Headers': 'authorization, content-type',
+  // supabase-js envía también apikey y x-client-info: si no se permiten, el navegador bloquea el POST
+  // tras la consulta previa (OPTIONS) y la alerta nunca sale.
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Content-Type': 'application/json',
 };
 
@@ -51,22 +54,30 @@ serve(async (req) => {
         </div>
       </div>`;
 
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_KEY}`,
-        'Content-Type':  'application/json',
-      },
-      body: JSON.stringify({
-        from:    FROM,
-        to:      [...destinatarios],
-        subject: `⚠️ Alerta ${lote} — ${fechaFmt}`,
-        html,
-      }),
-    });
-
-    const data = await res.json();
-    return new Response(JSON.stringify({ ok: res.ok, data }), { headers: CORS });
+    // Un correo por destinatario: si Resend rechaza uno (p. ej. remitente sin dominio verificado,
+    // que solo permite enviar al dueño de la cuenta), los demás igual salen. El asesor va primero.
+    const lista = [...destinatarios].sort((x, y) => (y === ASESOR_MAIL ? 1 : 0) - (x === ASESOR_MAIL ? 1 : 0));
+    const resultados = [];
+    for (const dest of lista) {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${RESEND_KEY}`,
+          'Content-Type':  'application/json',
+        },
+        body: JSON.stringify({
+          from:    FROM,
+          to:      [dest],
+          subject: `⚠️ Alerta ${lote} — ${fechaFmt}`,
+          html,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) console.error('Resend rechazó el correo a', dest, res.status, JSON.stringify(data));
+      resultados.push({ to: dest, ok: res.ok, data });
+    }
+    const algunoOk = resultados.some(r => r.ok);
+    return new Response(JSON.stringify({ ok: algunoOk, data: resultados }), { status: algunoOk ? 200 : 502, headers: CORS });
 
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: String(e) }), { headers: CORS });
