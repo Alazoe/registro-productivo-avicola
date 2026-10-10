@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8">
+<title>Propuesta v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f1e8;--card:#fffdf8;--ink:#1c2118;--muted:#8a9284;--line:#e8e2d4;--green:#2a5430;--green-m:#3d7a42;--green-l:#e4ede5;--gold:#b8860b;--gold-l:#f6eed8;--red:#b03a2e;--red-l:#f8e4e0;--serif:'Fraunces',Georgia,serif;--mono:'IBM Plex Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:#d9d3c4;color:var(--ink);padding:40px;-webkit-font-smoothing:antialiased;width:1840px}
+h2.t{font-family:var(--serif);font-weight:600;font-size:1.5rem;margin:0 0 6px}
+p.t{font-size:.9rem;color:#4d5748;margin-bottom:22px;max-width:980px;line-height:1.45}
+.row{display:flex;gap:28px;align-items:flex-start;margin-bottom:56px}
+.op h3{font-family:var(--serif);font-size:1.05rem;font-weight:600;margin:0 0 3px 6px}
+.op p{font-size:.78rem;color:#4d5748;margin:0 0 12px 6px;max-width:390px;line-height:1.4;min-height:44px}
+.ph{width:390px;background:var(--bg);border-radius:32px;overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.15);padding-bottom:20px;position:relative}
+.top{padding:22px 20px 6px;display:flex;align-items:center;gap:12px}
+.top .hola{flex:1}
+.hola small{font-size:.74rem;color:var(--muted);font-weight:500}
+.hola h1{font-family:var(--serif);font-weight:600;font-size:1.45rem;letter-spacing:-.02em;line-height:1.12}
+.hola h1 em{font-style:normal;color:var(--green-m)}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-weight:700;font-size:.85rem;flex-shrink:0}
+.chips{display:flex;gap:8px;padding:12px 20px 0}
+.chip{padding:8px 14px;border-radius:999px;font-size:.8rem;font-weight:600;border:1px solid var(--line);background:var(--card);white-space:nowrap;color:#5a6450}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}.chip span{opacity:.6;font-weight:500;margin-left:4px}
+.chip .ok{color:var(--green-m);opacity:1;margin-left:6px}
+.chip.on .ok{color:#9fd3a3}
+.sec{padding:0 20px;margin-top:14px}
+/* tarjeta constancia */
+.cons{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px}
+.cons-h{display:flex;align-items:center;gap:14px}
+.cring{width:58px;height:58px;position:relative;flex-shrink:0}
+.cring b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--serif);font-size:1rem;font-weight:600}
+.cons-h .tx small{font-size:.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.cons-h .tx div{font-size:.95rem;margin-top:2px}.cons-h .tx div b{font-family:var(--serif);font-size:1.2rem;font-weight:600}
+.cal{display:grid;grid-template-columns:repeat(15,1fr);gap:4px;margin-top:14px}
+.cal i{display:block;aspect-ratio:1;border-radius:5px;background:var(--green-m)}
+.cal i.n{background:var(--red-l);outline:1.5px solid #e9b8ae;outline-offset:-1.5px}
+.cal i.h{background:transparent;outline:1.5px dashed var(--green-m);outline-offset:-1.5px}
+.cal-t{display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);margin-top:6px}
+.hint{display:flex;align-items:center;gap:8px;margin-top:12px;background:var(--red-l);color:var(--red);border-radius:12px;padding:8px 12px;font-size:.76rem;font-weight:600}
+.hint u{margin-left:auto;text-decoration:none;background:var(--card);padding:4px 10px;border-radius:999px;font-size:.72rem;white-space:nowrap}
+.done{display:flex;align-items:center;gap:10px;margin-top:12px;background:var(--green-l);color:var(--green);border-radius:12px;padding:9px 12px;font-size:.78rem;font-weight:600}
+.hero{background:var(--green);color:#fff;border-radius:24px;padding:18px 20px;display:flex;gap:16px;align-items:center}
+.ring{width:80px;height:80px;flex-shrink:0;position:relative}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--serif);font-size:1.25rem;font-weight:600}
+.hero small{font-size:.68rem;opacity:.7;text-transform:uppercase;letter-spacing:.08em}
+.hero p{font-size:.86rem;margin-top:3px;line-height:1.35}
+.cta{margin:16px 20px 0;background:var(--ink);color:#fff;border-radius:18px;padding:16px;text-align:center;font-weight:700}
+.cta span{color:var(--gold);margin-left:6px}
+.cta.alt{background:var(--card);color:var(--ink);border:1px solid var(--line);font-weight:600}
+/* celebración */
+.sheet{background:var(--card);border-radius:32px;padding:18px 24px 26px;text-align:center;width:390px;box-shadow:0 14px 40px rgba(0,0,0,.15)}
+.grab{width:40px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 18px}
+.sheet h3{font-family:var(--serif);font-size:1.65rem;font-weight:600;letter-spacing:-.02em;margin-top:10px}
+.sheet .sub{color:var(--muted);font-size:.86rem;margin-top:4px}
+.bigmeter{margin:20px 0 4px;text-align:left;background:var(--bg);border-radius:18px;padding:14px 16px}
+.bigmeter .l{display:flex;justify-content:space-between;align-items:baseline;font-size:.8rem;color:var(--muted);font-weight:600}
+.bigmeter .l b{font-family:var(--serif);font-size:1.3rem;color:var(--ink);font-weight:600}
+.bar{height:10px;border-radius:99px;background:#e8e2d4;margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green-m),var(--green));border-radius:99px}
+.bigmeter .f{font-size:.76rem;margin-top:8px;color:var(--green);font-weight:600}
+.dato{display:flex;gap:12px;align-items:center;text-align:left;background:var(--gold-l);border-radius:18px;padding:14px;margin-top:10px}
+.dato .m{width:44px;height:44px;border-radius:14px;background:var(--card);display:grid;place-items:center;font-size:1.3rem}
+.dato small{display:block;font-size:.68rem;color:#8a6508;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.dato b{font-size:.92rem}
+.btn2{display:flex;gap:8px;margin-top:20px}
+.btn2 div{flex:1;padding:14px;border-radius:16px;font-weight:700;font-size:.9rem}
+/* whatsapp */
+.wwrap{display:flex;gap:28px;align-items:flex-start}
+.wcol h3{font-family:var(--serif);font-size:1.05rem;font-weight:600;margin:0 0 3px 6px}
+.wcol p{font-size:.78rem;color:#4d5748;margin:0 0 12px 6px;max-width:400px;line-height:1.4;min-height:34px}
+.chat{width:400px;background:#e9e1d3;border-radius:22px;padding:18px 14px;box-shadow:0 14px 40px rgba(0,0,0,.12)}
+.bub{background:#dcf2d0;border-radius:12px 12px 4px 12px;padding:11px 13px 8px;font-size:13.2px;line-height:1.48;white-space:pre-line;color:#111b0f;box-shadow:0 1px 1px rgba(0,0,0,.08);margin-left:22px}
+.bub .hr{font-size:10.5px;color:#6b7a63;text-align:right;margin-top:4px}
+.bub.old{font-family:var(--mono);font-size:11.2px;background:#eef2ea;color:#3b4537}
+.tag{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;margin:0 0 10px 6px}
+.tag.o{background:#e8e2d4;color:#6a7565}.tag.n{background:var(--gold);color:#fff}
+.ctrl{display:flex;gap:6px;margin:0 0 10px 6px}
+.ctrl span{font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:7px;background:#fefefe;border:1px solid #ddd8cc;color:#4d5748}
+.ctrl span.on{background:#2a5430;color:#fff;border-color:#2a5430}
+</style></head><body>
+
+<h2 class="t">A · Saludo combinado (2 + 3) y constancia mensual en la app</h2>
+<p class="t">Antes de registrar, el saludo recuerda lo que falta. Después de guardar, trae el dato de las gallinas. La racha se reemplaza por <b>días registrados en los últimos 30</b>, con un calendario de cuadritos. No se "corta" nunca: un día perdido solo baja el número, y se recupera completándolo.</p>
+<div class="row">
+
+  <div class="op"><h3>Antes de registrar</h3><p>Saludo según la hora + lo que falta. El lote pendiente no lleva marca; el que está listo muestra ✓.</p>
+  <div class="ph">
+    <div class="top"><div class="hola"><small>Buenos días · viernes 9 oct</small><h1>Faltan los datos<br>de <em>hoy</em></h1></div><div class="avatar">AD</div></div>
+    <div class="chips"><div class="chip on">Lote Primavera<span>43 sem</span></div><div class="chip">Lote Invierno<span class="ok">✓</span></div></div>
+    <div class="sec">
+      <div class="cons">
+        <div class="cons-h">
+          <div class="cring"><svg width="58" height="58" viewBox="0 0 58 58"><circle cx="29" cy="29" r="24" fill="none" stroke="#e8e2d4" stroke-width="6"/><circle cx="29" cy="29" r="24" fill="none" stroke="#3d7a42" stroke-width="6" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="15" transform="rotate(-90 29 29)"/></svg><b>27</b></div>
+          <div class="tx"><small>Últimos 30 días</small><div><b>27 de 30</b> días registrados</div></div>
+        </div>
+        <div class="cal" id="cal1"></div>
+        <div class="cal-t"><span>10 sep</span><span>hoy</span></div>
+        <div class="hint">Faltan 2 días: lun 5 y sáb 26<u>Completar</u></div>
+      </div>
+    </div>
+    <div class="cta">Registrar hoy<span>→</span></div>
+  </div></div>
+
+  <div class="op"><h3>Después de guardar</h3><p>El encabezado pasa al dato de las gallinas (rota cada día). La tarjeta de constancia queda en verde.</p>
+  <div class="ph">
+    <div class="top"><div class="hola"><small>Buenos días · viernes 9 oct</small><h1>Hoy tus gallinas<br>pusieron <em>1.002 huevos</em></h1></div><div class="avatar">AD</div></div>
+    <div class="chips"><div class="chip on">Lote Primavera<span class="ok">✓</span></div><div class="chip">Lote Invierno<span class="ok">✓</span></div></div>
+    <div class="sec">
+      <div class="cons">
+        <div class="cons-h">
+          <div class="cring"><svg width="58" height="58" viewBox="0 0 58 58"><circle cx="29" cy="29" r="24" fill="none" stroke="#e8e2d4" stroke-width="6"/><circle cx="29" cy="29" r="24" fill="none" stroke="#3d7a42" stroke-width="6" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="10" transform="rotate(-90 29 29)"/></svg><b>28</b></div>
+          <div class="tx"><small>Últimos 30 días</small><div><b>28 de 30</b> días registrados</div></div>
+        </div>
+        <div class="cal" id="cal2"></div>
+        <div class="cal-t"><span>10 sep</span><span>hoy</span></div>
+        <div class="done">✓ Listo por hoy · completa 2 días más y llegas a 30/30</div>
+      </div>
+    </div>
+    <div class="cta alt">Editar el registro de hoy</div>
+  </div></div>
+
+  <div class="op"><h3>Otros textos del dato rotativo</h3><p>Siempre en positivo. Si no hay nada bueno que contar ese día, usa el clásico "Buenos días, Avícola Demo".</p>
+  <div class="ph" style="padding:18px 20px 20px">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div><small style="font-size:.72rem;color:var(--muted)">Huevos del día</small><div style="font-family:var(--serif);font-size:1.2rem;font-weight:600;line-height:1.2">Hoy tus gallinas pusieron <span style="color:var(--green-m)">1.002 huevos</span></div></div>
+      <div style="border-top:1px solid var(--line);padding-top:12px"><small style="font-size:.72rem;color:var(--muted)">Sin bajas</small><div style="font-family:var(--serif);font-size:1.2rem;font-weight:600;line-height:1.2">Ya van <span style="color:var(--green-m)">7 días sin bajas</span> 🕊️</div></div>
+      <div style="border-top:1px solid var(--line);padding-top:12px"><small style="font-size:.72rem;color:var(--muted)">Sobre la curva</small><div style="font-family:var(--serif);font-size:1.2rem;font-weight:600;line-height:1.2">Lote Invierno está <span style="color:var(--green-m)">sobre la curva</span> esta semana</div></div>
+      <div style="border-top:1px solid var(--line);padding-top:12px"><small style="font-size:.72rem;color:var(--muted)">Constancia</small><div style="font-family:var(--serif);font-size:1.2rem;font-weight:600;line-height:1.2"><span style="color:var(--green-m)">30 de 30</span> días registrados. ¡Mes perfecto!</div></div>
+      <div style="border-top:1px solid var(--line);padding-top:12px"><small style="font-size:.72rem;color:var(--muted)">Hito</small><div style="font-family:var(--serif);font-size:1.2rem;font-weight:600;line-height:1.2">¡Pasaste los <span style="color:var(--green-m)">150 mil huevos</span> en este lote!</div></div>
+    </div>
+  </div></div>
+
+  <div class="op"><h3>Al guardar</h3><p>Sin llamas: un medidor de 30 días y un dato positivo del día.</p>
+  <div class="sheet">
+    <div class="grab"></div>
+    <svg width="70" height="84" viewBox="0 0 76 92"><ellipse cx="38" cy="50" rx="34" ry="40" fill="#f6eed8"/><ellipse cx="38" cy="50" rx="34" ry="40" fill="none" stroke="#b8860b" stroke-width="3"/><path d="M24 52l10 10 19-22" fill="none" stroke="#2a5430" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <h3>¡Día guardado!</h3>
+    <div class="sub">Lote Primavera · viernes 9 de octubre</div>
+    <div class="bigmeter"><div class="l"><span>Últimos 30 días</span><span><b>28</b> / 30</span></div><div class="bar"><i style="width:93%"></i></div><div class="f">Completa lun 5 y sáb 26 para llegar a 30/30</div></div>
+    <div class="dato"><div class="m">🕊️</div><div><small>Dato del día</small><b>7 días seguidos sin bajas</b></div></div>
+    <div class="btn2"><div style="background:var(--bg)">Completar días</div><div style="background:var(--ink);color:#fff">Listo</div></div>
+  </div></div>
+</div>
+
+<h2 class="t">B · Texto de WhatsApp desde tu dashboard (por productor)</h2>
+<p class="t">Sin ranking ni comparación entre productores. Eliges el productor y el período (<b>últimos 7 días</b> o <b>mes</b>) y "Copiar texto" arma un mensaje más corto y fácil de leer en el celular, con la constancia del período al final.</p>
+<div class="wwrap">
+  <div class="wcol"><span class="tag o">HOY</span><h3>Texto actual</h3><p>Formato de reporte, pensado para varios productores a la vez.</p>
+  <div class="chat"><div class="bub old">📊 RESUMEN SEMANAL AVIVET
+Período: 3 oct – 9 oct
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▸ AVÍCOLA DEMO
+Lote Primavera · Sem 43 de vida · 🟡 Leve baja
+  Postura: 85.4% (estándar 87.9%, -2.5%) · 6 días registrados
+  Huevos: 5.931 · Mortalidad: 3 (0.26%) · anterior: 5
+  Consumo: 115 g/ave/día
+Lote Invierno · Sem 25 de vida · 🟢 Sobre estándar
+  Postura: 93.1% (estándar 92.5%, +0.6%) · 7 días registrados
+  Huevos: 5.210 · Mortalidad: 0 (0%) · anterior: 1
+  Consumo: 112 g/ave/día
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AviVet.cl · Dr. Andrés Lazo Escobar, MV<div class="hr">17:42</div></div></div></div>
+
+  <div class="wcol"><span class="tag n">PROPUESTA</span><h3>Últimos 7 días</h3><p>Saludo, lo esencial por lote en 2 líneas, y cierre con la constancia.</p>
+  <div class="ctrl"><span>Avícola Demo ▾</span><span class="on">Últimos 7 días</span><span>Mes</span></div>
+  <div class="chat"><div class="bub">Hola Avícola Demo 👋 Aquí va el resumen de tus últimos 7 días (3 al 9 de octubre):
+
+🐔 <b>Lote Primavera</b> · sem 43
+🥚 5.931 huevos · postura 85,4 % (esperado 87,9 %)
+🕊️ 3 bajas (0,26 %) · menos que la semana pasada
+
+🐔 <b>Lote Invierno</b> · sem 25
+🥚 5.210 huevos · postura 93,1 % ✅ sobre lo esperado
+🕊️ Sin bajas en la semana
+
+📅 <b>Días registrados:</b> Lote Primavera 6 de 7 (falta el lunes 5) · Lote Invierno 7 de 7
+
+Cualquier duda me escribes.
+Andrés Lazo · AviVet<div class="hr">17:42</div></div></div></div>
+
+  <div class="wcol"><span class="tag n">PROPUESTA</span><h3>Mes</h3><p>Igual, pero con totales del mes, comparación con el mes anterior y la constancia mensual.</p>
+  <div class="ctrl"><span>Avícola Demo ▾</span><span>Últimos 7 días</span><span class="on">Mes</span></div>
+  <div class="chat"><div class="bub">Hola Avícola Demo 👋 Este es tu resumen de <b>septiembre</b>:
+
+🐔 <b>Lote Primavera</b> · sem 38 a 42
+🥚 25.840 huevos · postura 86,2 % (esperado 88,7 %)
+🕊️ 11 bajas (0,94 %) · agosto: 14
+🌾 115 g por ave al día
+
+🐔 <b>Lote Invierno</b> · sem 20 a 24
+🥚 18.105 huevos · postura 76,0 % ✅ subiendo bien
+🕊️ 2 bajas (0,25 %) · agosto: 4
+
+📅 <b>Registraste 29 de 30 días</b> en septiembre. ¡Muy bien! 👏
+
+Cualquier duda me escribes.
+Andrés Lazo · AviVet<div class="hr">17:42</div></div></div></div>
+</div>
+
+<script>
+function cal(id, miss, hoyPend){
+  const el=document.getElementById(id);
+  for(let i=1;i<=30;i++){const e=document.createElement('i');if(miss.includes(i))e.className='n';if(i===30&&hoyPend)e.className='h';el.appendChild(e);}
+}
+cal('cal1',[17,26],true);  // ventana 10 sep – 9 oct: 17 = sáb 26 sep, 26 = lun 5 oct
+cal('cal2',[17,26],false);
+</script>
+</body></html>
