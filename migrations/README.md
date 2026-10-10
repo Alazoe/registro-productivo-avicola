@@ -21,7 +21,7 @@ Cada migración:
 | 007 | `007_alimento.sql` | Tablas `proveedores`, `alimento_recepciones`, `alimento_ajustes` | ✅ 2026-07 |
 | 008 | `008_equipo.sql` | Cuenta compartida: tabla `equipo`, función `tiene_acceso`, RLS por cuenta | ✅ 2026-07 |
 | 009 | `009_stock_resumen.sql` | Función `stock_resumen()` (agregados de bodega en 1 petición) | ✅ 2026-09 |
-| 010 | `010_notas_dia.sql` | Tabla `notas_dia`: nota general del día por cuenta (la del lote sigue en `registros.observaciones`) | ⏳ pendiente |
+| 010 | `010_notas_dia.sql` | Tabla `notas_dia`: nota general del día por cuenta (la del lote sigue en `registros.observaciones`) | ✅ 2026-10 |
 
 Para ver qué tiene aplicado un proyecto, en el SQL Editor:
 
