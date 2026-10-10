@@ -423,6 +423,28 @@ input[type=number]{-moz-appearance:textfield}
 .h-btn{font-size:.72rem;font-weight:700;padding:6px 12px;border-radius:999px;background:var(--rojo);color:#fff;flex-shrink:0}
 .h-btn.hoy{background:var(--ink)}
 .h-mas{text-align:center;margin-top:16px}
+
+/* Plantel */
+.pl-grp{background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.pl-it{display:flex;align-items:center;gap:12px;padding:13px 14px;border:0;border-bottom:1px solid var(--line);width:100%;background:none;font-family:inherit;text-align:left;color:var(--ink);cursor:pointer;text-decoration:none}
+.pl-it:last-child{border-bottom:0}
+.pl-it:active{background:var(--gris-f)}
+.pl-ico{width:34px;height:34px;border-radius:11px;background:var(--gris-f);display:grid;place-items:center;font-size:1rem;flex-shrink:0}
+.pl-sem{width:42px;height:42px;border-radius:14px;background:var(--green-l);color:var(--verde-o);display:grid;place-items:center;font-family:var(--serif);font-weight:600;flex-shrink:0;line-height:1}
+.pl-sem small{display:block;font-family:'DM Sans',sans-serif;font-size:.52rem;font-weight:600;opacity:.7}
+.pl-t{flex:1;min-width:0}
+.pl-t div{font-size:.9rem;font-weight:600}
+.pl-t small{display:block;font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-v{font-size:.78rem;color:var(--muted);font-weight:600;max-width:42%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-chev{color:#c3bba8;font-size:1.2rem;margin-left:2px}
+.pl-add{justify-content:center;color:var(--verde);font-weight:700;font-size:.86rem}
+.pl-salir .pl-t div{color:var(--rojo)}
+.pl-volver{background:none;border:0;color:var(--verde);font:600 .9rem 'DM Sans',sans-serif;padding:12px 0 2px;cursor:pointer}
+.pl-tit{font-family:var(--serif);font-weight:600;font-size:1.35rem;letter-spacing:-.02em;margin:4px 2px 14px}
+.pl-sec .card{margin-bottom:12px}
+.pl-sec .card-body > p:first-child{margin-top:0}
+.lote-card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--verde);border-radius:18px;box-shadow:none}
+.lote-card.archivado{border-left-color:#c9c2b2}
 </style>
 </head>
 <body>
@@ -675,23 +697,36 @@ input[type=number]{-moz-appearance:textfield}
   </div>
 </div>
 
-<!-- ══ TAB LOTES ══════════════════════════════════════ -->
+<!-- ══ TAB PLANTEL (id interno: lotes) ══════════════════════ -->
 <div class="page" id="page-lotes">
 
-  <div class="card">
-    <div class="card-header">🏷️ Nombre de tu plantel</div>
-    <div class="card-body">
+  <!-- Menú: lista agrupada como los ajustes del celular -->
+  <div id="pl-menu"></div>
+
+  <!-- Pantallas de cada ajuste (se abren desde el menú) -->
+  <section class="pl-sec" id="pl-lotes" hidden>
+    <button class="pl-volver" onclick="volverPl()">‹ Plantel</button>
+    <h2 class="pl-tit">Lotes</h2>
+    <div id="lista-lotes"><div class="alerta alerta-info" style="margin:0">Cargando lotes…</div></div>
+    <button class="nota-btn" style="text-align:center;color:var(--verde);font-weight:700" onclick="abrirPl('nuevo')">＋ Nuevo lote</button>
+  </section>
+
+  <section class="pl-sec" id="pl-nombre" hidden>
+    <button class="pl-volver" onclick="volverPl()">‹ Plantel</button>
+    <h2 class="pl-tit">Nombre del plantel</h2>
+    <div class="card"><div class="card-body">
       <p style="font-size:.8rem;color:#7a8470;margin-bottom:10px">Escribe el nombre de tu granja o plantel. Así apareces identificado correctamente ante tu asesor (en vez de un código).</p>
       <label>Nombre del productor / plantel
         <input type="text" id="np-nombre" placeholder="Ej: Avícola Los Robles" onkeydown="if(event.key==='Enter')guardarNombreProductor()">
       </label>
       <button class="btn btn-verde btn-sm" onclick="guardarNombreProductor()" id="btn-np" style="margin-top:10px;width:auto;padding:10px 18px">💾 Guardar nombre</button>
-    </div>
-  </div>
+    </div></div>
+  </section>
 
-  <div class="card">
-    <div class="card-header">➕ Nuevo lote</div>
-    <div class="card-body">
+  <section class="pl-sec" id="pl-nuevo" hidden>
+    <button class="pl-volver" onclick="volverPl()">‹ Plantel</button>
+    <h2 class="pl-tit">Nuevo lote</h2>
+    <div class="card"><div class="card-body">
       <label>Nombre del lote
         <input type="text" id="nl-nombre" placeholder="Ej: Lote Primavera 2026">
       </label>
@@ -718,12 +753,13 @@ input[type=number]{-moz-appearance:textfield}
         </select>
       </label>
       <button class="btn btn-verde" onclick="crearLote()" id="btn-crear-lote" style="margin-top:14px">+ Crear lote</button>
-    </div>
-  </div>
+    </div></div>
+  </section>
 
-  <div class="card">
-    <div class="card-header">📍 Ubicaciones físicas</div>
-    <div class="card-body">
+  <section class="pl-sec" id="pl-ubic" hidden>
+    <button class="pl-volver" onclick="volverPl()">‹ Plantel</button>
+    <h2 class="pl-tit">Ubicaciones</h2>
+    <div class="card"><div class="card-body">
       <p style="font-size:.8rem;color:#7a8470;margin-bottom:10px">Define los espacios físicos donde alojas tus lotes: carros, pabellones, galpones, etc.</p>
       <label>Nueva ubicación
         <input type="text" id="ub-nombre" placeholder="Ej: Carro 1, Pabellón 2, Galpón Norte…"
@@ -731,12 +767,13 @@ input[type=number]{-moz-appearance:textfield}
       </label>
       <button class="btn btn-azul btn-sm" onclick="crearUbicacion()" id="btn-crear-ub" style="margin-top:10px;width:auto;padding:10px 18px">+ Agregar</button>
       <div id="lista-ubicaciones" style="margin-top:12px"></div>
-    </div>
-  </div>
+    </div></div>
+  </section>
 
-  <div class="card">
-    <div class="card-header">⚙️ Personalización — No vendibles</div>
-    <div class="card-body">
+  <section class="pl-sec" id="pl-nv" hidden>
+    <button class="pl-volver" onclick="volverPl()">‹ Plantel</button>
+    <h2 class="pl-tit">Categorías no vendibles</h2>
+    <div class="card"><div class="card-body">
       <p style="font-size:.8rem;color:#7a8470;margin-bottom:12px">Renombra las 4 categorías de huevos no vendibles según tu criterio. Ejemplos: "Rotos+Trizados", "Deformes", etc.</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <label>Categoría 1
@@ -753,12 +790,13 @@ input[type=number]{-moz-appearance:textfield}
         </label>
       </div>
       <button class="btn btn-verde" onclick="guardarConfig()" id="btn-guardar-cfg" style="margin-top:12px">💾 Guardar configuración</button>
-    </div>
-  </div>
+    </div></div>
+  </section>
 
-  <div class="card">
-    <div class="card-header">🔔 Alertas por email</div>
-    <div class="card-body">
+  <section class="pl-sec" id="pl-alertas" hidden>
+    <button class="pl-volver" onclick="volverPl()">‹ Plantel</button>
+    <h2 class="pl-tit">Alertas por correo</h2>
+    <div class="card"><div class="card-body">
       <p style="font-size:.8rem;color:#7a8470;margin-bottom:12px">Recibe un correo automático cuando un lote tenga mortalidad o caída de postura sobre el umbral que definas.</p>
 
       <label style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-top:0">
@@ -782,12 +820,13 @@ input[type=number]{-moz-appearance:textfield}
       </div>
 
       <button class="btn btn-verde" onclick="guardarAlertas()" id="btn-guardar-al" style="margin-top:12px">💾 Guardar alertas</button>
-    </div>
-  </div>
+    </div></div>
+  </section>
 
-  <div class="card">
-    <div class="card-header">👥 Equipo — acceso compartido</div>
-    <div class="card-body">
+  <section class="pl-sec" id="pl-equipo" hidden>
+    <button class="pl-volver" onclick="volverPl()">‹ Plantel</button>
+    <h2 class="pl-tit">Equipo</h2>
+    <div class="card"><div class="card-body">
       <p style="font-size:.8rem;color:#7a8470;margin-bottom:12px">Invita a otra persona (por ejemplo un pabellonero) a esta cuenta con su correo. Verá y editará <b>la misma información</b>. Puedes desactivar su acceso cuando quieras, sin borrar nada.</p>
       <div id="equipo-lista" style="margin-bottom:12px"></div>
       <label>Correo del invitado
@@ -795,12 +834,13 @@ input[type=number]{-moz-appearance:textfield}
       </label>
       <button class="btn btn-verde" onclick="agregarInvitado()" id="btn-eq" style="margin-top:12px">➕ Dar acceso</button>
       <p style="font-size:.75rem;color:#7a8470;margin-top:10px">ℹ️ Al dar acceso, se avisa automáticamente al administrador (AviVet) por correo para que cree la cuenta de la persona y le entregue su clave. Cuando la tenga, ya podrá entrar y ver esta cuenta.</p>
-    </div>
-  </div>
+    </div></div>
+  </section>
 
-  <div class="card">
-    <div class="card-header">📁 Importar historial CSV</div>
-    <div class="card-body">
+  <section class="pl-sec" id="pl-import" hidden>
+    <button class="pl-volver" onclick="volverPl()">‹ Plantel</button>
+    <h2 class="pl-tit">Importar historial CSV</h2>
+    <div class="card"><div class="card-body">
       <p style="font-size:.8rem;color:#7a8470;margin-bottom:10px">
         Exporta cada pestaña del Google Sheet como CSV (Archivo → Descargar → CSV) y súbela aquí para migrar el historial.
       </p>
@@ -820,10 +860,8 @@ input[type=number]{-moz-appearance:textfield}
         <div class="import-preview" id="imp-preview-txt"></div>
         <button class="btn btn-azul" onclick="confirmarImport()" id="btn-import" style="margin-top:8px">📥 Importar registros</button>
       </div>
-    </div>
-  </div>
-
-  <div id="lista-lotes"><div class="alerta alerta-info" style="margin:0">Cargando lotes…</div></div>
+    </div></div>
+  </section>
 </div>
 
 </div><!-- /#app -->
@@ -891,7 +929,8 @@ function actualizarEncabezado() {
   const sub = document.getElementById('hdr-sub'), tit = document.getElementById('hdr-titulo');
   const fechaTxt = new Date().toLocaleDateString('es-CL', { weekday:'long', day:'numeric', month:'short' });
   if (tabActual !== 'registro') {
-    sub.textContent = loteActual ? loteActual.nombre + ' · ' + loteActual.linea_genetica : (nombreProductor || '');
+    sub.textContent = tabActual === 'lotes' ? (nombreProductor || currentUser?.email || '')
+                    : loteActual ? loteActual.nombre + ' · ' + loteActual.linea_genetica : (nombreProductor || '');
     tit.textContent = TITULOS_TAB[tabActual] || '';
     return;
   }
@@ -1118,7 +1157,7 @@ function irTab(tab) {
   document.getElementById('page-'+tab).classList.add('active');
   tabActual = tab; actualizarEncabezado(); window.scrollTo(0,0);
   if (tab === 'graficos') renderGraficosTab();
-  if (tab === 'lotes')    { renderListaLotes(); renderListaUbicaciones(); renderConfigCard(); renderAlertasCard(); cargarEquipo(); }
+  if (tab === 'lotes')    { volverPl(); renderListaLotes(); renderListaUbicaciones(); renderConfigCard(); renderAlertasCard(); cargarEquipo(); }
   if (tab === 'datos')    renderHistorial();
 }
 
@@ -1306,6 +1345,61 @@ async function crearLote() {
   btn.disabled=false; btn.textContent='+ Crear lote';
 }
 
+// ══ PLANTEL: menú agrupado; cada fila abre la pantalla de ese ajuste ══
+function abrirPl(id) {
+  document.getElementById('pl-menu').hidden = true;
+  document.querySelectorAll('.pl-sec').forEach(x => x.hidden = x.id !== 'pl-' + id);
+  if (id === 'lotes') renderListaLotes();
+  if (id === 'equipo') cargarEquipo();
+  window.scrollTo(0, 0);
+}
+function volverPl() {
+  document.querySelectorAll('.pl-sec').forEach(x => x.hidden = true);
+  document.getElementById('pl-menu').hidden = false;
+  renderPlantelMenu();
+  window.scrollTo(0, 0);
+}
+function renderPlantelMenu() {
+  const cont = document.getElementById('pl-menu'); if (!cont) return;
+  const activos = lotes.filter(l => l.activo), archivados = lotes.length - activos.length;
+  const fila = (onclick, ico, tit, sub, val, extra = '') =>
+    `<button class="pl-it ${extra}" onclick="${onclick}">${ico}<div class="pl-t"><div>${tit}</div>${sub ? `<small>${sub}</small>` : ''}</div>`
+    + (val != null ? `<span class="pl-v">${val}</span>` : '') + `<span class="pl-chev">›</span></button>`;
+  const ico = e => `<div class="pl-ico">${e}</div>`;
+  const al = userConfig.alertas || ALERTAS_DEFAULT;
+  const alSub = al.activas === false ? 'Desactivadas (el asesor igual recibe copia)'
+    : `Mortalidad > ${String(al.umbralMort ?? 0.3).replace('.', ',')} % · caída > ${al.umbralCaida ?? 3} pts`;
+  const nv = userConfig.noVendibles || NV_DEFAULT;
+
+  let html = `<div class="lbl">Lotes activos</div><div class="pl-grp">`;
+  html += activos.map(l => {
+    const ub = ubicaciones.find(u => u.id === l.ubicacion_id);
+    return fila(`abrirPl('lotes')`, `<div class="pl-sem">${calcEdad(l.fecha_nac)}<small>sem</small></div>`, esc(l.nombre),
+      [l.linea_genetica, fmtN(l.n_aves) + ' aves', ub ? esc(ub.nombre) : ''].filter(Boolean).join(' · '));
+  }).join('');
+  html += `<button class="pl-it pl-add" onclick="abrirPl('nuevo')">＋ Nuevo lote</button></div>`;
+
+  html += `<div class="lbl">Plantel</div><div class="pl-grp">`
+    + fila(`abrirPl('nombre')`, ico('🏷️'), 'Nombre del plantel', '', nombreProductor ? esc(nombreProductor) : 'Sin nombre')
+    + fila(`abrirPl('ubic')`, ico('📍'), 'Ubicaciones', 'Carros, pabellones, galpones', ubicaciones.length)
+    + fila(`abrirPl('nv')`, ico('⚠️'), 'Categorías no vendibles', [nv.sucios, nv.rotos, nv.trizados, nv.sangre].map(esc).join(' · '), null)
+    + fila(`abrirPl('lotes')`, ico('🗄️'), 'Todos los lotes', 'Editar, cambiar ubicación, archivar', archivados ? archivados + ' archivados' : null)
+    + `</div>`;
+
+  html += `<div class="lbl">Avisos y equipo</div><div class="pl-grp">`
+    + fila(`abrirPl('alertas')`, ico('🔔'), 'Alertas por correo', alSub, null)
+    + fila(`abrirPl('equipo')`, ico('👥'), 'Equipo', 'Personas con acceso a esta cuenta', equipo.length || null)
+    + `</div>`;
+
+  html += `<div class="lbl">Más</div><div class="pl-grp">`
+    + `<a class="pl-it" href="../ventas/">${ico('📦')}<div class="pl-t"><div>Bodega, pedidos y ventas</div></div><span class="pl-chev">›</span></a>`
+    + fila(`abrirPl('import')`, ico('📁'), 'Importar historial CSV', 'Desde Google Sheets', null)
+    + `<a class="pl-it" href="../../docs/manual.html" target="_blank" rel="noopener">${ico('📖')}<div class="pl-t"><div>Manual de uso</div></div><span class="pl-chev">›</span></a>`
+    + `<button class="pl-it pl-salir" onclick="logout()">${ico('↪')}<div class="pl-t"><div>Cerrar sesión</div><small>${esc(currentUser?.email || '')}</small></div></button>`
+    + `</div>`;
+  cont.innerHTML = html;
+}
+
 function renderListaLotes() {
   const cont = document.getElementById('lista-lotes');
   if (!lotes.length) { cont.innerHTML='<div class="alerta alerta-info" style="margin:0">Sin lotes. Crea el primero arriba.</div>'; return; }
@@ -1329,7 +1423,7 @@ function renderListaLotes() {
         </div>
         <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;margin-left:8px">
           ${l.activo
-            ? `<button class="btn btn-rojo btn-sm" onclick="archivarLote('${l.id}')">Archivar</button>`
+            ? `<button class="btn btn-gris btn-sm" onclick="archivarLote('${l.id}')">Archivar</button>`
             : '<span style="font-size:.72rem;color:#bbb">Archivado</span>'}
           <button class="btn btn-sm" style="background:#ffebee;color:var(--rojo);border:1px solid #ffcdd2"
             onclick="eliminarLote('${l.id}','${l.nombre.replace(/'/g,"\\'")}')">🗑️ Eliminar</button>
