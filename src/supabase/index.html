@@ -396,6 +396,33 @@ input[type=number]{-moz-appearance:textfield}
 .t-detalle{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:4px 14px}
 .t-detalle summary{cursor:pointer;padding:12px 0;font-size:.84rem;font-weight:600;color:var(--verde-o)}
 .t-detalle[open]{padding-bottom:14px}
+
+/* Historial */
+.h-acciones{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;font-size:.78rem;color:var(--muted)}
+.h-sem{display:flex;align-items:baseline;gap:8px;margin:20px 4px 8px}
+.h-sem b{font-family:var(--serif);font-size:1.05rem;font-weight:600;color:var(--ink)}
+.h-sem small{font-size:.74rem;color:var(--muted)}
+.h-sem em{margin-left:auto;font-style:normal;font-size:.76rem;font-weight:700;color:var(--verde)}
+.h-sem em.dn{color:#a8481f}
+.h-lista{background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.h-dia{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line);cursor:pointer;width:100%;background:none;border-left:0;border-right:0;border-top:0;font-family:inherit;text-align:left;color:inherit}
+.h-dia:last-child{border-bottom:0}
+.h-dia:active{background:var(--gris-f)}
+.h-d{width:36px;text-align:center;font-size:.62rem;color:var(--muted);font-weight:700;text-transform:uppercase;flex-shrink:0}
+.h-d b{display:block;font-size:1.05rem;color:var(--ink)}
+.h-mid{flex:1;min-width:0}
+.h-mid div{font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-mid small{font-size:.72rem;color:var(--muted)}
+.h-bar{height:6px;border-radius:9px;background:var(--gris-f);margin-top:6px;position:relative}
+.h-bar i{display:block;height:100%;border-radius:9px;background:var(--verde)}
+.h-bar u{position:absolute;top:-3px;width:2px;height:12px;background:var(--gold);border-radius:1px}
+.h-pct{font-family:var(--serif);font-weight:600;font-size:1.05rem;width:50px;text-align:right;flex-shrink:0}
+.h-dia.falta{background:var(--red-l)}
+.h-dia.falta .h-mid div,.h-dia.falta .h-d b{color:var(--rojo)}
+.h-dia.hoy .h-mid div{color:var(--muted)}
+.h-btn{font-size:.72rem;font-weight:700;padding:6px 12px;border-radius:999px;background:var(--rojo);color:#fff;flex-shrink:0}
+.h-btn.hoy{background:var(--ink)}
+.h-mas{text-align:center;margin-top:16px}
 </style>
 </head>
 <body>
@@ -634,30 +661,17 @@ input[type=number]{-moz-appearance:textfield}
   </div>
 </div>
 
-<!-- ══ TAB DATOS ══════════════════════════════════════ -->
+<!-- ══ TAB HISTORIAL (id interno: datos) ══════════════════════ -->
 <div class="page" id="page-datos">
-  <div id="datos-selector-wrap" class="card" style="display:none;margin-bottom:12px">
-    <div class="card-body" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <label style="margin:0;font-weight:600;color:var(--muted)">🐔 Lote:</label>
-      <select id="datos-lote-sel" onchange="cambiarLoteDatos(this.value)" style="flex:1;min-width:180px"></select>
-    </div>
-  </div>
-  <div id="datos-sin-lote" class="alerta alerta-info">Selecciona un lote en la pestaña Registro para ver su historial.</div>
+  <div class="chips" id="h-lotes-btns"></div>
+  <div id="datos-sin-lote" class="alerta alerta-info" style="margin-top:14px">Selecciona un lote para ver su historial.</div>
   <div id="datos-tabla-wrap" style="display:none">
-    <div style="background:#fff;border-radius:var(--radio) var(--radio) 0 0;border:1px solid #e0e0e0;border-bottom:none">
-      <div class="card-header" style="border-radius:var(--radio) var(--radio) 0 0">📂 Historial diario — <span id="datos-lote-nombre"></span></div>
+    <div class="h-acciones">
+      <span id="h-resumen"></span>
+      <button class="chip-p" onclick="exportarHistorialCSV()">⬇ CSV</button>
     </div>
-    <div class="tabla-wrap" style="border-radius:0 0 var(--radio) var(--radio)">
-      <table class="tabla-semanal">
-        <thead>
-          <tr>
-            <th>Fecha</th><th>Sem</th><th>Aves</th><th>Mort</th>
-            <th>Huevos</th><th>% Post</th><th>Kg alim</th><th>Defec</th><th></th>
-          </tr>
-        </thead>
-        <tbody id="datos-body"></tbody>
-      </table>
-    </div>
+    <div id="h-semanas"></div>
+    <button class="nota-btn h-mas" id="h-mas" onclick="histSemanas += 8; renderHistorial()">Ver semanas anteriores</button>
   </div>
 </div>
 
@@ -1187,6 +1201,9 @@ function renderSelectorLotes() {
 
   const graf = document.getElementById('g-lotes-btns');
   if (graf) graf.innerHTML = activos.length ? mkBtn('g-lbtn-', 'seleccionarLoteGraficos') : vacio;
+
+  const hist = document.getElementById('h-lotes-btns');
+  if (hist) hist.innerHTML = activos.length ? mkBtn('h-lbtn-', 'cambiarLoteDatos') : vacio;
 }
 
 async function seleccionarLote(id) {
@@ -1195,6 +1212,7 @@ async function seleccionarLote(id) {
   document.querySelectorAll('.lote-btn').forEach(b => b.classList.remove('activo'));
   document.getElementById('lbtn-'+id)?.classList.add('activo');
   document.getElementById('g-lbtn-'+id)?.classList.add('activo');
+  document.getElementById('h-lbtn-'+id)?.classList.add('activo');
   document.getElementById('card-info').style.display = 'flex';
   document.getElementById('hero-mini').style.display = 'flex';
   document.getElementById('btn-guardar').disabled = false;
@@ -2396,58 +2414,93 @@ async function verificarAlertas(loteNombre, fecha, nAves, mort, pctPost, prevReg
 }
 
 // Selector de lote de la pestaña Datos (permite cambiar sin volver a Registro)
-function renderDatosSelector() {
-  const activos = lotes.filter(l => l.activo);
-  const selWrap = document.getElementById('datos-selector-wrap');
-  const sel     = document.getElementById('datos-lote-sel');
-  if (!activos.length) { selWrap.style.display = 'none'; return; }
-  selWrap.style.display = 'block';
-  sel.innerHTML = activos.map(l => `<option value="${l.id}">${l.nombre}</option>`).join('');
-  if (loteActual) sel.value = loteActual.id;
-}
+let histSemanas = 8; // semanas visibles en Historial (se amplía con "Ver semanas anteriores")
 async function cambiarLoteDatos(id) {
+  histSemanas = 8;
   await seleccionarLote(id);
   renderHistorial();
 }
 
+// Historial agrupado por semana de vida: todos los días desde el primer registro hasta hoy,
+// con los días sin registro marcados para completarlos.
 function renderHistorial() {
-  renderDatosSelector();
   const sinLote = document.getElementById('datos-sin-lote');
   const wrap    = document.getElementById('datos-tabla-wrap');
   if (!loteActual) { sinLote.style.display='block'; wrap.style.display='none'; return; }
   sinLote.style.display = 'none';
   wrap.style.display    = 'block';
-  document.getElementById('datos-lote-nombre').textContent = loteActual.nombre;
-  const tbody = document.getElementById('datos-body');
+  const cont = document.getElementById('h-semanas');
   if (!registrosLote.length) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:20px">Sin registros aún</td></tr>';
+    document.getElementById('h-resumen').textContent = '';
+    cont.innerHTML = '<div class="alerta alerta-info" style="margin-top:14px">Sin registros aún. Guarda el primer día en la pestaña Registro.</div>';
+    document.getElementById('h-mas').style.display = 'none';
     return;
   }
-  const rows = [...registrosLote].reverse();
-  tbody.innerHTML = rows.map(r => {
-    const pct  = (r.pct_postura||0)*100;
-    const esp  = (r.pct_esperado||0)*100;
-    const dif  = pct - esp;
-    const col  = dif >= 0 ? 'var(--verde)' : 'var(--rojo)';
-    const def  = (r.sucios||0)+(r.rotos||0)+(r.trizados||0)+(r.sangre||0);
-    return `<tr>
-      <td style="white-space:nowrap">${fmtFecha(r.fecha)}</td>
-      <td>${r.semana_vida||'—'}</td>
-      <td>${(r.n_aves||0).toLocaleString('es-CL')}</td>
-      <td>${r.mortalidad||0}</td>
-      <td>${(r.n_huevos||0).toLocaleString('es-CL')}</td>
-      <td style="font-weight:700;color:${col}">${pct.toFixed(1)}%</td>
-      <td>${(r.kg_alimento||0).toFixed(2)}</td>
-      <td>${def||0}</td>
-      <td><button class="btn-editar-row" onclick="editarDesdeHistorial('${r.fecha}')">✏️</button></td>
-    </tr>`;
+  const porFecha = {}; registrosLote.forEach(r => { porFecha[r.fecha] = r; });
+  // Días del más reciente al más antiguo, agrupados por semana de vida
+  const semanas = [];
+  for (let f = hoy(); f >= registrosLote[0].fecha; f = fechaMas(f, -1)) {
+    const sem = calcEdadFecha(loteActual.fecha_nac, f);
+    let g = semanas[semanas.length - 1];
+    if (!g || g.sem !== sem) { g = { sem, dias: [] }; semanas.push(g); }
+    g.dias.push({ fecha: f, r: porFecha[f] || null });
+  }
+  const faltan = semanas.reduce((n, g) => n + g.dias.filter(d => !d.r && d.fecha < hoy()).length, 0);
+  document.getElementById('h-resumen').textContent = `${fmtN(registrosLote.length)} días registrados` + (faltan ? ` · ${faltan} sin registro` : '');
+
+  const mesCorto = f => new Date(f+'T12:00:00').toLocaleDateString('es-CL', { day:'numeric', month:'short' }).replace('.', '');
+  cont.innerHTML = semanas.slice(0, histSemanas).map(g => {
+    const conDatos = g.dias.filter(d => d.r && d.r.n_aves > 0);
+    const prom = conDatos.length ? conDatos.reduce((s,d) => s + d.r.n_huevos/d.r.n_aves, 0) / conDatos.length : null;
+    const esp  = pctEsperado(g.sem, loteActual.linea_genetica);
+    const f1 = g.dias[g.dias.length-1].fecha, f2 = g.dias[0].fecha;
+    const rango = f1 === f2 ? mesCorto(f2) : f1.slice(0,7) === f2.slice(0,7) ? `${Number(f1.slice(8))} – ${mesCorto(f2)}` : `${mesCorto(f1)} – ${mesCorto(f2)}`;
+    const filas = g.dias.map(d => {
+      const dt = new Date(d.fecha+'T12:00:00');
+      const dia = `<div class="h-d">${DIAS_CORTOS[dt.getDay()]}<b>${dt.getDate()}</b></div>`;
+      if (!d.r) {
+        const esHoy = d.fecha === hoy();
+        return `<button class="h-dia ${esHoy ? 'hoy' : 'falta'}" onclick="editarDesdeHistorial('${d.fecha}')">${dia}`
+          + `<div class="h-mid"><div>${esHoy ? 'Hoy, pendiente' : 'Sin registro'}</div></div>`
+          + `<span class="h-btn ${esHoy ? 'hoy' : ''}">${esHoy ? 'Registrar' : 'Completar'}</span></button>`;
+      }
+      const r = d.r, p = r.n_aves > 0 ? r.n_huevos / r.n_aves : 0;
+      const e = pctEsperado(r.semana_vida || g.sem, loteActual.linea_genetica);
+      const nota = (r.observaciones || '').trim() && !/^\[[^\]]+\]$/.test(r.observaciones.trim()) ? ' · 📝' : '';
+      return `<button class="h-dia" onclick="editarDesdeHistorial('${d.fecha}')">${dia}`
+        + `<div class="h-mid"><div>${fmtN(r.n_huevos)} huevos · ${r.mortalidad||0} ${r.mortalidad===1?'baja':'bajas'}${nota}</div>`
+        + `<div class="h-bar"><i style="width:${Math.min(p,1)*100}%"></i>${e>0?`<u style="left:${Math.min(e,1)*100}%"></u>`:''}</div></div>`
+        + `<div class="h-pct">${(p*100).toFixed(1).replace('.',',')}</div></button>`;
+    }).join('');
+    return `<div class="h-sem"><b>Semana ${g.sem}</b><small>${rango}</small>`
+      + (prom != null ? `<em class="${esp>0 && prom<esp ? 'dn' : ''}">${fmtPct(prom)} prom.</em>` : '') + `</div>`
+      + `<div class="h-lista">${filas}</div>`;
   }).join('');
+  document.getElementById('h-mas').style.display = semanas.length > histSemanas ? 'block' : 'none';
+}
+
+// Descarga el historial del lote en CSV (separador ; para que Excel en español lo abra en columnas)
+function exportarHistorialCSV() {
+  if (!loteActual || !registrosLote.length) return;
+  const nv = userConfig.noVendibles || NV_DEFAULT;
+  const cab = ['Fecha','Semana','Aves','Mortalidad','Kg alimento','Huevos','Chico','Mediano','Grande','XL','Super XL','Jumbo',
+               nv.sucios, nv.rotos, nv.trizados, nv.sangre, '% Postura','% Esperado','Nota'];
+  const q = v => { const t = String(v ?? ''); return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const num = v => String(v ?? 0).replace('.', ',');
+  const filas = registrosLote.map(r => [r.fecha, r.semana_vida, r.n_aves, r.mortalidad, num(r.kg_alimento), r.n_huevos,
+    r.chico, r.mediano, r.grande, r.xl, r.super_xl, r.jumbo, r.sucios, r.rotos, r.trizados, r.sangre,
+    num(((r.pct_postura||0)*100).toFixed(1)), num(((r.pct_esperado||0)*100).toFixed(1)), r.observaciones || ''].map(q).join(';'));
+  const blob = new Blob(['﻿' + [cab.map(q).join(';'), ...filas].join('\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `historial-${loteActual.nombre.replace(/[^\wáéíóúñ-]+/gi, '_')}-${hoy()}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 
 function editarDesdeHistorial(fecha) {
   irTab('registro');
-  document.getElementById('fecha-input').value = fecha;
-  onFechaChange();
+  irAFecha(fecha);
 }
 
 function mostrarLoading(show, txt='Cargando…') {
