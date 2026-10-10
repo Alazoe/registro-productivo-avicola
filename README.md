@@ -105,11 +105,11 @@ Todas las tablas tienen Row Level Security activado: cada usuario ve y modifica 
 - **Detección de huecos** — tira de los últimos 7 días (faltantes en rojo) y aviso con botón *Completar* que lleva al día pendiente más reciente
 - **Saludo y hoja de guardado** — el encabezado recuerda si faltan los datos de hoy; tras guardar muestra un dato positivo del lote
 - **Tendencia** — indicadores por período (7 / 30 días / todo el lote) con cambio vs período anterior; curva de postura vs esperado, mortalidad, tamaños, no vendibles, acumulado y tabla por semana de vida; hitos del lote
-- **Importar CSV** — herramienta integrada para migrar historial desde Google Sheets (tab Lotes → Importar)
+- **Importar CSV** — herramienta integrada para migrar historial desde Google Sheets (Plantel → Importar historial CSV)
 - **KPIs calculados client-side** — semana de vida, kg/ave, % postura, % esperado por línea genética, diferencia vs curva
-- **Alertas por email** — notificación automática vía Resend cuando mortalidad o caída de postura superan el umbral. **Configurables por productor** (tab Lotes → 🔔 Alertas): destino del correo, umbrales propios, activar/desactivar y copia opcional al asesor
+- **Alertas por email** — notificación automática vía Resend cuando mortalidad o caída de postura superan el umbral. **Configurables por productor** (Plantel → Alertas por correo): destino del correo, umbrales propios, activar/desactivar y copia opcional al asesor
 - **Ubicaciones físicas** — catálogo de espacios por productor (carros, pabellones, galpones); asignación opcional por lote, cambiable en cualquier momento sin afectar registros
-- **Personalización de no vendibles** — cada productor renombra sus 4 categorías de huevos no vendibles (tab Lotes → ⚙️ Personalización)
+- **Personalización de no vendibles** — cada productor renombra sus 4 categorías de huevos no vendibles (Plantel → Categorías no vendibles)
 
 ### Cómo activar Supabase (una sola vez)
 
@@ -198,6 +198,7 @@ src/avicolas/<nombre>/
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-10 | **Rediseño — Etapa 3c: Plantel** (completa el rediseño). La pestaña Lotes pasa a ser una lista agrupada como los ajustes del celular: *Lotes activos* (semana, línea, aves, ubicación; ＋ Nuevo lote), *Plantel* (nombre, ubicaciones, categorías no vendibles, todos los lotes), *Avisos y equipo* (alertas con sus umbrales, equipo) y *Más* (bodega/pedidos/ventas, importar CSV, manual, cerrar sesión). Cada fila abre su pantalla con «‹ Plantel» para volver; formularios y funciones sin cambios |
 | 2026-10 | **Rediseño — Etapa 3b: Historial.** La tabla ancha se reemplaza por días agrupados por semana de vida (con promedio de la semana), cada día con barra de postura y la marca de la curva, 📝 si tiene nota, días sin registro en rosado con *Completar* y *Registrar* para hoy; tocar un día lo abre para editar. Chips de lote, «Ver semanas anteriores» y botón **⬇ CSV** (historial del lote, separador `;` para Excel en español) |
 | 2026-10 | **Rediseño — Etapa 3a: Tendencia.** La pestaña Gráficos pasa a llamarse Tendencia: período 7 días / 30 días / todo el lote con 4 indicadores (postura vs curva, mortalidad, conversión, no vendibles) y su cambio contra el período anterior; un gráfico principal con selector (Postura, Mortalidad, Tamaños, Distribución, No vend., Acumulado, Semanas); *Hitos del lote* (mejor semana, días seguidos sin bajas, huevos acumulados y próximo hito de 50 mil); el detalle completo de indicadores y el costo de alimentación quedan plegables. Gráficos con tipografía de la marca, leyenda abajo y eje Y de postura ajustado a los datos |
 | 2026-10 | **Notas por lote y nota general del día.** Corregido: al cambiar de lote o de día el formulario conservaba los datos y la nota anteriores, y se guardaban repetidos en otro lote. Ahora cada día sin registro parte en blanco (aves = las del día anterior de ese lote). Nueva *nota general del día* para todo el plantel (tabla `notas_dia`, migración 010); la nota del lote sigue en `registros.observaciones`. El dashboard muestra *Notas del productor · últimos 30 días* (generales y por lote) en el detalle y en «Todos los lotes» |
