@@ -54,23 +54,30 @@ serve(async (req) => {
         </div>
       </div>`;
 
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_KEY}`,
-        'Content-Type':  'application/json',
-      },
-      body: JSON.stringify({
-        from:    FROM,
-        to:      [...destinatarios],
-        subject: `⚠️ Alerta ${lote} — ${fechaFmt}`,
-        html,
-      }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) console.error('Resend rechazó el correo:', res.status, JSON.stringify(data));
-    return new Response(JSON.stringify({ ok: res.ok, data }), { status: res.ok ? 200 : 502, headers: CORS });
+    // Un correo por destinatario: si Resend rechaza uno (p. ej. remitente sin dominio verificado,
+    // que solo permite enviar al dueño de la cuenta), los demás igual salen. El asesor va primero.
+    const lista = [...destinatarios].sort((x, y) => (y === ASESOR_MAIL ? 1 : 0) - (x === ASESOR_MAIL ? 1 : 0));
+    const resultados = [];
+    for (const dest of lista) {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${RESEND_KEY}`,
+          'Content-Type':  'application/json',
+        },
+        body: JSON.stringify({
+          from:    FROM,
+          to:      [dest],
+          subject: `⚠️ Alerta ${lote} — ${fechaFmt}`,
+          html,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) console.error('Resend rechazó el correo a', dest, res.status, JSON.stringify(data));
+      resultados.push({ to: dest, ok: res.ok, data });
+    }
+    const algunoOk = resultados.some(r => r.ok);
+    return new Response(JSON.stringify({ ok: algunoOk, data: resultados }), { status: algunoOk ? 200 : 502, headers: CORS });
 
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: String(e) }), { headers: CORS });
