@@ -319,6 +319,9 @@ select, input { font-family: inherit; }
 .const-leyenda .l-h::before { background: transparent; outline: 1.5px dashed var(--prim-mid); outline-offset: -1.5px; }
 @media (max-width: 640px) { .const-fila { grid-template-columns: 1fr auto; } .const-fila .cuad { grid-column: 1 / -1; order: 3; } }
 
+.tabla-pesajes { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tabla-pesajes th { font-family: var(--fuente-m); font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--tenue); text-align: left; padding: 0 8px 7px; font-weight: 500; border-bottom: 1px solid var(--linea); white-space: nowrap; }
+.tabla-pesajes td { padding: 7px 8px; border-bottom: 1px solid var(--fondo-2); white-space: nowrap; }
 .nota-fila { display: grid; grid-template-columns: 64px 110px 1fr; gap: 12px; padding: 7px 0; border-top: 1px solid var(--fondo-2); font-size: 13.5px; align-items: baseline; }
 .nota-fecha { font-family: var(--fuente-m); font-size: 11px; color: var(--tenue); }
 .nota-quien { font-size: 11px; font-weight: 600; color: var(--prim); background: var(--verde-cl); border-radius: 4px; padding: 2px 7px; justify-self: start; }
@@ -601,6 +604,55 @@ function tarjetaNotas(lotes, notasGral, mostrarLote) {
   return card;
 }
 
+// Pesajes del lote: gráfico del peso promedio sobre la banda de la curva guardada en cada pesaje + tabla
+let chartPeso = null;
+function tarjetaPesajes(l) {
+  const ps = (l.pesajes || []).filter(p => p.promedio_kg != null);
+  if (!ps.length) return null;
+  const dec = (v, d=1) => v == null ? '—' : Number(v).toFixed(d).replace('.', ',');
+  const card = document.createElement('div'); card.className = 'const-card';
+  const filas = [...ps].reverse().slice(0, 10).map(p => {
+    const ref = p.rango_min && p.rango_max ? (+p.rango_min + +p.rango_max) / 2 : null;
+    let d = ref ? (p.promedio_kg - ref) / ref * 100 : null;
+    if (d != null && Math.abs(d) < 0.05) d = 0;
+    const col = d == null ? 'var(--tenue)' : Math.abs(d) <= 5 ? 'var(--ok)' : 'var(--mal)';
+    const u = p.uniformidad * 100, cv = p.cv_pct * 100;
+    return `<tr><td>S${p.semana}</td><td>${fmtFechaCorta(p.fecha)}</td><td>${p.n_aves}</td><td><b>${dec(p.promedio_kg, 3)}</b></td>`
+      + `<td style="color:var(--tenue)">${ref ? dec(p.rango_min, 3) + '–' + dec(p.rango_max, 3) : '—'}</td>`
+      + `<td style="color:${col};font-weight:600">${d == null ? '—' : (d > 0 ? '+' : '') + dec(d) + ' %'}</td>`
+      + `<td style="color:${u >= 85 ? 'var(--ok)' : u >= 75 ? 'var(--alerta)' : 'var(--mal)'}">${dec(u)} %</td>`
+      + `<td style="color:${cv <= 10 ? 'var(--ok)' : cv <= 15 ? 'var(--alerta)' : 'var(--mal)'}">${dec(cv)} %</td></tr>`;
+  }).join('');
+  card.innerHTML = `<div class="const-top"><div class="const-titulo">Pesajes · peso corporal vs curva</div></div>`
+    + `<div style="position:relative;height:220px;margin-bottom:12px"><canvas></canvas></div>`
+    + `<div style="overflow-x:auto"><table class="tabla-pesajes"><thead><tr><th>Sem</th><th>Fecha</th><th>Aves</th><th>Prom. kg</th><th>Curva</th><th>Δ curva</th><th>Unif.</th><th>CV</th></tr></thead><tbody>${filas}</tbody></table></div>`;
+  setTimeout(() => {
+    const cv = card.querySelector('canvas'); if (!cv || !window.Chart) return;
+    if (chartPeso) chartPeso.destroy();
+    chartPeso = new Chart(cv.getContext('2d'), { type:'line', data:{ labels: ps.map(p => 'S' + p.semana), datasets:[
+      { label:'Máx. curva', data: ps.map(p => p.rango_max), borderColor:'rgba(184,134,11,.5)', borderWidth:1, pointRadius:0, fill:false },
+      { label:'Rango de la curva', data: ps.map(p => p.rango_min), borderColor:'rgba(184,134,11,.5)', backgroundColor:'rgba(184,134,11,.13)', borderWidth:1, pointRadius:0, fill:'-1' },
+      { label:'Peso promedio (kg)', data: ps.map(p => +p.promedio_kg), borderColor:'#2a5430', backgroundColor:'#2a5430', borderWidth:2.5, pointRadius:3.5, tension:.25 },
+    ]}, options:{ responsive:true, maintainAspectRatio:false, interaction:{ mode:'index', intersect:false },
+      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:12, filter: it => it.text !== 'Máx. curva' } } },
+      scales:{ x:{ grid:{ display:false } } } } });
+  }, 0);
+  return card;
+}
+const fmtFechaCorta = f => f ? new Date(f+'T12:00:00').toLocaleDateString('es-CL', { day:'numeric', month:'short' }).replace('.', '') : '—';
+
+// Vista de un lote en crianza: encabezado + pesajes
+function renderMainCrianza(main, granja, l) {
+  const sem = l.fechaNac ? Math.floor((new Date(hoyISO()+'T12:00:00') - new Date(l.fechaNac+'T12:00:00')) / 864e5 / 7) + 1 : null;
+  const ult = l.pesajes[l.pesajes.length - 1];
+  const header = document.createElement('div'); header.className = 'lote-header';
+  header.innerHTML = `<div><div class="lote-header-meta">${esc(granja.nombre)} · Crianza${sem ? ' · semana ' + sem + ' de vida' : ''}</div>`
+    + `<div class="lote-header-titulo" style="color:${granja.color}">${esc(l.nombre)}</div>`
+    + `<div class="lote-header-sub">${l.linea || ''}${l.aves ? ' · ' + Number(l.aves).toLocaleString('es-CL') + ' aves' : ''} · último pesaje: ${ult ? fmtFechaCorta(ult.fecha) + ' (semana ' + ult.semana + ')' : '—'}</div></div>`;
+  main.appendChild(header);
+  const tp = tarjetaPesajes(l); if (tp) main.appendChild(tp);
+}
+
 function tarjetaConstancia(lotes, mostrarNombre) {
   const card = document.createElement('div'); card.className = 'const-card';
   let html = `<div class="const-top"><div class="const-titulo">Constancia de registro · últimos 30 días</div></div>`;
@@ -824,6 +876,18 @@ function renderSidebar() {
     btn.append(nm, tag); listaL.appendChild(btn);
   });
 
+  // Lotes en crianza (solo pesajes): se abren con su vista de pesaje
+  (state.datos[state.granjaId]?.crianza || []).forEach((l, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'lote-btn' + (state.loteIdx === 'c'+i ? ' activo' : '');
+    btn.onclick = () => { state.loteIdx = 'c'+i; render(); };
+    const nm = document.createElement('span'); nm.className='lote-nombre'; nm.textContent = l.nombre;
+    const tag = document.createElement('span'); tag.className='alert-tag';
+    Object.assign(tag.style, {background:'var(--fondo)', color:'var(--suave)', border:'1px solid var(--linea)'});
+    tag.textContent = 'crianza';
+    btn.append(nm, tag); listaL.appendChild(btn);
+  });
+
   const alertas = GRANJAS.flatMap(g => {
     const d = state.datos[g.id]; if (!d) return [];
     return (d.lotes||[]).filter(l=>l.diasPendientes>0)
@@ -933,6 +997,11 @@ function renderMain() {
   // Vista combinada: todos los lotes del productor
   if (state.loteIdx === 'todos' && lotes.length) { renderMainTodos(main, granja, lotes); return; }
 
+  // Lote en crianza (o productor que solo tiene lotes en crianza)
+  const crianza = datosG?.crianza || [];
+  if (typeof state.loteIdx === 'string' && state.loteIdx[0] === 'c' && crianza[+state.loteIdx.slice(1)]) { renderMainCrianza(main, granja, crianza[+state.loteIdx.slice(1)]); return; }
+  if (!lotes.length && crianza.length) { renderMainCrianza(main, granja, crianza[0]); return; }
+
   const lote  = lotes[state.loteIdx];
 
   if (!lote && est==='cargando') { main.innerHTML='<div class="estado-msg"><div class="estado-msg-titulo">Cargando datos…</div></div>'; return; }
@@ -1011,6 +1080,7 @@ function renderMain() {
   main.appendChild(kpiGrid);
   main.appendChild(tarjetaConstancia([lote], false));
   const tn = tarjetaNotas([lote], datosG?.notasGral, false); if (tn) main.appendChild(tn);
+  const tp = tarjetaPesajes(lote); if (tp) main.appendChild(tp);
 
   // ── Gráfico con tabs ──
   const chartWrap = document.createElement('div'); chartWrap.className='chart-wrap';
@@ -1946,12 +2016,20 @@ async function cargarDatos() {
             'select':  'fecha,semana_vida,n_aves,mortalidad,kg_alimento,n_huevos,chico,mediano,grande,xl,super_xl,jumbo,sucios,rotos,trizados,sangre,pct_postura,pct_esperado,diferencia,observaciones',
             'order':   'fecha.desc',
             'limit':   '1000',   // ~2,7 años: cubre la vida completa de un lote para la curva por semana de vida
-          }).then(regs => procesarLote(lote, regs))
+          }).then(async regs => {
+            // Pesajes del lote (requiere la política vet_admin_pesajes; si no, llegan vacíos)
+            let pes = [];
+            try { pes = await sbFetch('pesajes', { 'lote_id':'eq.'+lote.id, 'select':'semana,fecha,n_aves,promedio_kg,cv_pct,uniformidad,rango_min,rango_max', 'order':'semana.asc,fecha.asc' }); } catch(e) {}
+            const pl = procesarLote(lote, regs);
+            if (pl) { pl.pesajes = pes; return pl; }
+            // Sin postura pero con pesajes: lote en crianza (vista propia, fuera del resumen de postura)
+            return pes.length ? { crianza:true, id:lote.id, nombre:lote.nombre, fechaNac:lote.fecha_nac, linea:lote.linea_genetica, aves:lote.n_aves, pesajes:pes } : null;
+          })
         ));
         // Notas generales del día de este productor (tabla notas_dia; si no existe, sin ellas)
         let notasGral = [];
         try { notasGral = await sbFetch('notas_dia', { 'user_id':'eq.'+granja.id, 'select':'fecha,texto', 'order':'fecha.desc', 'limit':'200' }); } catch(e) {}
-        state.datos[granja.id] = { fechaConsulta: hoyISO(), lotes: resultados.filter(Boolean), notasGral };
+        state.datos[granja.id] = { fechaConsulta: hoyISO(), lotes: resultados.filter(x => x && !x.crianza), crianza: resultados.filter(x => x && x.crianza), notasGral };
         state.estados[granja.id] = 'ok';
       } catch(e) { state.estados[granja.id]='error'; }
       // Refresco parcial: sidebar siempre; el panel principal solo si es el productor que se está viendo
