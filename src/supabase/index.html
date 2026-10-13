@@ -1721,16 +1721,19 @@ async function mostrarApp() {
   await Promise.all([cargarLotes(), cargarConfig(), cargarNombreProductor(), cargarNotasDia()]);
   actualizarAvatar();
   actualizarEncabezado();
-  autoSeleccionarLote();
+  await autoSeleccionarLote();
+  // Enlaces directos a una pestaña: …/src/supabase/#pesaje, #tendencia, #historial, #plantel
+  const destino = { pesaje:'pesaje', tendencia:'graficos', historial:'datos', plantel:'lotes' }[location.hash.slice(1)];
+  if (destino) irTab(destino);
 }
 // Recuerda el último lote usado (o toma el primero activo) para no perder la selección
-function autoSeleccionarLote(){
+async function autoSeleccionarLote(){
   if (loteActual) return;
   const activos = lotes.filter(l => l.activo);
   if (!activos.length) return;
   let saved = null; try { saved = localStorage.getItem('avivet_lote_'+ownerId); } catch(e){}
   const elegir = activos.find(l => l.id === saved) || activos[0];
-  seleccionarLote(elegir.id);
+  await seleccionarLote(elegir.id);
 }
 
 // ══ TABS ════════════════════════════════════════════════════════
