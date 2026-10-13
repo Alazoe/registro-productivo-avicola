@@ -22,6 +22,7 @@ Cada migración:
 | 008 | `008_equipo.sql` | Cuenta compartida: tabla `equipo`, función `tiene_acceso`, RLS por cuenta | ✅ 2026-07 |
 | 009 | `009_stock_resumen.sql` | Función `stock_resumen()` (agregados de bodega en 1 petición) | ✅ 2026-09 |
 | 010 | `010_notas_dia.sql` | Tabla `notas_dia`: nota general del día por cuenta (la del lote sigue en `registros.observaciones`) | ✅ 2026-10 |
+| 011 | `011_vet_admin_pesajes.sql` | Lectura de `pesajes` para el asesor (dashboard) | ✅ 2026-10 |
 
 Para ver qué tiene aplicado un proyecto, en el SQL Editor:
 
