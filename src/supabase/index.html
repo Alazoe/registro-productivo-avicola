@@ -677,7 +677,7 @@ input[type=number]{-moz-appearance:textfield}
   <div id="pp-manual" class="big p-manual">
     <label class="big-l" for="p-peso">Peso de cada ave (kg o gramos)</label>
     <div class="p-in">
-      <input type="text" inputmode="decimal" id="p-peso" class="big-in" placeholder="1,250" onkeydown="if(event.key==='Enter'){event.preventDefault();agregarPeso()}">
+      <input type="text" inputmode="decimal" id="p-peso" class="big-in" placeholder="1,250" oninput="actualizarBtnPesaje()" onkeydown="if(event.key==='Enter'){event.preventDefault();agregarPeso()}">
       <button class="p-add" onclick="agregarPeso()" aria-label="Agregar">＋</button>
       <button class="p-mic" id="btn-mic" onclick="toggleVoz()" aria-label="Dictar por voz">🎤</button>
     </div>
@@ -1480,7 +1480,7 @@ function limpiarPesos() { if (pesos.length && confirm(`¿Borrar los ${pesos.leng
 function renderPesos() {
   const n = pesos.length;
   document.getElementById('p-resultado').style.display = n ? 'block' : 'none';
-  document.getElementById('btn-guardar-pesaje').disabled = !n || !loteActual;
+  actualizarBtnPesaje();
   if (!n) return;
   document.getElementById('p-n').textContent = `(${n} aves)`;
   const prom = pesos.reduce((a,b)=>a+b,0) / n;
@@ -1510,7 +1510,14 @@ function renderPesos() {
   } else c.style.display = 'none';
 }
 
+// Guardar se habilita también con un peso escrito que aún no se agregó con ＋
+function actualizarBtnPesaje() {
+  const escrito = document.getElementById('p-peso')?.value.trim();
+  document.getElementById('btn-guardar-pesaje').disabled = !loteActual || (!pesos.length && !escrito);
+}
 async function guardarPesaje() {
+  // Si quedó un peso escrito sin tocar ＋, se agrega antes de guardar
+  if (document.getElementById('p-peso').value.trim()) agregarPeso();
   if (!loteActual || !pesos.length) return;
   const fecha = document.getElementById('p-fecha').value, semana = parseInt(document.getElementById('p-semana').value);
   if (!fecha || !semana) { toast('Completa la fecha y la semana', 'warn'); return; }
