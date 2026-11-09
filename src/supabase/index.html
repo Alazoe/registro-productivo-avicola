@@ -475,6 +475,34 @@ input[type=number]{-moz-appearance:textfield}
 .pl-sec .card-body > p:first-child{margin-top:0}
 .lote-card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--verde);border-radius:18px;box-shadow:none}
 .lote-card.archivado{border-left-color:#c9c2b2}
+/* ── Sin clasificar (Historial) ─────────────────────────── */
+.sc-item{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;overflow:hidden}
+.sc-hdr{padding:11px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:.88rem;gap:10px}
+.sc-badge{background:var(--verde-o);color:#fff;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;white-space:nowrap;flex-shrink:0}
+.sc-form{padding:0 14px 14px}
+.sc-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:10px}
+.sc-grid label{font-size:.7rem;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+.sc-grid input{font-size:.85rem;padding:6px 4px;border-radius:7px;border:1px solid var(--line);text-align:center;width:100%;box-sizing:border-box}
+/* ── Reporte ────────────────────────────────────────────── */
+.rep-tbl{width:100%;border-collapse:collapse;font-size:.8rem}
+.rep-tbl th{background:var(--verde-o);color:#fff;padding:7px 7px;text-align:left;font-weight:600;font-size:.73rem}
+.rep-tbl td{padding:6px 7px;border-bottom:1px solid var(--line)}
+.rep-tbl tr:last-child td{border-bottom:0}
+.rep-chips{display:flex;gap:7px;flex-wrap:wrap;padding:4px 0 10px}
+/* ── Print ──────────────────────────────────────────────── */
+@media print{
+  .tabs,.hdr,.chips,.lotes-btns,.btn,nav,.rep-chips,.rep-acciones,#rep-acciones{display:none!important}
+  .page{display:none!important;padding-bottom:0}
+  #page-reporte{display:block!important;padding:0;margin:0}
+  #rep-wrap{display:block!important}
+  #rep-sin-lote{display:none!important}
+  body,#app{background:#fff!important}
+  .kpi-item{border:1px solid #ccc!important;break-inside:avoid}
+  .rep-tbl{width:100%;font-size:.85rem}
+  .rep-tbl th,.rep-tbl td{border:1px solid #ccc;padding:4px 6px}
+  .rep-print-header{display:block!important}
+}
+.rep-print-header{display:none;margin-bottom:12px;font-size:.9rem;color:#333}
 </style>
 </head>
 <body>
@@ -540,6 +568,7 @@ input[type=number]{-moz-appearance:textfield}
   <div class="tab" onclick="irTab('graficos')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18l5-6 4 3 7-9"/></svg>Tendencia</div>
   <div class="tab" onclick="irTab('datos')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h14M4 11h14M4 17h9"/></svg>Historial</div>
   <div class="tab" onclick="irTab('lotes')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="3"/><path d="M11 2v3M11 17v3M2 11h3M17 11h3"/></svg>Plantel</div>
+  <div class="tab" onclick="irTab('reporte')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h8l4 4v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v4h4M8 13h6M8 17h4"/></svg>Reporte</div>
 </nav>
 
 <div id="banner-cuenta" style="display:none;background:#1e5a7a;color:#fff;padding:9px 14px;font-size:.82rem;font-weight:600;text-align:center"></div>
@@ -798,8 +827,39 @@ input[type=number]{-moz-appearance:textfield}
       <span id="h-resumen"></span>
       <button class="chip-p" onclick="exportarHistorialCSV()">⬇ CSV</button>
     </div>
+    <div id="sc-seccion" style="display:none">
+      <div style="font-weight:700;color:var(--verde-o);font-size:.88rem;padding:14px 0 6px">📋 Pendientes de clasificar</div>
+      <div id="sc-lista"></div>
+    </div>
     <div id="h-semanas"></div>
     <button class="nota-btn h-mas" id="h-mas" onclick="histSemanas += 8; renderHistorial()">Ver semanas anteriores</button>
+  </div>
+</div>
+
+<!-- ══ TAB REPORTE ══════════════════════════════════════════ -->
+<div class="page" id="page-reporte">
+  <div id="rep-sin-lote" class="alerta alerta-info" style="margin-top:14px">Selecciona un lote para ver el reporte.</div>
+  <div id="rep-wrap" style="display:none">
+    <div class="rep-print-header" id="rep-print-header"></div>
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-body" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding-bottom:4px">
+        <label style="flex:1;min-width:130px;margin-bottom:0">Desde
+          <input type="date" id="rep-desde" onchange="renderReporte()">
+        </label>
+        <label style="flex:1;min-width:130px;margin-bottom:0">Hasta
+          <input type="date" id="rep-hasta" onchange="renderReporte()">
+        </label>
+        <button class="btn btn-verde btn-sm" onclick="imprimirReporte()" style="margin-bottom:0;padding:10px 16px">🖨 Imprimir PDF</button>
+      </div>
+      <div style="padding:0 14px 10px" class="rep-chips">
+        <button class="chip" onclick="rangoRapido(7)">7 días</button>
+        <button class="chip" onclick="rangoRapido(30)">30 días</button>
+        <button class="chip" onclick="rangoRapido(90)">3 meses</button>
+        <button class="chip" onclick="rangoRapidoMes()">Mes actual</button>
+      </div>
+    </div>
+    <div id="rep-kpis" class="kpi-grid col2" style="margin-bottom:12px"></div>
+    <div id="rep-tabla"></div>
   </div>
 </div>
 
@@ -1738,14 +1798,15 @@ async function autoSeleccionarLote(){
 
 // ══ TABS ════════════════════════════════════════════════════════
 function irTab(tab) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['registro','pesaje','graficos','datos','lotes'][i]===tab));
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['registro','pesaje','graficos','datos','lotes','reporte'][i]===tab));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
   tabActual = tab; actualizarEncabezado(); window.scrollTo(0,0);
   if (tab === 'graficos') renderGraficosTab();
   if (tab === 'lotes')    { volverPl(); renderListaLotes(); renderListaUbicaciones(); renderConfigCard(); renderAlertasCard(); cargarEquipo(); }
-  if (tab === 'datos')    renderHistorial();
+  if (tab === 'datos')    { renderHistorial(); renderSinClasificar(); }
   if (tab === 'pesaje')   renderPesaje();
+  if (tab === 'reporte')  renderReporte();
 }
 
 // ══ EQUIPO — acceso compartido ═════════════════════════════════
@@ -3134,6 +3195,7 @@ async function cambiarLoteDatos(id) {
   histSemanas = 8;
   await seleccionarLote(id);
   renderHistorial();
+  renderSinClasificar();
 }
 
 // Historial agrupado por semana de vida: todos los días desde el primer registro hasta hoy,
@@ -3221,6 +3283,149 @@ function editarDesdeHistorial(fecha) {
 function mostrarLoading(show, txt='Cargando…') {
   document.getElementById('loading').classList.toggle('visible',show);
   document.getElementById('loading-txt').textContent=txt;
+}
+
+// ── Sin clasificar ───────────────────────────────────────────
+function renderSinClasificar() {
+  const sec = document.getElementById('sc-seccion');
+  const lista = document.getElementById('sc-lista');
+  if (!loteActual || !registrosLote.length) { sec.style.display='none'; return; }
+  const pendientes = registrosLote.filter(r =>
+    (r.n_huevos||0) > 0 &&
+    (r.chico||0)+(r.mediano||0)+(r.grande||0)+(r.xl||0)+(r.super_xl||0)+(r.jumbo||0) === 0
+  );
+  if (!pendientes.length) { sec.style.display='none'; return; }
+  sec.style.display = 'block';
+  lista.innerHTML = pendientes.map(r => `
+    <div class="sc-item" id="sc-${r.id}">
+      <div class="sc-hdr" onclick="toggleScForm('${r.id}')">
+        <span>${fmtFecha(r.fecha)} · <b>${fmtN(r.n_huevos)}</b> huevos · Sem ${r.semana_vida||'?'}</span>
+        <span class="sc-badge">Clasificar ›</span>
+      </div>
+      <div class="sc-form" id="scf-${r.id}" style="display:none">
+        <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">Distribución por tamaño</div>
+        <div class="sc-grid">
+          <label>Chico<input type="number" id="sc-chico-${r.id}" value="0" min="0"></label>
+          <label>Mediano<input type="number" id="sc-mediano-${r.id}" value="0" min="0"></label>
+          <label>Grande<input type="number" id="sc-grande-${r.id}" value="0" min="0"></label>
+          <label>XL<input type="number" id="sc-xl-${r.id}" value="0" min="0"></label>
+          <label>Super XL<input type="number" id="sc-sxl-${r.id}" value="0" min="0"></label>
+        </div>
+        <div class="sc-grid" style="grid-template-columns:repeat(5,1fr)">
+          <label>Jumbo<input type="number" id="sc-jumbo-${r.id}" value="0" min="0"></label>
+          <label>Sucios<input type="number" id="sc-sucios-${r.id}" value="0" min="0"></label>
+          <label>Rotos<input type="number" id="sc-rotos-${r.id}" value="0" min="0"></label>
+          <label>Trizados<input type="number" id="sc-triz-${r.id}" value="0" min="0"></label>
+          <label>C/sangre<input type="number" id="sc-sang-${r.id}" value="0" min="0"></label>
+        </div>
+        <div id="sc-err-${r.id}" class="alerta alerta-err" style="display:none;margin-bottom:8px"></div>
+        <button class="btn btn-verde btn-sm" onclick="guardarClasificacion('${r.id}',${r.n_huevos})" style="width:auto;padding:10px 20px">💾 Guardar clasificación</button>
+      </div>
+    </div>`).join('');
+}
+
+function toggleScForm(id) {
+  const f = document.getElementById('scf-'+id);
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+async function guardarClasificacion(id, nHuevos) {
+  const g = s => parseInt(document.getElementById(s+id)?.value)||0;
+  const chico=g('sc-chico-'), mediano=g('sc-mediano-'), grande=g('sc-grande-');
+  const xl=g('sc-xl-'), super_xl=g('sc-sxl-'), jumbo=g('sc-jumbo-');
+  const sucios=g('sc-sucios-'), rotos=g('sc-rotos-'), trizados=g('sc-triz-'), sangre=g('sc-sang-');
+  const total = chico+mediano+grande+xl+super_xl+jumbo;
+  const errEl = document.getElementById('sc-err-'+id);
+  if (total === 0) { errEl.textContent='Ingresa al menos un tamaño.'; errEl.style.display='block'; return; }
+  if (total > nHuevos * 1.1) { errEl.textContent=`Total clasificado (${total}) supera los huevos registrados (${nHuevos}).`; errEl.style.display='block'; return; }
+  errEl.style.display='none';
+  const { error } = await sb.from('registros').update({ chico, mediano, grande, xl, super_xl, jumbo, sucios, rotos, trizados, sangre }).eq('id', id);
+  if (error) { errEl.textContent='Error: '+error.message; errEl.style.display='block'; return; }
+  const r = registrosLote.find(r => r.id === id);
+  if (r) Object.assign(r, { chico, mediano, grande, xl, super_xl, jumbo, sucios, rotos, trizados, sangre });
+  toast('Clasificación guardada ✅');
+  renderSinClasificar();
+}
+
+// ── Reporte ──────────────────────────────────────────────────
+function renderReporte() {
+  const sinLote = document.getElementById('rep-sin-lote');
+  const wrap = document.getElementById('rep-wrap');
+  if (!loteActual) { sinLote.style.display='block'; wrap.style.display='none'; return; }
+  sinLote.style.display='none'; wrap.style.display='block';
+  const desdeEl = document.getElementById('rep-desde');
+  const hastaEl = document.getElementById('rep-hasta');
+  if (!desdeEl.value) {
+    const d = new Date(hoy()+'T12:00:00'); d.setDate(d.getDate()-29);
+    desdeEl.value = d.toLocaleDateString('en-CA');
+  }
+  if (!hastaEl.value) hastaEl.value = hoy();
+  const desde = desdeEl.value, hasta = hastaEl.value;
+  const datos = registrosLote.filter(r => r.fecha >= desde && r.fecha <= hasta);
+
+  document.getElementById('rep-print-header').innerHTML =
+    `<b>${nombreProductor||'Plantel'}</b> · Lote: ${esc(loteActual.nombre)} · ${desde} – ${hasta}`;
+
+  if (!datos.length) {
+    document.getElementById('rep-kpis').innerHTML='';
+    document.getElementById('rep-tabla').innerHTML='<div class="alerta alerta-info">Sin registros en el período seleccionado.</div>';
+    return;
+  }
+  const nDias = datos.length;
+  const totalHuevos = datos.reduce((s,r)=>s+(r.n_huevos||0),0);
+  const totalMort   = datos.reduce((s,r)=>s+(r.mortalidad||0),0);
+  const totalKg     = datos.reduce((s,r)=>s+(r.kg_alimento||0),0);
+  const promPost    = datos.reduce((s,r)=>s+(r.pct_postura||0),0)/nDias*100;
+  const promEsp     = datos.reduce((s,r)=>s+(r.pct_esperado||0),0)/nDias*100;
+  const totalNV     = datos.reduce((s,r)=>s+(r.sucios||0)+(r.rotos||0)+(r.trizados||0)+(r.sangre||0),0);
+  const pctNV       = totalHuevos > 0 ? totalNV/totalHuevos*100 : 0;
+  const cP = v => v < 80 ? 'rojo' : v < 90 ? 'naranja' : '';
+  document.getElementById('rep-kpis').innerHTML = `
+    <div class="kpi-item"><div class="kpi-label">Días registrados</div><div class="kpi-val azul">${nDias}</div><div class="kpi-sub">${desde} – ${hasta}</div></div>
+    <div class="kpi-item"><div class="kpi-label">Total huevos</div><div class="kpi-val azul">${fmtN(totalHuevos)}</div><div class="kpi-sub">${fmtN(totalMort)} bajas</div></div>
+    <div class="kpi-item"><div class="kpi-label">% Postura promedio</div><div class="kpi-val ${cP(promPost)}">${promPost.toFixed(1).replace('.',',')}%</div><div class="kpi-sub">esperado ${promEsp.toFixed(1).replace('.',',')}%</div></div>
+    <div class="kpi-item"><div class="kpi-label">Total kg alimento</div><div class="kpi-val">${totalKg.toFixed(1).replace('.',',')} kg</div><div class="kpi-sub">no vendibles ${pctNV.toFixed(1).replace('.',',')}%</div></div>`;
+  const fP = v => ((v||0)*100).toFixed(1).replace('.',',')+'%';
+  const rows = [...datos].reverse().map(r => {
+    const dif = (((r.pct_postura||0)-(r.pct_esperado||0))*100).toFixed(1).replace('.',',');
+    const neg = (r.pct_postura||0) < (r.pct_esperado||0);
+    return `<tr>
+      <td>${fmtFecha(r.fecha)}</td><td>${r.semana_vida||'—'}</td>
+      <td>${fmtN(r.n_aves)}</td><td>${fmtN(r.n_huevos)}</td>
+      <td>${fP(r.pct_postura)}</td><td ${neg?'style="color:var(--rojo)"':''}>${dif}%</td>
+      <td>${r.mortalidad||0}</td><td>${(r.kg_alimento||0).toString().replace('.',',')}</td>
+      <td style="color:#888;font-size:.75rem">${esc(r.observaciones||'')}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('rep-tabla').innerHTML = `
+    <div style="overflow-x:auto">
+      <table class="rep-tbl">
+        <thead><tr><th>Fecha</th><th>Sem</th><th>Aves</th><th>Huevos</th><th>Postura</th><th>Dif.</th><th>Bajas</th><th>Kg Alim.</th><th>Nota</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function rangoRapido(dias) {
+  const d = new Date(hoy()+'T12:00:00'); d.setDate(d.getDate()-(dias-1));
+  document.getElementById('rep-desde').value = d.toLocaleDateString('en-CA');
+  document.getElementById('rep-hasta').value = hoy();
+  renderReporte();
+}
+
+function rangoRapidoMes() {
+  const d = new Date(hoy()+'T12:00:00');
+  document.getElementById('rep-desde').value = new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString('en-CA');
+  document.getElementById('rep-hasta').value = hoy();
+  renderReporte();
+}
+
+function imprimirReporte() {
+  if (!loteActual) return;
+  const t = document.title;
+  document.title = `Reporte ${loteActual.nombre} ${document.getElementById('rep-desde').value||''}`;
+  window.print();
+  document.title = t;
 }
 </script>
 </body>
