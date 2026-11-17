@@ -17,7 +17,7 @@ dashboard.html         ← Monitor de Producción del asesor (Supabase): todos l
 ```
 
 ## Reglas IMPORTANTES
-- NUNCA agregar frameworks, librerías npm ni bundlers. La app es vanilla JS por decisión de diseño.
+- NUNCA agregar frameworks, librerías npm ni bundlers. La app es vanilla JS por decisión de diseño. (Chart.js y sus plugins por CDN sí se usan: el dashboard carga `chartjs-plugin-annotation` para la banda y las notas de la curva de postura.)
 - Los KPIs se calculan siempre client-side en `index.html`. No hay API intermediaria.
 - Las Edge Functions (TypeScript Deno) viven en `supabase/functions/<nombre>/index.ts` (fuente de verdad). Se despliegan pegando ese archivo en el Dashboard → Edge Functions, o con `scripts/deploy-functions.sh` (Supabase CLI, opcional).
 - Cambios de base de datos: SIEMPRE como migración numerada en `migrations/NNN_nombre.sql` (idempotente, con guarda de orden y auto-registro en `schema_migrations`; ver `migrations/README.md`). Nunca SQL suelto en otras carpetas.

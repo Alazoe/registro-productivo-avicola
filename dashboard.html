@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.1.0/chartjs-plugin-annotation.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
 :root {
@@ -173,6 +174,9 @@ select, input { font-family: inherit; }
 .chart-leyenda { display: flex; gap: 16px; font-size: 13px; color: var(--tenue); }
 .chart-leyenda span { display: inline-flex; align-items: center; gap: 6px; }
 .chart-canvas-wrap { position: relative; height: 240px; width: 100%; }
+.nota-chart { display:none; position:absolute; z-index:5; max-width:320px; padding:7px 10px; background:#fff;
+  border:1px solid #ddd8cc; border-left:3px solid #b8860b; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,.08);
+  font:12px/1.45 'DM Sans',sans-serif; color:#4d5748; pointer-events:none; }
 .pending-aviso {
   display: flex; align-items: center; gap: 8px; margin-top: 14px;
   padding: 9px 14px; border-radius: 6px; font-size: 13px; border: 1px dashed;
@@ -710,10 +714,71 @@ function agrupar(registros, vista) {
 }
 
 // ── CHART ──────────────────────────────────────────────────────────────
+// Zona aceptable alrededor de la curva esperada: ± puntos porcentuales de postura.
+// Es el mismo margen que dispara la alerta por correo (caída de postura > 3 %).
+const BANDA_TOL = 3;
+
+// Etiqueta del eje X que le toca a una fecha según la vista (igual que agrupar()).
+function etiquetaVista(fecha, vista) {
+  if (vista === 'diario')  return fecha.slice(5);
+  if (vista === 'semanal') return getLunes(fecha).slice(5);
+  return new Date(fecha.slice(0, 7) + '-15').toLocaleDateString('es-CL', {month:'short', year:'2-digit'});
+}
+
+// Notas del productor (las del lote y las generales del día) como líneas verticales 📝
+// sobre la curva. Al pasar el mouse muestran el texto. Se omiten marcas tipo "[Odoo]".
+function anotacionesNotas(lote, granja, vista, etiquetas) {
+  const porEtiqueta = {};
+  const add = (fecha, txt) => {
+    if (!txt) return;
+    const et = etiquetaVista(fecha, vista);
+    if (!etiquetas.includes(et)) return;
+    (porEtiqueta[et] = porEtiqueta[et] || []).push(fmtFechaCorta(fecha) + ': ' + txt);
+  };
+  lote.registros.forEach(r => { if (r.obs && !/^\[[^\]]+\]$/.test(r.obs)) add(r.fecha, r.obs); });
+  (state.datos[granja.id]?.notasGral || []).forEach(n => add(n.fecha, (n.texto || '').trim()));
+  const corta = t => t.length > 70 ? t.slice(0, 68) + '…' : t;
+  const anot = {};
+  Object.entries(porEtiqueta).forEach(([et, notas], i) => {
+    const lineas = notas.slice(0, 4).map(corta);
+    if (notas.length > 4) lineas.push(`y ${notas.length - 4} nota(s) más`);
+    anot['nota' + i] = {
+      type: 'line', scaleID: 'x', value: et,
+      borderColor: 'rgba(184,134,11,.55)', borderWidth: 1.5, borderDash: [3, 3],
+      label: {
+        display: true, content: '📝', position: 'start', yAdjust: -2,
+        backgroundColor: 'rgba(255,255,255,.92)', color: '#4d5748',
+        borderColor: '#ddd8cc', borderWidth: 1, borderRadius: 4, padding: 3,
+        font: { family: "'DM Sans'", size: 11 },
+      },
+      enter: (ctx, ev) => mostrarNotaChart(ctx.chart, ev, lineas),
+      click: (ctx, ev) => mostrarNotaChart(ctx.chart, ev, lineas),   // en celular no hay hover
+      leave: ctx => ocultarNotaChart(ctx.chart),
+    };
+  });
+  return anot;
+}
+
+// Recuadro HTML con el texto de las notas (el label del plugin no se redimensiona al cambiar).
+function mostrarNotaChart(chart, ev, lineas) {
+  const wrap = chart.canvas.parentElement;
+  let box = wrap.querySelector('.nota-chart');
+  if (!box) { box = document.createElement('div'); box.className = 'nota-chart'; wrap.appendChild(box); }
+  box.innerHTML = lineas.map(esc).join('<br>');
+  box.style.display = 'block';
+  const x = Math.max(0, Math.min(ev.x - 12, wrap.clientWidth - box.offsetWidth));
+  box.style.left = x + 'px';
+  box.style.top = (chart.chartArea.top + 22) + 'px';
+}
+function ocultarNotaChart(chart) {
+  const box = chart.canvas.parentElement.querySelector('.nota-chart');
+  if (box) box.style.display = 'none';
+}
+
 function renderChart(lote, granja, vista) {
   const canvas = document.getElementById('chart-canvas');
   if (!canvas) return;
-  if (chartInst) { chartInst.destroy(); chartInst = null; }
+  if (chartInst) { ocultarNotaChart(chartInst); chartInst.destroy(); chartInst = null; }
 
   const puntos = agrupar(lote.registros, vista);
   if (!puntos.length) {
@@ -723,12 +788,19 @@ function renderChart(lote, granja, vista) {
 
   const color = granja.color;
   const colorAlpha = color + '20';
+  const etiquetas = puntos.map(p => p.label);
+  const banda = d => puntos.map(p => p.esperado == null ? null : Math.max(0, Math.min(100, p.esperado + d)));
 
   chartInst = new Chart(canvas, {
     type: 'line',
     data: {
-      labels: puntos.map(p => p.label),
+      labels: etiquetas,
       datasets: [
+        // banda de tolerancia: borde superior + borde inferior relleno hasta el de arriba
+        { label: 'banda+', data: banda(BANDA_TOL), borderWidth: 0, pointRadius: 0, pointHoverRadius: 0,
+          tension: 0.3, fill: false, spanGaps: true },
+        { label: 'banda-', data: banda(-BANDA_TOL), borderWidth: 0, pointRadius: 0, pointHoverRadius: 0,
+          backgroundColor: 'rgba(184,134,11,.12)', tension: 0.3, fill: '-1', spanGaps: true },
         {
           label: 'Postura real',
           data: puntos.map(p => p.postura),
@@ -765,7 +837,9 @@ function renderChart(lote, granja, vista) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
+        annotation: { annotations: anotacionesNotas(lote, granja, vista, etiquetas) },
         tooltip: {
+          filter: it => !it.dataset.label.startsWith('banda'),
           backgroundColor: '#fff',
           titleColor: '#1c2118',
           bodyColor: '#4d5748',
@@ -1107,7 +1181,9 @@ function renderMain() {
   const leyenda = document.createElement('div'); leyenda.className='chart-leyenda';
   leyenda.innerHTML=`
     <span><span style="display:inline-block;width:18px;height:2.5px;background:${granja.color};vertical-align:middle;margin-right:4px;border-radius:2px"></span>Real</span>
-    <span><span style="display:inline-block;width:18px;height:0;border-top:2px dashed #c9c2b2;vertical-align:middle;margin-right:4px"></span>Esperado</span>`;
+    <span><span style="display:inline-block;width:18px;height:0;border-top:2px dashed #c9c2b2;vertical-align:middle;margin-right:4px"></span>Esperado</span>
+    <span title="Esperado ± ${BANDA_TOL} puntos: el mismo margen de la alerta por correo"><span style="display:inline-block;width:18px;height:9px;background:rgba(184,134,11,.18);vertical-align:middle;margin-right:4px;border-radius:2px"></span>± ${BANDA_TOL} pts</span>
+    <span title="Días con notas del productor; pasa el mouse sobre 📝 para leerlas">📝 Notas</span>`;
 
   controles.append(tabs, leyenda);
   chartTop.append(chartTtl, controles);
