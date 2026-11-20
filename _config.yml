@@ -1,0 +1,12 @@
+# Ajustes del sitio publicado (GitHub Pages).
+lang: es-CL
+exclude:
+  - CLAUDE.md
+  - "src/avicolas/Copihue real/NOTAS.md"
+  - "src/avicolas/Vicente-Abogabir/Notas.md"
+  - "src/avicolas/avicola-clarita/NOTAS.md"
+  - "src/avicolas/avicola-gh/NOTAS.md"
+  - "src/avicolas/praderas-de-ranco/NOTAS.md"
+  - "src/avicolas/reinhard/NOTAS.md"
+  - "src/avicolas/rincon-de-chincolco/NOTAS.md"
+  - "src/avicolas/roberto-santelices/NOTAS.md"
